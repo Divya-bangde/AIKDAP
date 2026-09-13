@@ -13,6 +13,7 @@ import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 
 import { AikdapMark } from "@/components/common/AikdapMark";
 import { ThemeToggle } from "@/components/common/ThemeToggle";
+import { ProfilePersonaSelect } from "@/features/auth/ProfilePersonaSelect";
 import { ActiveWorkToast } from "@/features/command-center/ActiveWorkToast";
 import { EntryBackdrop } from "@/features/landing/EntryBackdrop";
 import { RoutedPage } from "@/layouts/RoutedPage";
@@ -219,6 +220,7 @@ export function AppShell() {
                 {user?.full_name && (
                   <p className="truncate text-xs text-muted-foreground">{user.email}</p>
                 )}
+                {user && <ProfilePersonaSelect persona={user.persona} />}
               </div>
             )}
             <button

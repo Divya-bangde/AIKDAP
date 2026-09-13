@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { AppShell } from "@/layouts/AppShell";
 import * as authService from "@/services/auth";
 import { useAuthStore } from "@/store/auth-store";
+import { makeUser } from "@/test/fixtures";
 import { renderWithProviders } from "@/test/render";
 
 vi.mock("@/services/auth");
@@ -180,5 +181,26 @@ describe("AppShell", () => {
     // One indicator per navigation bar (the shell renders a desktop and
     // a compact bar), never one per link.
     expect(indicator().length).toBe(2);
+  });
+
+  it("changes the default persona from the sidebar", async () => {
+    useAuthStore.setState({ accessToken: "tok", refreshToken: "ref", user: null });
+    vi.mocked(authService.currentUser).mockResolvedValue(makeUser());
+    vi.mocked(authService.updateMe).mockResolvedValue(makeUser({ persona: "student" }));
+    const user = userEvent.setup();
+
+    renderWithProviders(
+      <Routes>
+        <Route element={<AppShell />}>
+          <Route path="/" element={<div>Dashboard content</div>} />
+        </Route>
+      </Routes>,
+    );
+
+    const select = await screen.findByLabelText("I am a");
+    await user.selectOptions(select, "student");
+
+    await waitFor(() => expect(select).toHaveValue("student"));
+    expect(vi.mocked(authService.updateMe).mock.calls[0][0]).toEqual({ persona: "student" });
   });
 });
