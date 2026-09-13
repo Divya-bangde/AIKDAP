@@ -1,21 +1,33 @@
 import { Fragment, type ReactNode } from "react";
 
+import { MathTex } from "@/features/research/MathTex";
 import type { Citation } from "@/types/citation";
 
-/** Matches the `[c1]`-style markers the synthesis prompt asks the model
- * to emit, and `**bold**` spans. Capturing, so `split` keeps both. */
-const INLINE = /(\*\*[^*]+\*\*|\[[A-Za-z0-9_-]{1,16}\])/g;
+/** Matches `$$display$$` and `$inline$` LaTeX, the `[c1]`-style markers
+ * the synthesis prompt asks the model to emit, and `**bold**` spans.
+ * Capturing, so `split` keeps them. Inline math may not start or end
+ * with a space, so prose like "$5 and $10" stays text. */
+const INLINE =
+  /(\$\$[^$]+\$\$|\$(?!\s)[^$\n]+?(?<!\s)\$|\*\*[^*]+\*\*|\[[A-Za-z0-9_-]{1,16}\])/g;
+const DISPLAY_MATH = /^\$\$([^$]+)\$\$$/;
+const INLINE_MATH = /^\$(?!\s)([^$\n]+?)(?<!\s)\$$/;
 const MARKER = /^\[([A-Za-z0-9_-]{1,16})\]$/;
 const BOLD = /^\*\*([^*]+)\*\*$/;
 
-/** Renders one line's inline spans: bold text, citation markers that
- * resolve to a real citation, and everything else verbatim. */
+/** Renders one line's inline spans: math, bold text, citation markers
+ * that resolve to a real citation, and everything else verbatim. */
 function inlineNodes(
   line: string,
   byId: Map<string, { citation: Citation; index: number }>,
   onSelect: (citation: Citation, index: number) => void,
 ): ReactNode[] {
   return line.split(INLINE).map((part, index) => {
+    const display = part.match(DISPLAY_MATH);
+    if (display) return <MathTex key={index} tex={display[1]} display />;
+
+    const math = part.match(INLINE_MATH);
+    if (math) return <MathTex key={index} tex={math[1]} />;
+
     const bold = part.match(BOLD);
     if (bold) {
       return (
@@ -52,8 +64,9 @@ function inlineNodes(
 /** Renders the backend's final answer.
  *
  * The synthesis prompt asks the model for Markdown, so the stored
- * answer really does contain `##` headings, `**bold**` spans and `-`
- * bullets. Painting those control characters literally on screen was
+ * answer really does contain `##` headings, `**bold**` spans, `-`
+ * bullets and `$...$` / `$$...$$` LaTeX, typeset with KaTeX. Painting
+ * those control characters literally on screen was
  * the honest-but-unpolished default; this renders them as the
  * structure they already are.
  *
@@ -67,7 +80,7 @@ function inlineNodes(
  *   rejected stays inert text rather than gaining the appearance of a
  *   source.
  * - **Deliberately not a general Markdown engine.** It handles the
- *   three constructs this prompt actually produces; anything else falls
+ *   constructs this prompt actually produces; anything else falls
  *   through as plain text rather than being silently transformed by a
  *   dependency whose behaviour we would not control. */
 export function AnswerBody({

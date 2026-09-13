@@ -892,6 +892,7 @@ async def synthesis_node(state: ResearchState, config: RunnableConfig) -> dict[s
     citations = result.citations
     grounding_status = result.grounding_status
     visualization = result.visualization
+    equations = result.equations
     if general is not None:
         # Never presented as grounded: no citations, no claims, no chart,
         # and the disclosure is written into the text itself so it
@@ -903,6 +904,7 @@ async def synthesis_node(state: ResearchState, config: RunnableConfig) -> dict[s
         citations = []
         grounding_status = ResearchGroundingStatus.UNSOURCED
         visualization = None
+        equations = []
     elif insufficient and not web_fallback and result.model is not None:
         # The run ends declining to answer. A model's prose there is not
         # reliably an explanation of what is missing (a small model has
@@ -1000,6 +1002,7 @@ async def synthesis_node(state: ResearchState, config: RunnableConfig) -> dict[s
         "citations": citations_for_storage,
         "grounding_status": grounding_status.value,
         "visualization": visualization,
+        "equations": equations,
         "web_fallback": web_fallback,
         "topic_relation": topic_relation,
         # The graph's terminal node, so this is where the shared state
@@ -1062,6 +1065,7 @@ async def synthesis_node(state: ResearchState, config: RunnableConfig) -> dict[s
                 # nothing about verification appears in the prose itself.
                 "claims": result.verified_claims,
                 "visualization_kind": (visualization or {}).get("kind"),
+                "equation_count": len(equations),
                 "web_fallback": web_fallback,
                 # How the question relates to the project's documents, and
                 # whether the final answer came from general knowledge --

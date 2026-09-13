@@ -44,6 +44,7 @@ from typing import get_args
 
 from pydantic import ValidationError
 
+from app.agents.planner.equations import build_equations
 from app.agents.planner.prompts import (
     GROUNDED_SYNTHESIS_SYSTEM_PROMPT,
     UNSOURCED_SYNTHESIS_SYSTEM_PROMPT,
@@ -153,6 +154,9 @@ class SynthesisResult:
     #: A validated chart/diagram spec (`schemas.Visualization`, dumped),
     #: only when the question asked for one and the answer is grounded.
     visualization: dict | None = None
+    #: Validated equations (see `planner.equations.build_equations`),
+    #: only when the question involved any and the answer is grounded.
+    equations: list[dict] = field(default_factory=list)
     #: How the question relates to the subject of the supplied evidence,
     #: as the model judged it. `None` when no model judged it: the
     #: extractive path, a skipped call, or a missing/invalid value.
@@ -441,6 +445,7 @@ class GroundedSynthesizer(Synthesizer):
             claimed_ids,
             claimed_status,
             claimed_claims,
+            equations,
             topic_relation,
             visualization,
         ) = _parse_response(response.content)
@@ -505,6 +510,8 @@ class GroundedSynthesizer(Synthesizer):
             # A chart drawn from evidence judged insufficient would present
             # exactly the unsupported figures grounding exists to withhold.
             visualization=visualization if status is ResearchGroundingStatus.GROUNDED else None,
+            # Same reason: equations are presented as what the evidence says.
+            equations=equations if status is ResearchGroundingStatus.GROUNDED else [],
             topic_relation=topic_relation,
             rejected_citation_ids=rejected,
             evidence_supplied=len(supplied),
@@ -642,9 +649,15 @@ class UnsourcedSynthesizer:
 def _parse_response(
     content: str,
 ) -> tuple[
-    str, list[str], str | None, list[SynthesisClaim], TopicRelation | None, dict | None
+    str,
+    list[str],
+    str | None,
+    list[SynthesisClaim],
+    list[dict],
+    TopicRelation | None,
+    dict | None,
 ]:
-    """Pull the answer, citation ids, status, claims, topic relation and visual out of JSON.
+    """Pull the answer, citation ids, status, claims, equations, topic relation and visual out of JSON.
 
     Strict about the envelope and lenient about nothing important: a
     response that is not a JSON object with a non-empty `answer` is an
@@ -730,6 +743,7 @@ def _parse_response(
         claimed_ids,
         claimed_status if isinstance(claimed_status, str) else None,
         claims,
+        build_equations(payload.get("equations")),
         topic_relation,
         visualization,
     )

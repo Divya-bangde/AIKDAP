@@ -127,6 +127,11 @@ class ResearchRun(BaseModel):
     # when none was requested or the model's spec failed validation.
     visualization: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
 
+    # Equations the answer relies on, when the question involved any:
+    # `schemas.Equation` entries, each with the backend-sampled `curve`
+    # (see `planner.equations`). Null when there were none.
+    equations: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB, nullable=True)
+
     # The Celery task actually carrying out this run, so a run can be
     # correlated with the worker logs that executed it.
     celery_task_id: Mapped[str | None] = mapped_column(String(255), nullable=True)

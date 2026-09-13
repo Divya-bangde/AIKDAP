@@ -574,6 +574,26 @@ async def test_ollama_embedding_sends_a_base_url_and_no_credential(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_embedding_is_sent_in_batches_and_reassembled_in_order(monkeypatch):
+    """Regression: a whole textbook (2937 chunks) in one request crashed
+    Ollama's model runner and failed every chunk of the upload. The
+    texts must go out in slices and come back as one ordered list."""
+
+    async def embed_each(**kwargs):
+        # Each vector encodes its text's length, so order is checkable.
+        return SimpleNamespace(data=[{"embedding": [float(len(text)), 0.0]} for text in kwargs["input"]])
+
+    mock = AsyncMock(side_effect=embed_each)
+    monkeypatch.setattr(gateway_module, "aembedding", mock)
+    texts = ["x" * (i + 1) for i in range(150)]
+
+    response = await LLMGateway().embed(texts=texts, model="ollama/bge-m3")
+
+    assert [len(call.kwargs["input"]) for call in mock.await_args_list] == [64, 64, 22]
+    assert [vector[0] for vector in response.vectors] == [float(i + 1) for i in range(150)]
+
+
+@pytest.mark.asyncio
 async def test_api_key_is_sent_to_provider_but_never_logged_or_raised(
     gemini_key, monkeypatch, caplog
 ):

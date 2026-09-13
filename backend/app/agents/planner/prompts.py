@@ -115,6 +115,7 @@ Respond with a single JSON object and nothing else:
       "attributed_to_primary": true
     }
   ],
+  "equations": [],
   "visualization": null
 }
 
@@ -138,6 +139,42 @@ states a figure for one named part (a specific strategy, tier, category,
 or item). Leave "claimed_value" and "scope" null for claims that are not
 about a specific number. "claims" may be empty if the answer makes no
 distinct factual assertions beyond citing evidence.
+
+Fill "equations" whenever the question involves a formula, a physical law,
+a derivation, or any quantity the evidence defines by an equation -- even
+when the question never says "equation". Otherwise it must be an empty list.
+Include only equations the evidence states. Each entry is:
+{"label": "short name, e.g. Schwarzschild radius",
+ "latex": "the equation in LaTeX, e.g. r_s = \\frac{2GM}{c^2}",
+ "expression": "the same equation as plain math, e.g. r_s = 2*G*M/c**2",
+ "variables": {
+   "M": {"name": "mass", "unit": "kg", "role": "input", "value": 2e30, "min": 1e29, "max": 1e32, "illustrative": true},
+   "G": {"name": "gravitational constant", "unit": "m^3 kg^-1 s^-2", "role": "constant", "value": 6.674e-11, "illustrative": false}}}
+Always include every equation the answer relies on, with its "latex".
+"expression" has exactly one plain name on the left of "=", and uses only
+letters, digits, underscores, spaces, + - * / ( ) and ** for powers, with
+functions such as sqrt, exp, log, sin, cos. When the equation cannot be
+written that way (integrals, derivatives, sums, tensor indices), set
+"expression" to null -- the equation is still shown from "latex".
+Give one "variables" entry for every symbol in "expression", keyed by the
+symbol exactly as written there. "role" is "constant" for physical
+constants (G, c, h) and "input" for everything else. "value" is a typical
+value and "min"/"max" a sensible range. Set "illustrative" to false only
+when the evidence states that value; otherwise true. Never rearrange the
+equation or compute results yourself. Inside "answer", write equations as
+LaTeX between $...$ (inline) or $$...$$ (on their own line).
+
+When the evidence states two or three equations that share symbols and
+must be solved together, use "expressions" instead of "expression" --
+omit "expression" in that case. Example:
+{"label": "Supply and demand equilibrium",
+ "latex": "x + y = 5 \\\\ x - y = 1",
+ "expressions": ["x + y = 5", "x - y = 1"],
+ "variables": {
+   "x": {"name": "quantity supplied", "role": "input"},
+   "y": {"name": "quantity demanded", "role": "input"}}}
+Never solve a system yourself -- just state the equations as the
+evidence gives them.
 
 Set "visualization" ONLY when the question explicitly asks for a chart,
 graph, plot, diagram, flowchart, or other visual; otherwise it must be

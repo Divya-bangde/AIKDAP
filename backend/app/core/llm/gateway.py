@@ -112,6 +112,12 @@ MessageRole = Literal["system", "user", "assistant"]
 #: rather than an API key.
 _OLLAMA_PROVIDERS: frozenset[str] = frozenset({"ollama", "ollama_chat"})
 
+#: Texts per embedding request. A whole document in one call (a
+#: textbook is ~3000 chunks) crashes Ollama's model runner mid-request
+#: -- it answers 400 "connection refused" to its own tokenizer -- while
+#: the same chunks in batches of 64 embed fine (verified against bge-m3).
+_EMBED_BATCH_SIZE = 64
+
 # -- 429 classification vocabulary (Sprint 9G) -------------------------
 #
 # Everything below exists to answer one question: is this 429 a
@@ -728,7 +734,6 @@ class LLMGateway:
         provider = provider_of(model)
         request: dict[str, Any] = {
             "model": model,
-            "input": texts,
             "timeout": timeout or self._timeout,
         }
 
@@ -751,9 +756,15 @@ class LLMGateway:
             timeout=request["timeout"],
         )
 
+        # Sent in `_EMBED_BATCH_SIZE` slices, in order; the timeout applies
+        # per request. Any failing slice fails the whole call, so a caller
+        # never gets vectors for only part of its texts.
         start = time.monotonic()
+        results: list[tuple[Any, int]] = []
         try:
-            result = await aembedding(**request)
+            for batch_start in range(0, len(texts), _EMBED_BATCH_SIZE):
+                batch = texts[batch_start : batch_start + _EMBED_BATCH_SIZE]
+                results.append((await aembedding(**request, input=batch), len(batch)))
         except Exception as exc:
             latency_ms = int((time.monotonic() - start) * 1000)
             error = self._normalize_error(exc, model=model)
@@ -768,7 +779,18 @@ class LLMGateway:
             raise error from exc
 
         latency_ms = int((time.monotonic() - start) * 1000)
-        vectors = self._to_embedding_vectors(result, model=model, expected_count=len(texts))
+        vectors = [
+            vector
+            for result, count in results
+            for vector in self._to_embedding_vectors(result, model=model, expected_count=count)
+        ]
+        # Each batch is checked on its own above; batches must also agree.
+        dimensions = {len(vector) for vector in vectors}
+        if len(dimensions) > 1:
+            raise LLMProviderError(
+                f"The provider returned inconsistent vector dimensions: {sorted(dimensions)}.",
+                model=model,
+            )
         dimension = len(vectors[0]) if vectors else 0
         logger.info(
             "llm_embedding_request_completed",
@@ -781,7 +803,7 @@ class LLMGateway:
         return LLMEmbeddingResponse(
             vectors=vectors,
             dimension=dimension,
-            model=getattr(result, "model", None) or model,
+            model=getattr(results[-1][0], "model", None) or model,
             provider=provider,
             latency_ms=latency_ms,
         )

@@ -22,9 +22,8 @@ type ResearchGap = components["schemas"]["ResearchGap"];
  * `sufficiency`/`sufficiency_reason`) already existed and was already
  * correct -- Phase 8.2 proved it against a real paper -- but nothing
  * in the UI ever rendered it. This does not compute a new verdict: it
- * calls the same `/documents/{asset_id}/analyze` endpoint
- * `DocumentAnalysisPanel` already calls manually, automatically, using
- * the run's own query as the goal, and renders exactly what comes
+ * calls the `/documents/{asset_id}/analyze` endpoint automatically,
+ * using the run's own query as the goal, and renders exactly what comes
  * back. No gap text is invented here -- an item with no
  * `missing_information` renders no gap list at all, and the
  * `EmptyState`/upload action is the honest fallback while the check is

@@ -286,6 +286,9 @@ class ResearchState(TypedDict, total=False):
     # A validated chart/diagram spec, only when the question asked for
     # one (see `schemas.Visualization`).
     visualization: dict[str, Any] | None
+    # Validated equations with backend-sampled curves, when the question
+    # involved any (see `planner.equations`).
+    equations: list[dict[str, Any]]
 
     # --- Web fallback control: external search runs only when the
     # --- project's own evidence was insufficient, and at most once.

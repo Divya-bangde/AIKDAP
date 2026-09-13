@@ -488,6 +488,7 @@ class ResearchExecutionService:
         run.final_answer = final_state.get("final_answer")
         run.citations = final_state.get("citations") or []
         run.visualization = final_state.get("visualization")
+        run.equations = final_state.get("equations") or None
         # Read back as an enum so an unexpected value fails here rather
         # than being written to the column verbatim.
         grounding = final_state.get("grounding_status")

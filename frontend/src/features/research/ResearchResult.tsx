@@ -7,6 +7,7 @@ import { TechnicalDetails } from "@/components/common/TechnicalDetails";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AnswerBody } from "@/features/research/AnswerBody";
+import { AnswerEquations, type AnswerEquation } from "@/features/research/AnswerEquations";
 import {
   AnswerVisualization,
   type VisualizationSpec,
@@ -178,6 +179,12 @@ export function ResearchResult({ run }: { run: ResearchRunDetail }) {
              * and the answer is grounded -- the backend enforces both. */}
             {run.visualization && (
               <AnswerVisualization spec={run.visualization as unknown as VisualizationSpec} />
+            )}
+
+            {/* Present only when the question involved equations and the
+             * answer is grounded -- the backend enforces both. */}
+            {run.equations && run.equations.length > 0 && (
+              <AnswerEquations equations={run.equations as unknown as AnswerEquation[]} />
             )}
 
             {/* A real, counted statement of what backs this answer —

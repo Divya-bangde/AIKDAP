@@ -406,6 +406,21 @@ describe("ResearchResult", () => {
     expect(screen.getByText("Relevance threshold")).toBeInTheDocument();
   });
 
+  it("shows the Experiment Playground only when the run carries equations", () => {
+    const base = { grounding_status: "grounded" as const, final_answer: "Answer.", citations: [] };
+    const { unmount } = render(<ResearchResult run={makeRun(base)} />);
+    expect(screen.queryByText("Experiment Playground")).not.toBeInTheDocument();
+    unmount();
+
+    render(
+      <ResearchResult
+        run={makeRun({ ...base, equations: [{ label: "Schwarzschild radius", latex: "r_s = \\frac{2GM}{c^2}", expression: "r_s = 2*G*M/c**2" }] })}
+      />,
+    );
+    expect(screen.getByText("Experiment Playground")).toBeInTheDocument();
+    expect(screen.getByText("Schwarzschild radius")).toBeInTheDocument();
+  });
+
   describe("general-knowledge (unsourced) answers", () => {
     const synthesisStep = (outputPayload: Record<string, unknown>) => ({
       id: "step-s",

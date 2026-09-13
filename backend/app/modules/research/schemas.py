@@ -186,6 +186,64 @@ class Visualization(BaseModel):
         return self
 
 
+class EquationVariable(BaseModel):
+    """One symbol of an `Equation`: what it means, its unit, and the value
+    and slider range the interactive card starts from.
+
+    `role="constant"` (G, c) is shown fixed, never as a slider.
+    `illustrative` is true unless the evidence states the value: a range
+    the model picked is never passed off as a measured one. A missing or
+    unusable range is replaced by one around `value`, and marked
+    illustrative.
+    """
+
+    name: str = ""
+    unit: str = ""
+    role: Literal["input", "constant"] = "input"
+    value: float | None = Field(default=None, allow_inf_nan=False)
+    min: float | None = Field(default=None, allow_inf_nan=False)
+    max: float | None = Field(default=None, allow_inf_nan=False)
+    illustrative: bool = True
+
+    @model_validator(mode="before")
+    @classmethod
+    def _accept_bare_name(cls, data: Any) -> Any:
+        # Runs stored before variables carried values, and a small model
+        # that writes only the meaning, give a plain string.
+        return {"name": data} if isinstance(data, str) else data
+
+    @model_validator(mode="after")
+    def _usable_range(self) -> Self:
+        if self.value is None:
+            self.value, self.illustrative = 1.0, True
+        if self.min is None or self.max is None or not self.min <= self.value <= self.max or self.min == self.max:
+            span = abs(self.value) or 1.0
+            self.min, self.max, self.illustrative = self.value - span, self.value + span, True
+        return self
+
+
+class Equation(BaseModel):
+    """An equation a synthesis answer relies on: LaTeX for display, what
+    each symbol means, and -- only when it can be written as plain math --
+    an `expression` the backend can parse and rearrange.
+
+    `expression` is optional because many real equations (integrals,
+    tensors, derivatives) display fine but cannot be computed; those are
+    still shown, just without sliders or a chart.
+
+    `expressions` is the system form: two or three equations sharing
+    symbols (e.g. `["x + y = 5", "x - y = 1"]`), mutually exclusive with
+    `expression` -- `planner.equations.build_equations` solves every
+    combination of input symbols sized to the equation count instead of
+    rearranging a single one."""
+
+    label: str = ""
+    latex: str = Field(min_length=1)
+    expression: str | None = None
+    expressions: list[str] | None = None
+    variables: dict[str, EquationVariable] = Field(default_factory=dict)
+
+
 #: How a question relates to the subject of the evidence it was asked
 #: against -- not whether that evidence answers it (`grounding_status`).
 #: Routes an insufficient answer: an off-topic question is never sent to
@@ -206,6 +264,7 @@ class GroundedSynthesisResponse(BaseModel):
     grounding_status: str | None = None
     topic_relation: TopicRelation | None = None
     claims: list[SynthesisClaim] = Field(default_factory=list)
+    equations: list[Equation] = Field(default_factory=list)
     visualization: Visualization | None = None
 
 
@@ -284,6 +343,9 @@ class ResearchRunRead(BaseModel):
     grounding_status: ResearchGroundingStatus | None
     #: A validated `Visualization` spec, when the question asked for one.
     visualization: dict[str, Any] | None = None
+    #: Validated `Equation`s the answer relies on, each with its
+    #: backend-sampled `curve` (or null), when the question involved any.
+    equations: list[dict[str, Any]] | None = None
     error_message: str | None
     celery_task_id: str | None
     started_at: datetime | None
