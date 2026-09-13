@@ -341,6 +341,20 @@ Milestone 9
 
 Deployment
 
+Milestone 10
+
+Persona-Based Features (team-requested scope addition, approved 2026-09-13)
+
+Persona (Student, Researcher, Project Builder; project override)
+
+Paper Suggestions (OpenAlex) with Add & Re-run
+
+Synopsis (Study Summary, Project Synopsis; DOCX/PDF)
+
+Build Plan (tool and process recommendations)
+
+Design: docs/superpowers/specs/2026-09-13-persona-features-design.md
+
 ---
 
 # Folder Structure
