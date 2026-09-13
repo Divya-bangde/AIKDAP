@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 
 import { layoutSpring } from "@/lib/motion";
 import { projectLayoutIds } from "@/features/projects/ProjectCard";
+import { ProjectPersonaSelect } from "@/features/projects/ProjectPersonaSelect";
 
 import { ExportMenu } from "@/components/common/ExportMenu";
 import { Badge } from "@/components/ui/badge";
@@ -118,6 +119,9 @@ export function ProjectHeader({
             <p className="mt-1 text-label uppercase text-muted-foreground">
               {project.project_type.replace(/_/g, " ")} project
             </p>
+            <div className="mt-2">
+              <ProjectPersonaSelect project={project} />
+            </div>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end">

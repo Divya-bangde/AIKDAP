@@ -1,10 +1,12 @@
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ProjectHeader } from "@/features/projects/ProjectHeader";
-import { aiProfile, makeAsset, makeProject } from "@/test/fixtures";
+import { aiProfile, makeAsset, makeProject, makeUser } from "@/test/fixtures";
 import { renderWithProviders } from "@/test/render";
+import * as projectsService from "@/services/projects";
+import { useAuthStore } from "@/store/auth-store";
 
 vi.mock("@/services/projects");
 
@@ -48,5 +50,39 @@ describe("ProjectHeader — Start Research", () => {
     await user.click(screen.getByRole("button", { name: /start research/i }));
 
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+});
+
+describe("ProjectHeader — persona", () => {
+  afterEach(() => {
+    useAuthStore.getState().clear();
+    vi.restoreAllMocks();
+  });
+
+  it("overrides the persona for this project and can return to the default", async () => {
+    useAuthStore.setState({ user: makeUser({ persona: "student" }) });
+    vi.mocked(projectsService.updateProject).mockResolvedValue(makeProject());
+    const user = userEvent.setup();
+    // Starts overridden so both a new override and "use my default" are
+    // real changes; the select is controlled by the `project` prop, so it
+    // snaps back to "builder" between the two selections.
+    const overridden = makeProject({ persona_override: "builder", effective_persona: "builder" });
+
+    renderWithProviders(
+      <ProjectHeader project={overridden} assets={[]} runs={[]} onRequestUpload={vi.fn()} />,
+    );
+    const select = screen.getByLabelText("Project persona");
+    expect(select).toHaveValue("builder");
+    expect(screen.getByRole("option", { name: "Use my default (Student)" })).toBeInTheDocument();
+
+    await user.selectOptions(select, "researcher");
+    await waitFor(() =>
+      expect(projectsService.updateProject).toHaveBeenCalledWith("p1", { persona_override: "researcher" }),
+    );
+
+    await user.selectOptions(select, "");
+    await waitFor(() =>
+      expect(projectsService.updateProject).toHaveBeenLastCalledWith("p1", { persona_override: null }),
+    );
   });
 });
