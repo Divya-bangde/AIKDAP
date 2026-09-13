@@ -9,7 +9,7 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.modules.auth.models import User
+from app.modules.auth.models import Persona, User
 
 
 class UserRepository:
@@ -28,10 +28,20 @@ class UserRepository:
         return result.scalar_one_or_none()
 
     async def create(
-        self, *, email: str, hashed_password: str, full_name: str | None
+        self,
+        *,
+        email: str,
+        hashed_password: str,
+        full_name: str | None,
+        persona: Persona,
     ) -> User:
         """Insert a new user row and flush to populate generated fields."""
-        user = User(email=email, hashed_password=hashed_password, full_name=full_name)
+        user = User(
+            email=email,
+            hashed_password=hashed_password,
+            full_name=full_name,
+            persona=persona,
+        )
         self._session.add(user)
         await self._session.flush()
         await self._session.refresh(user)

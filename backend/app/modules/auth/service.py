@@ -4,7 +4,7 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.session import get_db
-from app.modules.auth.models import User
+from app.modules.auth.models import Persona, User
 from app.modules.auth.repository import UserRepository
 from app.modules.auth.schemas import TokenPair, UserCreate
 from app.modules.auth.security import (
@@ -42,8 +42,16 @@ class AuthService:
             email=email,
             hashed_password=hash_password(data.password),
             full_name=data.full_name,
+            persona=data.persona,
         )
         await self._session.commit()
+        return user
+
+    async def update_persona(self, user: User, persona: Persona) -> User:
+        """Change the user's default persona."""
+        user.persona = persona
+        await self._session.commit()
+        await self._session.refresh(user)
         return user
 
     async def authenticate(self, email: str, password: str) -> User:

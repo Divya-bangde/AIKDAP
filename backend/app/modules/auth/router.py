@@ -9,6 +9,7 @@ from app.modules.auth.schemas import (
     TokenPair,
     UserCreate,
     UserRead,
+    UserUpdate,
 )
 from app.modules.auth.security import get_current_user
 from app.modules.auth.service import (
@@ -73,3 +74,13 @@ async def refresh(
 async def read_current_user(current_user: User = Depends(get_current_user)) -> User:
     """Return the currently authenticated user."""
     return current_user
+
+
+@router.patch("/me", response_model=UserRead)
+async def update_current_user(
+    data: UserUpdate,
+    current_user: User = Depends(get_current_user),
+    service: AuthService = Depends(get_auth_service),
+) -> User:
+    """Update the current user's own settings."""
+    return await service.update_persona(current_user, data.persona)

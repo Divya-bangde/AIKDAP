@@ -5,6 +5,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+from app.modules.auth.models import Persona
+
 
 class UserCreate(BaseModel):
     """Payload for registering a new user."""
@@ -12,6 +14,7 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
     full_name: str | None = Field(default=None, max_length=255)
+    persona: Persona
 
 
 class UserRead(BaseModel):
@@ -24,6 +27,13 @@ class UserRead(BaseModel):
     full_name: str | None
     is_active: bool
     created_at: datetime
+    persona: Persona
+
+
+class UserUpdate(BaseModel):
+    """Payload for updating the current user's own settings."""
+
+    persona: Persona
 
 
 class LoginRequest(BaseModel):
