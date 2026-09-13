@@ -11,6 +11,7 @@ from sqlalchemy import ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import BaseModel
+from app.modules.auth.models import PERSONA_SQL_ENUM, Persona
 
 
 class ProjectType(str, enum.Enum):
@@ -60,3 +61,11 @@ class Project(BaseModel):
     )
     color: Mapped[str | None] = mapped_column(String(20), nullable=True)
     icon: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    #: Null means "use the owner's persona".
+    persona_override: Mapped[Persona | None] = mapped_column(
+        PERSONA_SQL_ENUM, nullable=True
+    )
+
+    def effective_persona(self, owner_persona: Persona) -> Persona:
+        """The persona this project behaves as: its override, else the owner's."""
+        return self.persona_override or owner_persona
