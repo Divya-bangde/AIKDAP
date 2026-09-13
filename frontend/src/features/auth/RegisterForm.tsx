@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { messageFor } from "@/lib/api-error";
+import { PERSONA_OPTIONS, type Persona } from "@/lib/persona";
 import * as authService from "@/services/auth";
 
 interface RegisterFormProps {
@@ -16,6 +17,7 @@ export function RegisterForm({ onRegistered }: RegisterFormProps) {
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
+  const [persona, setPersona] = useState<Persona | null>(null);
 
   const registerMutation = useMutation({
     mutationFn: authService.register,
@@ -24,7 +26,8 @@ export function RegisterForm({ onRegistered }: RegisterFormProps) {
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    registerMutation.mutate({ email, password, full_name: fullName || null });
+    if (!persona) return;
+    registerMutation.mutate({ email, password, full_name: fullName || null, persona });
   }
 
   return (
@@ -64,13 +67,36 @@ export function RegisterForm({ onRegistered }: RegisterFormProps) {
         />
       </div>
 
+      <fieldset className="flex flex-col gap-2">
+        <legend className="mb-2 text-sm font-medium">I am a…</legend>
+        {PERSONA_OPTIONS.map((option) => (
+          <label
+            key={option.value}
+            className="flex cursor-pointer items-start gap-3 rounded-md border border-input p-3 text-sm has-[:checked]:border-primary"
+          >
+            <input
+              type="radio"
+              name="persona"
+              value={option.value}
+              checked={persona === option.value}
+              onChange={() => setPersona(option.value)}
+              className="mt-0.5"
+            />
+            <span>
+              <span className="font-medium">{option.label}</span>
+              <span className="block text-xs text-muted-foreground">{option.description}</span>
+            </span>
+          </label>
+        ))}
+      </fieldset>
+
       {registerMutation.isError && (
         <p role="alert" className="text-sm text-destructive">
           {messageFor(registerMutation.error)}
         </p>
       )}
 
-      <Button type="submit" disabled={registerMutation.isPending} className="mt-1">
+      <Button type="submit" disabled={registerMutation.isPending || !persona} className="mt-1">
         {registerMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
         {registerMutation.isPending ? "Creating account…" : "Create account"}
       </Button>

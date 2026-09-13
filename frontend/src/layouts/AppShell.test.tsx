@@ -23,6 +23,7 @@ describe("AppShell", () => {
       email: "researcher@example.com",
       full_name: null,
       is_active: true,
+      persona: "researcher",
       created_at: new Date().toISOString(),
     });
     const user = userEvent.setup();
@@ -59,6 +60,7 @@ describe("AppShell", () => {
       email: "researcher@example.com",
       full_name: null,
       is_active: true,
+      persona: "researcher",
       created_at: new Date().toISOString(),
     });
     const user = userEvent.setup();
@@ -85,6 +87,7 @@ describe("AppShell", () => {
       email: "researcher@example.com",
       full_name: null,
       is_active: true,
+      persona: "researcher",
       created_at: new Date().toISOString(),
     });
     const user = userEvent.setup();
@@ -112,6 +115,7 @@ describe("AppShell", () => {
       email: "researcher@example.com",
       full_name: null,
       is_active: true,
+      persona: "researcher",
       created_at: new Date().toISOString(),
     });
 
@@ -143,6 +147,7 @@ describe("AppShell", () => {
       email: "researcher@example.com",
       full_name: null,
       is_active: true,
+      persona: "researcher",
       created_at: new Date().toISOString(),
     });
     const user = userEvent.setup();

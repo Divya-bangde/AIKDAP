@@ -21,6 +21,8 @@ function makeProject(overrides: Partial<ProjectRead> = {}): ProjectRead {
     status: "active",
     color: "#2563EB",
     icon: "brain",
+    persona_override: null,
+    effective_persona: "researcher",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     ...overrides,

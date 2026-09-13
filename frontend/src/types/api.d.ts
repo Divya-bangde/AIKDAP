@@ -110,7 +110,11 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update Current User
+         * @description Update the current user's own settings.
+         */
+        patch: operations["update_current_user_api_v1_auth_me_patch"];
         trace?: never;
     };
     "/api/v1/projects": {
@@ -1902,6 +1906,14 @@ export interface components {
          */
         OverallStatus: "healthy" | "degraded" | "unhealthy";
         /**
+         * Persona
+         * @description Who the user is, which decides the add-ons shown by default.
+         *
+         *     Visibility only: every endpoint accepts every persona.
+         * @enum {string}
+         */
+        Persona: "student" | "researcher" | "builder";
+        /**
          * ProjectCreate
          * @description Payload for creating a new project.
          */
@@ -1952,6 +1964,8 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            persona_override: components["schemas"]["Persona"] | null;
+            effective_persona: components["schemas"]["Persona"];
         };
         /**
          * ProjectStatus
@@ -1980,6 +1994,7 @@ export interface components {
             color?: string | null;
             /** Icon */
             icon?: string | null;
+            persona_override?: components["schemas"]["Persona"] | null;
         };
         /**
          * RefreshTokenRequest
@@ -2236,6 +2251,10 @@ export interface components {
             visualization?: {
                 [key: string]: unknown;
             } | null;
+            /** Equations */
+            equations?: {
+                [key: string]: unknown;
+            }[] | null;
             /** Error Message */
             error_message: string | null;
             /** Celery Task Id */
@@ -2313,6 +2332,10 @@ export interface components {
             visualization?: {
                 [key: string]: unknown;
             } | null;
+            /** Equations */
+            equations?: {
+                [key: string]: unknown;
+            }[] | null;
             /** Error Message */
             error_message: string | null;
             /** Celery Task Id */
@@ -2723,6 +2746,7 @@ export interface components {
             password: string;
             /** Full Name */
             full_name?: string | null;
+            persona: components["schemas"]["Persona"];
         };
         /**
          * UserRead
@@ -2748,6 +2772,14 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            persona: components["schemas"]["Persona"];
+        };
+        /**
+         * UserUpdate
+         * @description Payload for updating the current user's own settings.
+         */
+        UserUpdate: {
+            persona: components["schemas"]["Persona"];
         };
         /** ValidationError */
         ValidationError: {
@@ -2993,6 +3025,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserRead"];
+                };
+            };
+        };
+    };
+    update_current_user_api_v1_auth_me_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

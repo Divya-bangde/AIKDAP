@@ -3,6 +3,7 @@ import type { components } from "@/types/api";
 
 type UserCreate = components["schemas"]["UserCreate"];
 type UserRead = components["schemas"]["UserRead"];
+type UserUpdate = components["schemas"]["UserUpdate"];
 type LoginRequest = components["schemas"]["LoginRequest"];
 type TokenPair = components["schemas"]["TokenPair"];
 
@@ -24,4 +25,8 @@ export function login(payload: LoginRequest) {
 
 export function currentUser() {
   return request<UserRead>("/api/v1/auth/me");
+}
+
+export function updateMe(payload: UserUpdate) {
+  return request<UserRead>("/api/v1/auth/me", { method: "PATCH", body: payload });
 }

@@ -4,6 +4,7 @@ type AIProfile = components["schemas"]["AIProfile"];
 type AssetRead = components["schemas"]["AssetRead"];
 type ProjectRead = components["schemas"]["ProjectRead"];
 type ResearchRunRead = components["schemas"]["ResearchRunRead"];
+type UserRead = components["schemas"]["UserRead"];
 
 /** A complete `AIProfile` carrying the backend's own defaults, so a
  * fixture spells out only the fields its test is about -- and a new
@@ -29,8 +30,22 @@ export function makeProject(overrides: Partial<ProjectRead> = {}): ProjectRead {
     status: "active",
     color: null,
     icon: null,
+    persona_override: null,
+    effective_persona: "researcher",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
+    ...overrides,
+  };
+}
+
+export function makeUser(overrides: Partial<UserRead> = {}): UserRead {
+  return {
+    id: "u1",
+    email: "researcher@example.com",
+    full_name: null,
+    is_active: true,
+    persona: "researcher",
+    created_at: new Date().toISOString(),
     ...overrides,
   };
 }

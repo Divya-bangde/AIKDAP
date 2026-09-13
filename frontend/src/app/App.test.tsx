@@ -44,6 +44,7 @@ describe("App routing at /", () => {
       email: "researcher@example.com",
       full_name: null,
       is_active: true,
+      persona: "researcher",
       created_at: new Date().toISOString(),
     });
   });
