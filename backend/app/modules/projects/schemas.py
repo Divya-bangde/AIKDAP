@@ -5,7 +5,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.modules.projects.models import ProjectStatus, ProjectType
+from app.modules.auth.models import Persona
+from app.modules.projects.models import Project, ProjectStatus, ProjectType
 
 
 class ProjectCreate(BaseModel):
@@ -27,6 +28,8 @@ class ProjectUpdate(BaseModel):
     status: ProjectStatus | None = None
     color: str | None = Field(default=None, max_length=20)
     icon: str | None = Field(default=None, max_length=50)
+    #: Explicit null clears the override so the project follows the user's persona.
+    persona_override: Persona | None = None
 
 
 class ProjectRead(BaseModel):
@@ -44,3 +47,15 @@ class ProjectRead(BaseModel):
     icon: str | None
     created_at: datetime
     updated_at: datetime
+    persona_override: Persona | None
+    effective_persona: Persona
+
+    @classmethod
+    def from_project(cls, project: Project, owner_persona: Persona) -> "ProjectRead":
+        """Build the response, resolving the persona the project behaves as."""
+        fields = {
+            name: getattr(project, name)
+            for name in cls.model_fields
+            if name != "effective_persona"
+        }
+        return cls(**fields, effective_persona=project.effective_persona(owner_persona))
