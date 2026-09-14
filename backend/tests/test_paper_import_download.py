@@ -100,7 +100,7 @@ async def test_rejects_content_that_is_not_a_pdf():
 async def test_follows_a_redirect_to_another_public_https_host():
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.host == "example.org":
-            return httpx.Response(302, headers={"location": "https://cdn.example.org/paper.pdf"})
+            return httpx.Response(302, headers={"location": "https://example.com/paper.pdf"})
         return httpx.Response(200, content=_PDF_BYTES)
 
     content = await download_oa_pdf(
