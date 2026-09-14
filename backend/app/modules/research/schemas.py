@@ -423,6 +423,13 @@ class ResearchRunDetail(ResearchRunRead):
     #: client never has to distinguish claim entries from ordinary
     #: citation entries itself.
     claims: list[VerifiedClaimRead] = Field(default_factory=list)
+    #: The id of the run started by importing this run's suggested
+    #: papers (Milestone 10 step 3: Add & re-run), if any.
+    rerun_run_id: uuid.UUID | None = None
+    #: When THIS run is itself such a re-run (`parent_run_id` set), how
+    #: many papers were successfully added to the parent before it
+    #: started.
+    added_paper_count: int | None = None
 
     @classmethod
     def from_model(
@@ -431,6 +438,8 @@ class ResearchRunDetail(ResearchRunRead):
         *,
         steps: list[ResearchStepRead],
         messages: list[AgentMessageRead],
+        rerun_run_id: uuid.UUID | None = None,
+        added_paper_count: int | None = None,
     ) -> "ResearchRunDetail":
         """Build the detail response, splitting claims out of `citations`.
 
@@ -449,6 +458,8 @@ class ResearchRunDetail(ResearchRunRead):
             steps=steps,
             messages=messages,
             claims=claims,
+            rerun_run_id=rerun_run_id,
+            added_paper_count=added_paper_count,
         )
 
 

@@ -129,12 +129,20 @@ async def get_research_run(
 ) -> ResearchRunDetail:
     """Fetch one run with its full execution trace and agent transcript."""
     steps, messages = await service.get_trace(run)
+    rerun_run_id = await service.find_rerun_id(run.id)
+    added_paper_count = (
+        await service.get_added_paper_count(run.parent_run_id)
+        if run.parent_run_id is not None
+        else None
+    )
     return ResearchRunDetail.from_model(
         run,
         steps=[ResearchStepRead.model_validate(step) for step in steps],
         # `AgentMessage` needs the explicit bridge from its
         # `message_metadata` attribute to the `metadata` API field.
         messages=[AgentMessageRead.from_model(message) for message in messages],
+        rerun_run_id=rerun_run_id,
+        added_paper_count=added_paper_count,
     )
 
 

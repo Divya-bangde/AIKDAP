@@ -319,6 +319,24 @@ class ResearchService:
         messages = await self._messages.list_by_run(run.id)
         return steps, messages
 
+    async def find_rerun_id(self, run_id: uuid.UUID) -> uuid.UUID | None:
+        """The id of the run that resulted from importing suggested
+        papers into `run_id`, if any (Milestone 10 step 3)."""
+        child = await self._runs.find_latest_child(run_id)
+        return child.id if child else None
+
+    async def get_added_paper_count(self, parent_run_id: uuid.UUID) -> int | None:
+        """When `parent_run_id` had papers imported into it, how many
+        succeeded -- read directly off its own `suggested_papers`
+        rather than a new column. `None` when that run has no
+        suggested papers at all, so the frontend can distinguish "not
+        a re-run" from "a re-run of zero added papers" (which cannot
+        actually happen, but the type stays honest either way)."""
+        parent = await self._runs.get_by_id(parent_run_id)
+        if parent is None or not parent.suggested_papers:
+            return None
+        return sum(1 for paper in parent.suggested_papers if paper.get("import_status") == "added")
+
 
 class ResearchExecutionService:
     """Worker-scoped execution of the LangGraph research workflow.

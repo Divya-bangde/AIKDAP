@@ -57,6 +57,21 @@ class ResearchRunRepository:
         await self._session.refresh(run)
         return run
 
+    async def find_latest_child(self, parent_run_id: uuid.UUID) -> ResearchRun | None:
+        """Find the most recently created run linked to `parent_run_id`
+        via `parent_run_id` -- used both for follow-up questions and,
+        as of Milestone 10 step 3, for the re-run started after
+        importing suggested papers. "Most recent" rather than "the
+        one", since a run can in principle be re-run more than once."""
+        stmt = (
+            select(ResearchRun)
+            .where(ResearchRun.parent_run_id == parent_run_id)
+            .order_by(ResearchRun.created_at.desc())
+            .limit(1)
+        )
+        result = await self._session.execute(stmt)
+        return result.scalars().first()
+
 
 class ResearchStepRepository:
     """Encapsulates all direct database access for `ResearchStep` rows."""
