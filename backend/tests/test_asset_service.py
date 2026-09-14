@@ -303,3 +303,89 @@ async def test_reprocess_of_nonexistent_asset_raises(session, project):
     service = AssetService(session, _FakeStorage())
     with pytest.raises(AssetNotFoundError):
         await service.reprocess(project.owner_id, uuid.uuid4())
+
+
+# ---------------------------------------------------------------------------
+# Milestone 10, Task 3: `AssetService.create_imported_asset`
+# ---------------------------------------------------------------------------
+
+from app.modules.assets.validators import AssetValidationError
+
+_PDF_BYTES = b"%PDF-1.4\nmock imported pdf\n"
+
+
+async def test_create_imported_asset_persists_with_imported_source(session, project):
+    service = AssetService(session, _FakeStorage())
+
+    asset = await service.create_imported_asset(
+        owner_id=project.owner_id,
+        project_id=project.id,
+        content=_PDF_BYTES,
+        file_name="W123.pdf",
+        mime_type="application/pdf",
+        title="A Suggested Paper",
+    )
+
+    assert asset.source is AssetSource.IMPORTED
+    assert asset.asset_type is AssetType.DOCUMENT
+    assert asset.processing_status is AssetProcessingStatus.QUEUED
+    assert asset.file_size == len(_PDF_BYTES)
+    assert asset.title == "A Suggested Paper"
+
+
+async def test_create_imported_asset_never_enqueues_processing(session, project, monkeypatch):
+    """Unlike `upload()`, the caller runs the pipeline inline -- this
+    method must never dispatch the Celery task itself, or the pipeline
+    would run twice."""
+    from app.modules.assets import service as service_module
+
+    def _fail(*args, **kwargs):
+        raise AssertionError("create_imported_asset must not enqueue process_uploaded_asset")
+
+    monkeypatch.setattr(service_module.process_uploaded_asset, "delay", _fail)
+
+    service = AssetService(session, _FakeStorage())
+    await service.create_imported_asset(
+        owner_id=project.owner_id,
+        project_id=project.id,
+        content=_PDF_BYTES,
+        file_name="W456.pdf",
+        mime_type="application/pdf",
+        title="Another Paper",
+    )
+
+
+async def test_create_imported_asset_rejects_non_pdf_content_declared_as_pdf(session, project):
+    service = AssetService(session, _FakeStorage())
+
+    with pytest.raises(AssetValidationError):
+        await service.create_imported_asset(
+            owner_id=project.owner_id,
+            project_id=project.id,
+            content=b"<html>not a pdf</html>",
+            file_name="W789.pdf",
+            mime_type="application/pdf",
+            title="Fake Paper",
+        )
+
+
+async def test_create_imported_asset_deduplicates_by_checksum(session, project):
+    service = AssetService(session, _FakeStorage())
+    await service.create_imported_asset(
+        owner_id=project.owner_id,
+        project_id=project.id,
+        content=_PDF_BYTES,
+        file_name="first.pdf",
+        mime_type="application/pdf",
+        title="First",
+    )
+
+    with pytest.raises(DuplicateAssetError):
+        await service.create_imported_asset(
+            owner_id=project.owner_id,
+            project_id=project.id,
+            content=_PDF_BYTES,
+            file_name="duplicate.pdf",
+            mime_type="application/pdf",
+            title="Duplicate",
+        )

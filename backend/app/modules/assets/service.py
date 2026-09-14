@@ -193,6 +193,85 @@ class AssetService:
         )
         return created
 
+    async def create_imported_asset(
+        self,
+        *,
+        owner_id: uuid.UUID,
+        project_id: uuid.UUID,
+        content: bytes,
+        file_name: str,
+        mime_type: str,
+        title: str,
+        asset_type: AssetType = AssetType.DOCUMENT,
+    ) -> Asset:
+        """Create an asset from already-downloaded bytes (e.g. an
+        imported OpenAlex PDF), mirroring `upload()`'s validation and
+        dedup logic without the `UploadFile`-specific parts.
+
+        Deliberately does NOT enqueue `process_uploaded_asset.delay()`:
+        the caller (a paper-import Celery task) runs
+        `AssetProcessingService.process_asset` inline immediately after
+        this returns, so it can observe the final `processing_status`
+        before the import chord's callback decides whether to start a
+        re-run. Enqueuing here too would run the pipeline twice.
+        """
+        await self._ensure_project_owned(owner_id, project_id)
+
+        file_name = sanitize_filename(file_name)
+        extension = validate_extension(file_name)
+        validate_extension_matches_mime(extension, mime_type)
+        max_bytes = settings.max_upload_size_mb * 1024 * 1024
+        validate_file_size(len(content), max_bytes=max_bytes)
+        validate_content_matches_mime(content, mime_type)
+
+        checksum = hashlib.sha256(content).hexdigest()
+        duplicate = await self._repository.find_active_by_checksum(project_id, checksum)
+        if duplicate is not None:
+            raise DuplicateAssetError(duplicate)
+
+        storage_path = await self._storage.save(
+            project_id=project_id, filename=file_name, content=content
+        )
+
+        asset = Asset(
+            project_id=project_id,
+            owner_id=owner_id,
+            title=title,
+            description=None,
+            asset_type=asset_type,
+            status=AssetStatus.ACTIVE,
+            mime_type=mime_type,
+            file_name=file_name,
+            file_extension=extension,
+            file_size=len(content),
+            storage_path=storage_path,
+            checksum=checksum,
+            source=AssetSource.IMPORTED,
+            version=1,
+            tags=[],
+            asset_metadata={},
+            ai_profile=AIProfile().model_dump(mode="json"),
+            created_by=owner_id,
+            processing_status=AssetProcessingStatus.QUEUED,
+        )
+
+        try:
+            created = await self._repository.create(asset)
+        except Exception:
+            await self._storage.delete(storage_path)
+            raise
+
+        await self._session.commit()
+        logger.info(
+            "asset_imported",
+            asset_id=str(created.id),
+            project_id=str(project_id),
+            owner_id=str(owner_id),
+            file_name=created.file_name,
+            file_size=created.file_size,
+        )
+        return created
+
     async def get_owned(self, current_user_id: uuid.UUID, asset_id: uuid.UUID) -> Asset:
         """Fetch an asset, ensuring it belongs to the given user."""
         asset = await self._repository.get_by_id(asset_id)
