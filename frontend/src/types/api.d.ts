@@ -528,6 +528,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/research/runs/{run_id}/papers/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Suggested Papers Route
+         * @description Import selected OpenAlex-suggested papers as project assets and,
+         *     once every one reaches a final state, start exactly one re-run
+         *     (Milestone 10 step 3: Add & re-run).
+         */
+        post: operations["import_suggested_papers_route_api_v1_research_runs__run_id__papers_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/research/documents/{asset_id}/analyze": {
         parameters: {
             query?: never;
@@ -1906,6 +1928,44 @@ export interface components {
          */
         OverallStatus: "healthy" | "degraded" | "unhealthy";
         /**
+         * PaperImportAccepted
+         * @description Immediate `202` response: every requested paper has been validated
+         *     and queued. Poll `GET /research/runs/{run_id}` -- each paper's
+         *     entry in `suggested_papers` reports `import_status` as it
+         *     progresses (`queued` -> `processing` -> `added`/`failed`), and
+         *     `rerun_run_id` appears once the linked re-run starts.
+         */
+        PaperImportAccepted: {
+            /**
+             * Run Id
+             * Format: uuid
+             */
+            run_id: string;
+            /** Papers */
+            papers: components["schemas"]["PaperImportStatus"][];
+        };
+        /**
+         * PaperImportRequest
+         * @description Payload for importing selected OpenAlex-suggested papers.
+         */
+        PaperImportRequest: {
+            /** Openalex Ids */
+            openalex_ids: string[];
+        };
+        /**
+         * PaperImportStatus
+         * @description One paper's status immediately after the import request is accepted.
+         */
+        PaperImportStatus: {
+            /** Openalex Id */
+            openalex_id: string;
+            /**
+             * Status
+             * @constant
+             */
+            status: "queued";
+        };
+        /**
          * Persona
          * @description Who the user is, which decides the add-ons shown by default.
          *
@@ -2285,6 +2345,10 @@ export interface components {
             messages?: components["schemas"]["AgentMessageRead"][];
             /** Claims */
             claims?: components["schemas"]["VerifiedClaimRead"][];
+            /** Rerun Run Id */
+            rerun_run_id?: string | null;
+            /** Added Paper Count */
+            added_paper_count?: number | null;
         };
         /**
          * ResearchRunRead
@@ -3872,6 +3936,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ResearchRunRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_suggested_papers_route_api_v1_research_runs__run_id__papers_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaperImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaperImportAccepted"];
                 };
             };
             /** @description Validation Error */
