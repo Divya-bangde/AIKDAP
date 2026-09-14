@@ -129,6 +129,26 @@ describe("PaperSuggestionsPanel", () => {
     expect(screen.getByText("Downloaded content is not a PDF.")).toBeInTheDocument();
   });
 
+  it("renders no checkbox for a paper that is already added, queued, or processing", () => {
+    renderWithProviders(
+      <PaperSuggestionsPanel
+        papers={[
+          makePaper({ openalex_id: "W1", oa_pdf_url: "https://example.org/a.pdf", import_status: "added" }),
+          makePaper({ openalex_id: "W2", oa_pdf_url: "https://example.org/b.pdf", import_status: "queued" }),
+          makePaper({ openalex_id: "W3", oa_pdf_url: "https://example.org/c.pdf", import_status: "processing" }),
+          makePaper({ openalex_id: "W4", oa_pdf_url: "https://example.org/d.pdf", import_status: "failed" }),
+          makePaper({ openalex_id: "W5", oa_pdf_url: "https://example.org/e.pdf" }),
+        ]}
+        runId="run-1"
+      />,
+    );
+
+    // Only the "failed" (retry-eligible) and never-attempted papers get
+    // a checkbox -- added/queued/processing must not be re-selectable
+    // for import (final review Fix 3).
+    expect(screen.getAllByRole("checkbox")).toHaveLength(2);
+  });
+
   it("links to the re-run once it exists", () => {
     renderWithProviders(
       <PaperSuggestionsPanel

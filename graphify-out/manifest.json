@@ -2526,15 +2526,15 @@
     "semantic_hash": ""
   },
   "backend/app/modules/research/repository.py": {
-    "mtime": 1789406829.2640798,
-    "seen": 1789408921.346345,
-    "ast_hash": "4b56da8a48de0e5e2a7ea845f7666c71",
+    "mtime": 1789409567.589275,
+    "seen": 1789410009.3309126,
+    "ast_hash": "9452b67b31cde76225f05be4a93fed0a",
     "semantic_hash": ""
   },
   "backend/app/modules/research/router.py": {
-    "mtime": 1789407863.4069521,
-    "seen": 1789408921.346345,
-    "ast_hash": "b18df3ab60867bdd6dd349223c84f995",
+    "mtime": 1789409589.1814797,
+    "seen": 1789410009.3309126,
+    "ast_hash": "1594ea7c4b6426af4abeb02df7231f5b",
     "semantic_hash": ""
   },
   "backend/app/modules/research/schemas.py": {
@@ -2544,9 +2544,9 @@
     "semantic_hash": ""
   },
   "backend/app/modules/research/service.py": {
-    "mtime": 1789407804.7367682,
-    "seen": 1789408921.346345,
-    "ast_hash": "abbeb4287df58a4bfa63fa0f8bba9176",
+    "mtime": 1789409584.1038582,
+    "seen": 1789410009.3309126,
+    "ast_hash": "f0fa0d6a95fb968f3bd61c737b9b62f3",
     "semantic_hash": ""
   },
   "backend/app/modules/tasks/__init__.py": {
@@ -2622,9 +2622,9 @@
     "semantic_hash": ""
   },
   "backend/app/workers/tasks.py": {
-    "mtime": 1789407414.9371877,
-    "seen": 1789408921.350854,
-    "ast_hash": "466f313b2098e8f0fa9220f52636f490",
+    "mtime": 1789409621.1744149,
+    "seen": 1789410009.3346791,
+    "ast_hash": "92ac85f70430831aaed97db7560d1ab0",
     "semantic_hash": ""
   },
   "backend/app/workers/worker.py": {
@@ -3942,15 +3942,15 @@
     "semantic_hash": ""
   },
   "frontend/src/features/research/ResearchRunView.test.tsx": {
-    "mtime": 1789408615.4503026,
-    "seen": 1789408921.4222598,
-    "ast_hash": "7171f1942b80f60655753b393e23324f",
+    "mtime": 1789409887.9646764,
+    "seen": 1789410009.3812864,
+    "ast_hash": "3dc1fe87baa142041e50e41d4c4b6406",
     "semantic_hash": ""
   },
   "frontend/src/features/research/ResearchRunView.tsx": {
-    "mtime": 1789408598.0852242,
-    "seen": 1789408921.4222598,
-    "ast_hash": "042db84f7c4f415560e1c1959c0100d2",
+    "mtime": 1789409719.036381,
+    "seen": 1789410009.3812864,
+    "ast_hash": "2cabb34ab8fdb15f9f3be4cf237aed45",
     "semantic_hash": ""
   },
   "frontend/src/features/research/outcome-consistency.test.tsx": {
@@ -5388,15 +5388,15 @@
     "semantic_hash": ""
   },
   "frontend/src/features/research/PaperSuggestionsPanel.test.tsx": {
-    "mtime": 1789408295.829706,
-    "seen": 1789408921.421253,
-    "ast_hash": "bcad65680265c68b33d878e967299b81",
+    "mtime": 1789409708.9254704,
+    "seen": 1789410009.3797517,
+    "ast_hash": "aec62705a123c117d94f6a43f3b5e8a5",
     "semantic_hash": ""
   },
   "frontend/src/features/research/PaperSuggestionsPanel.tsx": {
-    "mtime": 1789408345.5135567,
-    "seen": 1789408921.421253,
-    "ast_hash": "5c9e4d8d0910cb57a7eaf3c417a7e981",
+    "mtime": 1789409697.119589,
+    "seen": 1789410009.3797517,
+    "ast_hash": "c357eb820eba0937863c09746a899081",
     "semantic_hash": ""
   },
   "backend/app/modules/research/paper_import.py": {
@@ -5412,21 +5412,21 @@
     "semantic_hash": ""
   },
   "backend/tests/test_paper_import_router.py": {
-    "mtime": 1789407827.2493334,
-    "seen": 1789408921.3864572,
-    "ast_hash": "ba461daba56e7d54763830ff66efd7b2",
+    "mtime": 1789409673.552396,
+    "seen": 1789410009.355514,
+    "ast_hash": "637c523ecfee00dce36a9d8583c2ec33",
     "semantic_hash": ""
   },
   "backend/tests/test_paper_import_tasks.py": {
-    "mtime": 1789407276.3166072,
-    "seen": 1789408921.3864572,
-    "ast_hash": "c68c60573a9d9c7d1cc4dfa54ada9d45",
+    "mtime": 1789409658.8560545,
+    "seen": 1789410009.355514,
+    "ast_hash": "1cfa9fcad433e8c789d03d382e42211b",
     "semantic_hash": ""
   },
   "backend/tests/test_research_rerun_linkage.py": {
-    "mtime": 1789406803.66605,
-    "seen": 1789408921.389464,
-    "ast_hash": "2557dcb8da1ff983de189635b5333c21",
+    "mtime": 1789409682.9223795,
+    "seen": 1789410009.3573732,
+    "ast_hash": "5192292b000a616315acad65e0712315",
     "semantic_hash": ""
   },
   "backend/tests/test_settings.py": {

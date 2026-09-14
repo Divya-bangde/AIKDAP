@@ -305,6 +305,14 @@ class ResearchService:
         and carry a non-null `oa_pdf_url` -- never an arbitrary
         client-supplied URL (Milestone 10 step 3).
         """
+        #: `import_status` values that mean a paper is already in the
+        #: project or already on its way there -- re-requesting one of
+        #: these is a no-op rather than a re-dispatch (Milestone 10
+        #: step 3 final review, Fix 3). Only a paper with no
+        #: `import_status` yet, or one that previously `failed`, is
+        #: eligible for (re-)import.
+        _ALREADY_HANDLED_STATUSES = {"queued", "processing", "added"}
+
         available = {paper["openalex_id"]: paper for paper in run.suggested_papers or []}
         selected: list[dict[str, Any]] = []
         seen: set[str] = set()
@@ -317,11 +325,17 @@ class ResearchService:
                 raise UnknownSuggestedPaperError(openalex_id)
             if not paper.get("oa_pdf_url"):
                 raise PaperNotOpenAccessError(openalex_id)
+            if paper.get("import_status") in _ALREADY_HANDLED_STATUSES:
+                continue
             selected.append(paper)
 
+        if not selected:
+            return []
+
+        selected_ids = {paper["openalex_id"] for paper in selected}
         updated = []
         for entry in run.suggested_papers:
-            if entry["openalex_id"] in seen:
+            if entry["openalex_id"] in selected_ids:
                 entry = {**entry, "import_status": "queued"}
             updated.append(entry)
         run.suggested_papers = updated
@@ -330,7 +344,7 @@ class ResearchService:
         logger.info(
             "paper_import_dispatched",
             run_id=str(run.id),
-            openalex_ids=sorted(seen),
+            openalex_ids=sorted(selected_ids),
         )
 
         from app.workers.tasks import dispatch_paper_import
@@ -370,10 +384,18 @@ class ResearchService:
         messages = await self._messages.list_by_run(run.id)
         return steps, messages
 
-    async def find_rerun_id(self, run_id: uuid.UUID) -> uuid.UUID | None:
+    async def find_rerun_id(self, run: ResearchRun) -> uuid.UUID | None:
         """The id of the run that resulted from importing suggested
-        papers into `run_id`, if any (Milestone 10 step 3)."""
-        child = await self._runs.find_latest_child(run_id)
+        papers into `run`, if any (Milestone 10 step 3).
+
+        Passes `run.query` through to `find_latest_child` as the
+        query-equality heuristic that tells a paper-import re-run
+        (query copied verbatim from `run`) apart from an unrelated
+        follow-up question (a new, user-typed query) that also happens
+        to share `run.id` as its `parent_run_id`. See that method's
+        docstring for the accepted limitation.
+        """
+        child = await self._runs.find_latest_child(run.id, matching_query=run.query)
         return child.id if child else None
 
     async def get_added_paper_count(self, parent_run_id: uuid.UUID) -> int | None:

@@ -180,7 +180,10 @@ describe("ResearchRunView polling (Phase 19)", () => {
 });
 
 describe("ResearchRunView re-run linkage (Milestone 10 step 3)", () => {
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
 
   it("shows a 're-run with N added papers' banner when this run has a parent", async () => {
     vi.mocked(researchService.getResearchRun).mockResolvedValue(
@@ -213,5 +216,48 @@ describe("ResearchRunView re-run linkage (Milestone 10 step 3)", () => {
     await screen.findByText("What challenges does ABC Poultry face?");
 
     expect(screen.queryByText(/re-run with/i)).not.toBeInTheDocument();
+  });
+
+  it("keeps polling when every paper is final but the rerun link has not appeared yet (final review Fix 4)", async () => {
+    // The import chord finishes writing every paper's final
+    // import_status a moment BEFORE the separate finalize_paper_import
+    // callback actually creates and links the child run. isTerminal
+    // must therefore keep polling (not stop) while a paper is "added"
+    // but rerun_run_id is still null -- proven here by advancing the
+    // poll interval and observing a second fetch, the same way
+    // usePolling's own refetchInterval is driven in production.
+    vi.useFakeTimers();
+    const getRun = vi.mocked(researchService.getResearchRun);
+    getRun.mockResolvedValue(
+      makeRun({
+        status: "completed",
+        grounding_status: "grounded",
+        final_answer: "The answer.",
+        citations: [],
+        rerun_run_id: null,
+        suggested_papers: [
+          {
+            openalex_id: "https://openalex.org/W1",
+            title: "A Suggested Paper",
+            authors: [],
+            year: null,
+            cited_by_count: 0,
+            landing_url: "https://example.org/landing",
+            oa_pdf_url: "https://example.org/a.pdf",
+            relevance_note: "",
+            import_status: "added",
+          },
+        ] as unknown as ResearchRunDetail["suggested_papers"],
+      }),
+    );
+
+    renderWithProviders(<ResearchRunView runId="run-1" />);
+    await vi.waitFor(() => expect(getRun.mock.calls.length).toBeGreaterThanOrEqual(1));
+    const callsBeforeAdvancing = getRun.mock.calls.length;
+
+    await vi.advanceTimersByTimeAsync(2000);
+    await vi.waitFor(() => expect(getRun.mock.calls.length).toBeGreaterThan(callsBeforeAdvancing));
+
+    vi.useRealTimers();
   });
 });

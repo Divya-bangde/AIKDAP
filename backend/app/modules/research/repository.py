@@ -29,6 +29,16 @@ class ResearchRunRepository:
         """Fetch a run by primary key, or None if not found."""
         return await self._session.get(ResearchRun, run_id)
 
+    async def get_by_id_for_update(self, run_id: uuid.UUID) -> ResearchRun | None:
+        """Fetch a run by primary key with a row lock (`SELECT ... FOR
+        UPDATE`), for callers that read-modify-write a JSONB column
+        (e.g. `suggested_papers`) from concurrent Celery tasks -- see
+        `tasks._update_paper_import_status`. Serializes the
+        read-rebuild-commit cycle so two papers finishing at the same
+        moment cannot silently clobber each other's status.
+        """
+        return await self._session.get(ResearchRun, run_id, with_for_update=True)
+
     async def list_by_owner(
         self,
         owner_id: uuid.UUID,
@@ -57,18 +67,32 @@ class ResearchRunRepository:
         await self._session.refresh(run)
         return run
 
-    async def find_latest_child(self, parent_run_id: uuid.UUID) -> ResearchRun | None:
+    async def find_latest_child(
+        self, parent_run_id: uuid.UUID, *, matching_query: str | None = None
+    ) -> ResearchRun | None:
         """Find the most recently created run linked to `parent_run_id`
-        via `parent_run_id` -- used both for follow-up questions and,
-        as of Milestone 10 step 3, for the re-run started after
-        importing suggested papers. "Most recent" rather than "the
-        one", since a run can in principle be re-run more than once."""
+        via `parent_run_id`.
+
+        `parent_run_id` is shared by two features: follow-up questions
+        (a new, user-typed `query`) and this feature's paper-import
+        re-run (`query` copied verbatim from the parent). When
+        `matching_query` is given, only a child whose `query` matches
+        it exactly is considered -- a heuristic, not a guarantee: a
+        follow-up whose typed question happens to exactly match its
+        parent's would be indistinguishable from a real re-run. This
+        trade-off was chosen over a new migration/column
+        (Milestone 10 step 3 was scoped to add none); a dedicated
+        column distinguishing "why was this child created" would
+        remove the ambiguity entirely and is the correct follow-up if
+        this edge case ever proves to matter in practice.
+        """
         stmt = (
             select(ResearchRun)
             .where(ResearchRun.parent_run_id == parent_run_id)
-            .order_by(ResearchRun.created_at.desc())
-            .limit(1)
         )
+        if matching_query is not None:
+            stmt = stmt.where(ResearchRun.query == matching_query)
+        stmt = stmt.order_by(ResearchRun.created_at.desc()).limit(1)
         result = await self._session.execute(stmt)
         return result.scalars().first()
 

@@ -133,7 +133,7 @@ async def get_research_run(
 ) -> ResearchRunDetail:
     """Fetch one run with its full execution trace and agent transcript."""
     steps, messages = await service.get_trace(run)
-    rerun_run_id = await service.find_rerun_id(run.id)
+    rerun_run_id = await service.find_rerun_id(run)
     added_paper_count = (
         await service.get_added_paper_count(run.parent_run_id)
         if run.parent_run_id is not None

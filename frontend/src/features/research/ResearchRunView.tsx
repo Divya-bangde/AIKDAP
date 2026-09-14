@@ -28,10 +28,26 @@ function isTerminal(run: ResearchRunDetail): boolean {
   // happens after this run is already `completed`, so `usePolling`
   // must keep polling through it -- otherwise a card frozen on
   // "Queued" would never update once the run itself stopped changing.
-  const hasPendingImport = (run.suggested_papers ?? []).some((paper) =>
+  const papers = run.suggested_papers ?? [];
+  const hasPendingImport = papers.some((paper) =>
     IN_PROGRESS_IMPORT_STATUSES.has((paper as { import_status?: string }).import_status ?? ""),
   );
-  return !hasPendingImport;
+  if (hasPendingImport) return false;
+
+  // Final review Fix 4: the import chord finishes writing every
+  // paper's final `import_status` a moment BEFORE its separate
+  // `finalize_paper_import` callback actually creates and links the
+  // child run. Stopping here, the instant every paper looks final,
+  // would let polling stop one tick too early -- `rerun_run_id` would
+  // still be null, and "View re-run" would never appear without a
+  // manual reload. Keep polling until either no paper was added (no
+  // re-run is coming) or the link has actually shown up.
+  const hasAddedPaper = papers.some(
+    (paper) => (paper as { import_status?: string }).import_status === "added",
+  );
+  if (hasAddedPaper && run.rerun_run_id == null) return false;
+
+  return true;
 }
 
 /** Polls `GET /research/runs/{id}` until the backend reports a terminal

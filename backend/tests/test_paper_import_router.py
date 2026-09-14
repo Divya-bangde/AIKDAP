@@ -117,6 +117,31 @@ async def test_dispatches_the_import_chord_exactly_once(session, project, _no_re
     assert [p["openalex_id"] for p in dispatched_papers] == ["W1"]
 
 
+async def test_reimporting_an_already_added_paper_is_a_noop(session, project, _no_real_dispatch):
+    """Final review Fix 3: a duplicate `POST .../papers/import` for a
+    paper already `added` (or `queued`/`processing`) must not
+    re-dispatch it -- re-dispatching would hit `DuplicateAssetError`
+    downstream and could regress an already-successful import, and a
+    second genuinely-new paper in the same request could trigger a
+    second re-run."""
+    run = await _make_run(
+        session,
+        project,
+        suggested_papers=[
+            {**_paper("W1", oa_pdf_url="https://x/a.pdf"), "import_status": "added"},
+        ],
+    )
+    service = ResearchService(session)
+
+    result = await service.import_papers(run, ["W1"])
+
+    assert result == []
+    assert _no_real_dispatch == []
+
+    await session.refresh(run)
+    assert run.suggested_papers[0]["import_status"] == "added"
+
+
 async def test_duplicate_ids_in_the_request_are_deduplicated(session, project, _no_real_dispatch):
     run = await _make_run(
         session, project, suggested_papers=[_paper("W1", oa_pdf_url="https://x/a.pdf")]

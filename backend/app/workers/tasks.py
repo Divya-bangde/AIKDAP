@@ -436,6 +436,15 @@ def import_suggested_paper(self, run_id: str, paper: dict[str, Any]) -> dict[str
     return _run_task_loop(_import_paper(uuid.UUID(run_id), paper))
 
 
+#: Returned (never `str(exc)`) when `_import_paper` catches an
+#: exception outside its three known error types. An unclassified
+#: exception (httpx, storage, SQLAlchemy, ...) can embed a URL or other
+#: sensitive detail this codebase's existing discipline scrubs
+#: everywhere else -- see `PaperDownloadError`'s own docstring on the
+#: same concern.
+_UNEXPECTED_IMPORT_ERROR = "An unexpected error occurred while importing this paper."
+
+
 async def _import_paper(run_id: uuid.UUID, paper: dict[str, Any]) -> dict[str, Any]:
     # Imported locally, not at module scope: `app.modules.assets.service`
     # itself imports `process_uploaded_asset` from this module at import
@@ -445,57 +454,101 @@ async def _import_paper(run_id: uuid.UUID, paper: dict[str, Any]) -> dict[str, A
     from app.modules.assets.service import AssetService, DuplicateAssetError
 
     openalex_id = paper["openalex_id"]
-    async with async_session_factory() as session:
-        await _update_paper_import_status(session, run_id, openalex_id, status="processing")
+    try:
+        async with async_session_factory() as session:
+            await _update_paper_import_status(session, run_id, openalex_id, status="processing")
 
-        try:
-            content = await download_oa_pdf(
-                paper["oa_pdf_url"],
-                timeout=settings.paper_import_download_timeout,
-                max_bytes=settings.max_upload_size_mb * 1024 * 1024,
-                max_redirects=settings.paper_import_max_redirects,
-            )
-        except PaperDownloadError as exc:
-            await _update_paper_import_status(
-                session, run_id, openalex_id, status="failed", error=str(exc)
-            )
-            return {"openalex_id": openalex_id, "status": "failed", "asset_id": None, "reason": str(exc)}
+            try:
+                content = await download_oa_pdf(
+                    paper["oa_pdf_url"],
+                    timeout=settings.paper_import_download_timeout,
+                    max_bytes=settings.max_upload_size_mb * 1024 * 1024,
+                    max_redirects=settings.paper_import_max_redirects,
+                )
+            except PaperDownloadError as exc:
+                await _update_paper_import_status(
+                    session, run_id, openalex_id, status="failed", error=str(exc)
+                )
+                return {"openalex_id": openalex_id, "status": "failed", "asset_id": None, "reason": str(exc)}
 
-        run = await ResearchRunRepository(session).get_by_id(run_id)
-        if run is None:
-            reason = "The research run no longer exists."
+            run = await ResearchRunRepository(session).get_by_id(run_id)
+            if run is None:
+                reason = "The research run no longer exists."
+                await _update_paper_import_status(session, run_id, openalex_id, status="failed", error=reason)
+                return {"openalex_id": openalex_id, "status": "failed", "asset_id": None, "reason": reason}
+
+            storage = get_storage_provider()
+            file_name = f"{openalex_id.rsplit('/', 1)[-1]}.pdf"
+            try:
+                asset = await AssetService(session, storage).create_imported_asset(
+                    owner_id=run.owner_id,
+                    project_id=run.project_id,
+                    content=content,
+                    file_name=file_name,
+                    mime_type="application/pdf",
+                    title=paper.get("title") or file_name,
+                )
+            except DuplicateAssetError as exc:
+                # The paper is genuinely already in the project (that's
+                # what "duplicate" means here) -- not a failure. Point
+                # at the asset that already exists rather than
+                # re-creating or re-processing it.
+                existing_id = str(exc.existing_asset.id)
+                await _update_paper_import_status(
+                    session, run_id, openalex_id, status="added", asset_id=existing_id
+                )
+                return {"openalex_id": openalex_id, "status": "added", "asset_id": existing_id, "reason": None}
+            except AssetValidationError as exc:
+                await _update_paper_import_status(
+                    session, run_id, openalex_id, status="failed", error=str(exc)
+                )
+                return {"openalex_id": openalex_id, "status": "failed", "asset_id": None, "reason": str(exc)}
+
+            await get_asset_processing_service(session, storage).process_asset(asset.id)
+            await session.refresh(asset)
+
+            if asset.processing_status is AssetProcessingStatus.COMPLETED:
+                await _update_paper_import_status(
+                    session, run_id, openalex_id, status="added", asset_id=str(asset.id)
+                )
+                return {"openalex_id": openalex_id, "status": "added", "asset_id": str(asset.id), "reason": None}
+
+            reason = asset.processing_error or f"Processing ended in status '{asset.processing_status.value}'."
             await _update_paper_import_status(session, run_id, openalex_id, status="failed", error=reason)
             return {"openalex_id": openalex_id, "status": "failed", "asset_id": None, "reason": reason}
-
-        storage = get_storage_provider()
-        file_name = f"{openalex_id.rsplit('/', 1)[-1]}.pdf"
+    except Exception:
+        # Anything not already handled above (a DB error, a storage
+        # failure, ...) must not propagate: this is a `max_retries=0`
+        # Celery chord member, and an unhandled exception here fails
+        # the whole chord -- `finalize_paper_import` then never runs,
+        # silently losing the re-run even for papers that succeeded.
+        logger.error(
+            "paper_import_unexpected_failure",
+            run_id=str(run_id),
+            openalex_id=openalex_id,
+            exc_info=True,
+        )
         try:
-            asset = await AssetService(session, storage).create_imported_asset(
-                owner_id=run.owner_id,
-                project_id=run.project_id,
-                content=content,
-                file_name=file_name,
-                mime_type="application/pdf",
-                title=paper.get("title") or file_name,
+            async with async_session_factory() as session:
+                await _update_paper_import_status(
+                    session, run_id, openalex_id, status="failed", error=_UNEXPECTED_IMPORT_ERROR
+                )
+        except Exception:
+            # Recording the failure itself failed (e.g. the same DB
+            # outage that caused the original exception) -- the
+            # returned dict below is still honest either way.
+            logger.error(
+                "paper_import_status_update_after_failure_also_failed",
+                run_id=str(run_id),
+                openalex_id=openalex_id,
+                exc_info=True,
             )
-        except (AssetValidationError, DuplicateAssetError) as exc:
-            await _update_paper_import_status(
-                session, run_id, openalex_id, status="failed", error=str(exc)
-            )
-            return {"openalex_id": openalex_id, "status": "failed", "asset_id": None, "reason": str(exc)}
-
-        await get_asset_processing_service(session, storage).process_asset(asset.id)
-        await session.refresh(asset)
-
-        if asset.processing_status is AssetProcessingStatus.COMPLETED:
-            await _update_paper_import_status(
-                session, run_id, openalex_id, status="added", asset_id=str(asset.id)
-            )
-            return {"openalex_id": openalex_id, "status": "added", "asset_id": str(asset.id), "reason": None}
-
-        reason = asset.processing_error or f"Processing ended in status '{asset.processing_status.value}'."
-        await _update_paper_import_status(session, run_id, openalex_id, status="failed", error=reason)
-        return {"openalex_id": openalex_id, "status": "failed", "asset_id": None, "reason": reason}
+        return {
+            "openalex_id": openalex_id,
+            "status": "failed",
+            "asset_id": None,
+            "reason": _UNEXPECTED_IMPORT_ERROR,
+        }
 
 
 async def _update_paper_import_status(
@@ -513,8 +566,16 @@ async def _update_paper_import_status(
     change tracking to see it (mutating a nested dict in place would be
     silently lost) -- so this rebuilds the list rather than editing the
     matched entry's dict directly.
+
+    Uses `get_by_id_for_update` (a `SELECT ... FOR UPDATE` row lock),
+    not the plain `get_by_id`: each per-paper Celery task runs this
+    read-rebuild-commit cycle in its own DB session, and the worker has
+    no `--concurrency` override, so multiple papers in one chord
+    genuinely run in parallel prefork processes. Without the lock, two
+    concurrent commits racing on the same JSONB column can silently
+    overwrite each other's already-written status (a lost update).
     """
-    run = await ResearchRunRepository(session).get_by_id(run_id)
+    run = await ResearchRunRepository(session).get_by_id_for_update(run_id)
     if run is None or not run.suggested_papers:
         return
     updated = []

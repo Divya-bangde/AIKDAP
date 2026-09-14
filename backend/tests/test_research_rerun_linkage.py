@@ -36,24 +36,39 @@ async def test_find_rerun_id_is_none_without_a_child_run(session, project):
     run = await _make_run(session, project)
     service = ResearchService(session)
 
-    assert await service.find_rerun_id(run.id) is None
+    assert await service.find_rerun_id(run) is None
 
 
 async def test_find_rerun_id_returns_the_child_run(session, project):
     original = await _make_run(session, project)
-    child = await _make_run(session, project, parent_run_id=original.id)
+    child = await _make_run(session, project, parent_run_id=original.id, query=original.query)
 
     service = ResearchService(session)
-    assert await service.find_rerun_id(original.id) == child.id
+    assert await service.find_rerun_id(original) == child.id
 
 
 async def test_find_rerun_id_returns_the_most_recent_child(session, project):
     original = await _make_run(session, project)
-    await _make_run(session, project, parent_run_id=original.id)
-    newest = await _make_run(session, project, parent_run_id=original.id)
+    await _make_run(session, project, parent_run_id=original.id, query=original.query)
+    newest = await _make_run(session, project, parent_run_id=original.id, query=original.query)
 
     service = ResearchService(session)
-    assert await service.find_rerun_id(original.id) == newest.id
+    assert await service.find_rerun_id(original) == newest.id
+
+
+async def test_find_rerun_id_ignores_a_followup_with_a_different_query(session, project):
+    """Final review Fix 4: `parent_run_id` is shared by paper-import
+    re-runs (query copied verbatim from the parent) and pre-existing
+    follow-up questions (a new, user-typed query). A follow-up child
+    must not be mistaken for a re-run link -- `find_rerun_id` filters
+    on query equality, so a child with a different query is ignored."""
+    original = await _make_run(session, project, query="Original question?")
+    await _make_run(
+        session, project, parent_run_id=original.id, query="A totally different follow-up question?"
+    )
+
+    service = ResearchService(session)
+    assert await service.find_rerun_id(original) is None
 
 
 async def test_added_paper_count_counts_only_added_status(session, project):

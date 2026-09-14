@@ -70,6 +70,15 @@ export function PaperSuggestionsPanel({
     });
   }
 
+  // Final review Fix 3: a paper already queued/processing/added must
+  // not be re-selectable -- re-submitting it would hit the backend's
+  // idempotency guard as a no-op at best, and disabling it here keeps
+  // the user from believing a re-click does anything. Only "never
+  // attempted" or "failed" (eligible for retry) stay checkable.
+  function isSelectable(paper: SuggestedPaper): boolean {
+    return paper.import_status === undefined || paper.import_status === "failed";
+  }
+
   return (
     <Card>
       <CardHeader className="flex-row flex-wrap items-center justify-between gap-2 space-y-0">
@@ -88,7 +97,7 @@ export function PaperSuggestionsPanel({
           {papers.map((paper) => (
             <li key={paper.openalex_id} className="flex flex-col gap-1.5 rounded-lg bg-sunken p-3">
               <div className="flex items-start gap-2.5">
-                {paper.oa_pdf_url && (
+                {paper.oa_pdf_url && isSelectable(paper) && (
                   <input
                     type="checkbox"
                     aria-label={`Select ${paper.title}`}

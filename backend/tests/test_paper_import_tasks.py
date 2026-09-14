@@ -248,6 +248,129 @@ async def test_finalize_import_starts_exactly_one_rerun_on_partial_success(
     assert str(child.id) == dispatched[0]
 
 
+async def test_concurrent_paper_status_updates_do_not_clobber_each_other(session, project):
+    """Final review Fix 1: `_update_paper_import_status` now reads the
+    run with `get_by_id_for_update` (a `SELECT ... FOR UPDATE` row
+    lock) so two per-paper Celery tasks racing on the same run's
+    `suggested_papers` JSONB column cannot silently overwrite each
+    other's already-written status.
+
+    This test's harness shares one DB session across the whole test
+    (see `_SameSessionContext` above), so it cannot simulate the actual
+    interleaved-write race a real multi-connection concurrent commit
+    would produce -- that's an accepted test-infrastructure limitation,
+    not a gap in the fix; the row lock itself is what prevents that
+    race in production. What this test DOES prove is the other half of
+    correctness the fix depends on: calling
+    `_update_paper_import_status` for two different papers on the same
+    run, one after another, must leave BOTH entries at their own final
+    status -- i.e. updating one paper's entry never clobbers a sibling
+    entry already written by a previous call. That whole-list-rebuild
+    correctness is what makes serializing the two calls (via the row
+    lock) actually sufficient to fix the race, rather than merely
+    moving it.
+    """
+    run = await _make_run(
+        session, project, suggested_papers=[_paper(openalex_id="W1"), _paper(openalex_id="W2")]
+    )
+
+    await tasks_module._update_paper_import_status(session, run.id, "W1", status="added", asset_id="asset-1")
+    await tasks_module._update_paper_import_status(session, run.id, "W2", status="failed", error="not a PDF")
+
+    await session.refresh(run)
+    by_id = {entry["openalex_id"]: entry for entry in run.suggested_papers}
+    assert by_id["W1"]["import_status"] == "added"
+    assert by_id["W1"]["imported_asset_id"] == "asset-1"
+    assert by_id["W2"]["import_status"] == "failed"
+    assert by_id["W2"]["import_error"] == "not a PDF"
+
+
+async def test_import_paper_never_raises_on_an_unexpected_exception(session, project, monkeypatch):
+    """Final review Fix 2: an exception outside the three known error
+    types (download, validation, duplicate) must not propagate out of
+    `_import_paper` -- it is a `max_retries=0` Celery chord member, and
+    an unhandled exception there fails the whole chord, so
+    `finalize_paper_import` never runs and the re-run silently never
+    starts even when other papers succeeded."""
+
+    async def fake_download(url, **kwargs):
+        return _PDF_BYTES
+
+    async def fake_process_asset(self, asset_id):
+        raise RuntimeError("boom: unexpected failure with a secret url https://internal/x")
+
+    monkeypatch.setattr(tasks_module, "download_oa_pdf", fake_download)
+    monkeypatch.setattr(AssetProcessingService, "process_asset", fake_process_asset)
+
+    run = await _make_run(session, project, suggested_papers=[_paper()])
+
+    result = await tasks_module._import_paper(run.id, _paper())
+
+    assert result["status"] == "failed"
+    assert result["reason"] == tasks_module._UNEXPECTED_IMPORT_ERROR
+    assert "boom" not in result["reason"]
+
+    await session.refresh(run)
+    entry = run.suggested_papers[0]
+    assert entry["import_status"] == "failed"
+    assert entry["import_error"] == tasks_module._UNEXPECTED_IMPORT_ERROR
+    assert "boom" not in entry["import_error"]
+    assert "secret" not in entry["import_error"]
+
+
+async def test_import_paper_treats_duplicate_asset_as_already_added(session, project, monkeypatch):
+    """Final review Fix 3: a duplicate (checksum-matched) paper genuinely
+    IS already in the project, so `_import_paper` must mark it `added`
+    pointing at the existing asset -- not `failed`, which would
+    silently regress a paper the project already has."""
+    from app.modules.assets.service import AssetService, DuplicateAssetError
+    from app.modules.assets.models import Asset
+    from app.modules.assets.enums import AssetStatus, AssetType
+
+    async def fake_download(url, **kwargs):
+        return _PDF_BYTES
+
+    existing_asset = Asset(
+        project_id=project.id,
+        owner_id=project.owner_id,
+        title="Already Imported",
+        asset_type=AssetType.DOCUMENT,
+        status=AssetStatus.ACTIVE,
+        mime_type="application/pdf",
+        file_name="existing.pdf",
+        file_extension="pdf",
+        file_size=len(_PDF_BYTES),
+        storage_path=f"{project.id}/existing.pdf",
+        checksum="irrelevant",
+        source=AssetSource.IMPORTED,
+        version=1,
+        tags=[],
+        asset_metadata={},
+        created_by=project.owner_id,
+        processing_status=AssetProcessingStatus.COMPLETED,
+    )
+    session.add(existing_asset)
+    await session.flush()
+
+    async def fake_create_imported_asset(self, **kwargs):
+        raise DuplicateAssetError(existing_asset)
+
+    monkeypatch.setattr(tasks_module, "download_oa_pdf", fake_download)
+    monkeypatch.setattr(AssetService, "create_imported_asset", fake_create_imported_asset)
+
+    run = await _make_run(session, project, suggested_papers=[_paper()])
+
+    result = await tasks_module._import_paper(run.id, _paper())
+
+    assert result["status"] == "added"
+    assert result["asset_id"] == str(existing_asset.id)
+
+    await session.refresh(run)
+    entry = run.suggested_papers[0]
+    assert entry["import_status"] == "added"
+    assert entry["imported_asset_id"] == str(existing_asset.id)
+
+
 async def test_finalize_import_starts_no_rerun_when_every_paper_failed(
     session, project, monkeypatch
 ):
