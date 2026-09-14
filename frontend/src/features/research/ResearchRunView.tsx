@@ -20,9 +20,18 @@ import type { components } from "@/types/api";
 type ResearchRunDetail = components["schemas"]["ResearchRunDetail"];
 
 const TERMINAL_RUN_STATUSES = new Set(["completed", "failed", "cancelled"]);
+const IN_PROGRESS_IMPORT_STATUSES = new Set(["queued", "processing"]);
 
 function isTerminal(run: ResearchRunDetail): boolean {
-  return TERMINAL_RUN_STATUSES.has(run.status);
+  if (!TERMINAL_RUN_STATUSES.has(run.status)) return false;
+  // Milestone 10 step 3 (Add & re-run): importing a suggested paper
+  // happens after this run is already `completed`, so `usePolling`
+  // must keep polling through it -- otherwise a card frozen on
+  // "Queued" would never update once the run itself stopped changing.
+  const hasPendingImport = (run.suggested_papers ?? []).some((paper) =>
+    IN_PROGRESS_IMPORT_STATUSES.has((paper as { import_status?: string }).import_status ?? ""),
+  );
+  return !hasPendingImport;
 }
 
 /** Polls `GET /research/runs/{id}` until the backend reports a terminal
@@ -52,6 +61,11 @@ export function ResearchRunView({ runId }: { runId: string }) {
 
   return (
     <div className="flex flex-col gap-6">
+      {run.parent_run_id && run.added_paper_count != null && (
+        <p className="text-sm text-muted-foreground">
+          Re-run with {run.added_paper_count} added paper{run.added_paper_count === 1 ? "" : "s"}
+        </p>
+      )}
       <motion.div initial="hidden" animate="visible" variants={fadeUp}>
         <Card className="overflow-hidden">
           <CardHeader className="gap-3">

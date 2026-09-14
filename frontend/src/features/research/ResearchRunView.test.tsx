@@ -178,3 +178,40 @@ describe("ResearchRunView polling (Phase 19)", () => {
     expect(screen.queryByText("Grounded Intelligence")).not.toBeInTheDocument();
   });
 });
+
+describe("ResearchRunView re-run linkage (Milestone 10 step 3)", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("shows a 're-run with N added papers' banner when this run has a parent", async () => {
+    vi.mocked(researchService.getResearchRun).mockResolvedValue(
+      makeRun({
+        status: "completed",
+        grounding_status: "grounded",
+        final_answer: "The answer.",
+        citations: [],
+        parent_run_id: "run-0",
+        added_paper_count: 2,
+      }),
+    );
+
+    renderWithProviders(<ResearchRunView runId="run-1" />);
+
+    expect(await screen.findByText(/re-run with 2 added papers/i)).toBeInTheDocument();
+  });
+
+  it("does not show the banner for a run with no parent", async () => {
+    vi.mocked(researchService.getResearchRun).mockResolvedValue(
+      makeRun({
+        status: "completed",
+        grounding_status: "grounded",
+        final_answer: "The answer.",
+        citations: [],
+      }),
+    );
+
+    renderWithProviders(<ResearchRunView runId="run-1" />);
+    await screen.findByText("What challenges does ABC Poultry face?");
+
+    expect(screen.queryByText(/re-run with/i)).not.toBeInTheDocument();
+  });
+});

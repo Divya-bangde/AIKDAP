@@ -92,7 +92,9 @@ export function ResearchResult({ run }: { run: ResearchRunDetail }) {
            * dead end. */}
           <EvidenceGapPanel projectId={run.project_id} query={run.query} runId={run.id} />
 
-          {suggestedPapers.length > 0 && <PaperSuggestionsPanel papers={suggestedPapers} />}
+          {suggestedPapers.length > 0 && (
+            <PaperSuggestionsPanel papers={suggestedPapers} runId={run.id} rerunRunId={run.rerun_run_id} />
+          )}
 
           {/* A declined answer can still carry claims (Sprint 16 Phase
            * 8.7) -- the model may state something in its explanation
@@ -257,7 +259,9 @@ export function ResearchResult({ run }: { run: ResearchRunDetail }) {
 
         <EvidenceWorkspace query={run.query} claims={claims} citations={citations} onSelectCitation={openEvidence} />
 
-        {suggestedPapers.length > 0 && <PaperSuggestionsPanel papers={suggestedPapers} />}
+        {suggestedPapers.length > 0 && (
+          <PaperSuggestionsPanel papers={suggestedPapers} runId={run.id} rerunRunId={run.rerun_run_id} />
+        )}
 
         {citations.length > 0 ? (
           <CitationList citations={citations} onSelect={openEvidence} />
