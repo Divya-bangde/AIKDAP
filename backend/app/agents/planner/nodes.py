@@ -444,7 +444,14 @@ def get_web_provider() -> WebResearchProvider:
 
 
 def get_paper_provider() -> OpenAlexProvider | None:
-    """Live OpenAlex search when a key is configured, else None (paper suggestions disabled)."""
+    """A configured OpenAlex provider, or `None` when no key is set.
+
+    `None` is a real, load-bearing value here (unlike `get_web_provider`,
+    which always returns something): `route_after_synthesis` uses
+    `paper_suggestion_eligible` to skip the `paper_suggestion` node
+    entirely when this is `None`, so "no key" is a true graph-level
+    skip rather than a node that runs and finds nothing.
+    """
     if settings.openalex_api_key is not None:
         return OpenAlexProvider(
             api_key=settings.openalex_api_key, timeout=settings.openalex_timeout
