@@ -99,12 +99,12 @@ async def test_rejects_content_that_is_not_a_pdf():
 
 async def test_follows_a_redirect_to_another_public_https_host():
     def handler(request: httpx.Request) -> httpx.Response:
-        if request.url.host == "github.com":
-            return httpx.Response(302, headers={"location": "https://raw.githubusercontent.com/paper.pdf"})
+        if request.url.host == "example.org":
+            return httpx.Response(302, headers={"location": "https://cdn.example.org/paper.pdf"})
         return httpx.Response(200, content=_PDF_BYTES)
 
     content = await download_oa_pdf(
-        "https://github.com/paper.pdf",
+        "https://example.org/paper.pdf",
         timeout=5.0,
         max_bytes=1_000_000,
         max_redirects=3,
@@ -115,13 +115,13 @@ async def test_follows_a_redirect_to_another_public_https_host():
 
 async def test_rejects_redirect_to_a_private_host():
     def handler(request: httpx.Request) -> httpx.Response:
-        if request.url.host == "github.com":
+        if request.url.host == "example.org":
             return httpx.Response(302, headers={"location": "https://127.0.0.1/evil.pdf"})
         return httpx.Response(200, content=_PDF_BYTES)
 
     with pytest.raises(PaperDownloadError, match="private or internal"):
         await download_oa_pdf(
-            "https://github.com/paper.pdf",
+            "https://example.org/paper.pdf",
             timeout=5.0,
             max_bytes=1_000_000,
             max_redirects=3,
