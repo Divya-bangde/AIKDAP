@@ -1,16 +1,16 @@
 # Graph Report - AIKDAP  (2026-09-14)
 
 ## Corpus Check
-- 845 files · ~1,745,839 words
+- 845 files · ~1,746,044 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 13251 nodes · 31187 edges · 593 communities (444 shown, 86 thin omitted)
-- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 1081 edges (avg confidence: 0.92)
+- 13254 nodes · 31195 edges · 591 communities (441 shown, 87 thin omitted)
+- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 1082 edges (avg confidence: 0.92)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `5c39249e`
+- Built from commit: `6f92d369`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -19,7 +19,7 @@
 - User
 - LLMGateway
 - .github/skills/impeccable/scripts/detector/rules/checks.mjs
-- planner/__init__.py
+- nodes.py
 - .claude/skills/impeccable/scripts/detector/rules/checks.mjs
 - test_paper_suggestion.py
 - Project
@@ -32,11 +32,11 @@
 - projects/router.py
 - .claude/skills/impeccable/scripts/context.mjs
 - .github/skills/impeccable/scripts/context.mjs
-- auth/router.py
-- ExecutionJob
+- auth/service.py
+- ExecutionAttempt
 - .github/skills/impeccable/scripts/live/svelte-component.mjs
-- settings.py
-- synthesis.py
+- Settings
+- test_embeddings.py
 - connectSSE
 - connectSSE
 - tasks.py
@@ -47,10 +47,10 @@
 - .claude/skills/impeccable/scripts/detector/design-system.mjs
 - .claude/skills/impeccable/scripts/live-server.mjs
 - .claude/skills/impeccable/scripts/detector/engines/regex/detect-text.mjs
-- EmbeddingProvider
+- EmbeddingProviderName
 - test_execution_docker_reconciliation.py
 - test_grounded_synthesis.py
-- nodes.py
+- planner/__init__.py
 - .claude/skills/impeccable/scripts/detector/browser/injected/index.mjs
 - .github/skills/impeccable/scripts/detector/browser/injected/index.mjs
 - .claude/skills/impeccable/scripts/detector/detect-antipatterns-browser.js
@@ -70,17 +70,17 @@
 - .github/skills/impeccable/scripts/modern-screenshot.umd.js
 - test_startup_validation.py
 - .claude/skills/impeccable/scripts/detector/detect-antipatterns.mjs
-- .claude/skills/impeccable/scripts/live/event-validation.mjs
+- .claude/skills/impeccable/scripts/live/insert-ui.mjs
 - .github/skills/impeccable/scripts/detector/detect-antipatterns.mjs
 - ProviderStatus
 - el
 - el
-- .github/skills/impeccable/scripts/live/insert-ui.mjs
+- .github/skills/impeccable/scripts/live/event-validation.mjs
 - .claude/skills/impeccable/scripts/live/manual-apply.mjs
 - .github/skills/impeccable/scripts/detector/engines/static-html/css-cascade.mjs
 - .github/skills/impeccable/scripts/live/manual-apply.mjs
-- research/schemas.py
-- reranking.py
+- BaseModel
+- test_execution_job_reconstruction.py
 - .github/skills/impeccable/scripts/live-wrap.mjs
 - syncPageChatFocus
 - .github/skills/impeccable/scripts/live-accept.mjs
@@ -94,11 +94,11 @@
 - test_fallback_grounding.py
 - .claude/skills/impeccable/scripts/lib/impeccable-config.mjs
 - .github/skills/impeccable/scripts/lib/impeccable-config.mjs
-- .github/skills/impeccable/scripts/lib/impeccable-paths.mjs
+- .github/skills/impeccable/scripts/live/session-store.mjs
 - .github/skills/impeccable/scripts/detector/engines/browser/detect-url.mjs
 - .github/skills/impeccable/scripts/hook-before-edit.mjs
 - .claude/skills/impeccable/scripts/hook-admin.mjs
-- document_understanding.py
+- QwenDocumentMetadata
 - .github/skills/impeccable/scripts/hook-admin.mjs
 - .claude/skills/impeccable/scripts/live-wrap.mjs
 - .claude/skills/impeccable/SKILL.md
@@ -111,13 +111,13 @@
 - .claude/skills/impeccable/scripts/build-phase.mjs
 - .github/skills/impeccable/scripts/build-phase.mjs
 - test_relevance_gate.py
-- .claude/skills/impeccable/scripts/live/session-store.mjs
+- .claude/skills/impeccable/scripts/lib/impeccable-paths.mjs
 - .claude/skills/impeccable/scripts/live-accept.mjs
 - initGlobalBar
 - initGlobalBar
 - .claude/skills/impeccable/scripts/comp-spec.mjs
 - .github/skills/impeccable/scripts/critique-storage.mjs
-- .github/skills/impeccable/scripts/live/accept-css.mjs
+- ResearchRun
 - claim_verification_track.py
 - .claude/skills/impeccable/scripts/font-match.mjs
 - .claude/skills/impeccable/scripts/lib/design-parser.mjs
@@ -130,7 +130,7 @@
 - motion.ts
 - documentRefForElement
 - documentRefForElement
-- test_semantic_search.py
+- health/service.py
 - KnowledgeBaseService
 - test_execution_timeout_cancellation.py
 - test_execution_job_reconciliation.py
@@ -140,9 +140,9 @@
 - test_execution_attempt_reconciliation.py
 - .claude/skills/impeccable/scripts/live.mjs
 - .claude/skills/impeccable/scripts/live-poll.mjs
-- resolveProjectRoot
+- .github/skills/impeccable/scripts/lib/surface-briefs.mjs
 - .github/skills/impeccable/scripts/live-poll.mjs
-- .claude/skills/impeccable/scripts/lib/impeccable-paths.mjs
+- .claude/skills/impeccable/scripts/live/source-lock.mjs
 - .github/skills/impeccable/scripts/live-inject.mjs
 - test_extractors.py
 - RerankerHealth
@@ -162,7 +162,7 @@
 - parseRgb
 - .github/skills/impeccable/scripts/live-manual-edit-evidence.mjs
 - experiment.py
-- test_research_run_reconciliation.py
+- AssetProcessingStatus
 - Responsive Design
 - parseAnyColor
 - Responsive Design
@@ -172,8 +172,8 @@
 - .claude/skills/impeccable/scripts/detector/engines/static-html/detect-html.mjs
 - .claude/skills/impeccable/scripts/live-manual-edit-evidence.mjs
 - collectBrowserFindings
-- semantic_search
-- build_equations
+- .claude/skills/impeccable/scripts/hook-before-edit.mjs
+- equations.py
 - ExtractionFailedError
 - .claude/skills/impeccable/reference/document.md
 - .claude/skills/impeccable/scripts/serve-question.mjs
@@ -184,9 +184,9 @@
 - .github/skills/impeccable/scripts/serve-question.mjs
 - handleManualEditActivity
 - .github/skills/impeccable/scripts/live/svelte-ast.mjs
-- get_logger
+- .github/skills/impeccable/scripts/detector/engines/static-html/detect-html.mjs
 - .claude/skills/impeccable/reference/onboard.md
-- LocalStorageProvider
+- StorageProvider
 - checkQuality
 - Local Storage
 - .github/skills/impeccable/reference/onboard.md
@@ -197,11 +197,11 @@
 - .claude/skills/impeccable/scripts/live/frameworks/nuxt.mjs
 - .github/skills/impeccable/scripts/live.mjs
 - .github/skills/impeccable/scripts/live/sveltekit-adapter.mjs
-- _parse_response
+- build_equations
 - ExperimentPlanCreateFromEquation
 - experiment_service.py
-- tasks/router.py
-- Persona
+- auth/router.py
+- test_persona.py
 - Operate mode depth (and Read notes)
 - The Toolkit
 - resolveLengthPx
@@ -214,7 +214,7 @@
 - .github/skills/impeccable/scripts/lib/font-fingerprint.mjs
 - phase7a5/run_benchmarks.py
 - test_execution_front_door.py
-- TaskRepository
+- .github/skills/impeccable/scripts/live/insert-ui.mjs
 - .claude/skills/impeccable/scripts/generate-image.mjs
 - ImageExtractor
 - .claude/skills/impeccable/scripts/lib/font-fingerprint.mjs
@@ -224,8 +224,8 @@
 - captureElementToBlob
 - .github/skills/impeccable/scripts/live/tanstack-adapter.mjs
 - phase7a/run_benchmarks.py
-- AssetValidationError
-- .claude/skills/impeccable/scripts/live/insert-ui.mjs
+- .github/skills/impeccable/scripts/lib/staleness.mjs
+- .claude/skills/impeccable/scripts/live/accept-css.mjs
 - is_reformulation_safe
 - .claude/skills/impeccable/scripts/lib/image-metrics.mjs
 - onAnnotDown
@@ -240,17 +240,17 @@
 - experiments.ts
 - createLiveBrowserSessionState
 - .github/skills/impeccable/scripts/pin.mjs
-- TaskPriority
+- Task
 - Persona-Based Features — Design
-- validate_numeric_constraint
+- parse_equation
 - ExecutionJobRepository
 - Test generation (plan → generate → heal)
 - Tracing
 - .github/skills/impeccable/scripts/live/manual-edit-routes.mjs
 - .github/skills/impeccable/scripts/live/frameworks/tag-strategy.mjs
-- reconciliation.py
+- ExecutionJob
 - .claude/skills/impeccable/scripts/lib/surface-briefs.mjs
-- Task
+- FastAPI
 - .claude/skills/impeccable/reference/animate.md
 - Handle `generate`
 - checkHeadingRhythmDOM
@@ -261,7 +261,7 @@
 - checkHeadingRhythmDOM
 - createLiveBrowserDomHelpers
 - seminar-start.ps1
-- TaskService
+- verify_categorical_claim
 - TestCalibration
 - sampleCssBackground
 - .claude/skills/impeccable/scripts/lib/png.mjs
@@ -273,32 +273,32 @@
 - .github/skills/impeccable/scripts/lib/png.mjs
 - ExperimentPlanService
 - Global Constraints
-- ocr_image
+- _detect_and_correct_orientation
 - New visual work
 - .claude/skills/impeccable/reference/optimize.md
-- analyze_research_document
+- runHook
 - .claude/skills/impeccable/scripts/embed-prompt.mjs
-- checkHtmlPatterns
+- .claude/skills/impeccable/scripts/lib/template-extensions.mjs
 - Browser Automation with playwright-cli
 - New visual work
 - .github/skills/impeccable/reference/optimize.md
 - .github/skills/impeccable/scripts/embed-prompt.mjs
 - .github/skills/impeccable/scripts/live/frameworks/detect-utils.mjs
-- test_cross_paper_real.py
-- Visualization
+- extractFindingIgnoreValue
+- .github/skills/impeccable/scripts/context-signals.mjs
 - checkElementDesignSystemDOM
 - .claude/skills/impeccable/scripts/live/frameworks/detect-utils.mjs
 - Running Custom Playwright Code
 - checkElementDesignSystemDOM
 - .github/skills/impeccable/scripts/lib/template-extensions.mjs
 - .github/skills/impeccable/scripts/live/frameworks/index.mjs
-- .github/skills/impeccable/scripts/live/source-lock.mjs
-- TaskUpdate
+- .github/skills/impeccable/scripts/lib/impeccable-paths.mjs
+- relevance_track.py
 - .claude/skills/impeccable/reference/critique.md
 - Simplify the Design
 - Hardening Dimensions
 - .claude/skills/impeccable/scripts/lib/roll-selection.mjs
-- .claude/skills/impeccable/scripts/live/generation-preflight.mjs
+- StaticElement
 - AIKDAP Frontend Foundation — Design Spec
 - ExperimentPlaygroundPanel.tsx
 - frontend/package.json
@@ -314,7 +314,7 @@
 - Nielsen's 10 Heuristics
 - .claude/skills/impeccable/reference/polish.md
 - .claude/skills/impeccable/reference/quieter.md
-- .claude/skills/impeccable/scripts/lib/staleness-notice.mjs
+- test_cors_startup_guard.py
 - .claude/skills/impeccable/scripts/detect-csp.mjs
 - StaticElement
 - .claude/skills/impeccable/scripts/palette.mjs
@@ -329,7 +329,7 @@
 - .github/skills/impeccable/scripts/live/generation-preflight.mjs
 - .github/skills/impeccable/scripts/palette.mjs
 - DocxExtractor
-- checkHtmlPatterns
+- evidence_state_from_claim_verification
 - Generate Combined Critique Report
 - Init flow
 - .claude/skills/impeccable/scripts/detector/shared/inline-ignores.mjs
@@ -341,14 +341,14 @@
 - Init flow
 - .github/skills/impeccable/scripts/lib/staleness-notice.mjs
 - checkHeadingRhythmDOM
-- tasks/service.py
+- claim_extraction.py
 - .github/skills/impeccable/scripts/live/frameworks/nuxt.mjs
 - reranker.ps1
-- _imported_module_roots
+- Persona
 - Common Cognitive Load Violations
 - iOS platform
 - monorepoOwnsPath
-- _imported_module_roots
+- classify_false_insufficiency
 - Cookies
 - Video Recording
 - active-work.ts
@@ -357,7 +357,7 @@
 - Common Cognitive Load Violations
 - iOS platform
 - monorepoOwnsPath
-- reset_litellm_logging_worker_for_task_boundary
+- renderGroupedTemplate
 - .process_asset
 - Global Constraints
 - Worker Infrastructure
@@ -379,9 +379,8 @@
 - Persona-Based Design Testing
 - Extract Flow
 - Shape
-- worker.py
+- session.py
 - AIKDAP: An Autonomous Multi-Agent AI Work Operating System for Unified Knowledge Discovery and Analytics
-- create_task
 - Impeccable Asset Producer
 - Impeccable Finish Reviewer
 - Impeccable Manual Edit Applier
@@ -392,7 +391,6 @@
 - Impeccable Finish Reviewer
 - Impeccable Manual Edit Applier
 - checkHeadingRhythmDOM
-- normalizeGitHubEvent
 - .claude/skills/impeccable/scripts/live-browser-ignores.js
 - card.tsx
 - asset-state.ts
@@ -423,7 +421,7 @@
 - Diagnostic Scan
 - .claude/skills/impeccable/reference/bolder.md
 - Visualize: Direction Comps & Asset Production
-- .claude/skills/impeccable/scripts/hook.mjs
+- readConfig
 - persona.ts
 - 3. Heal
 - UploadDropzone
@@ -567,45 +565,45 @@
   .claude/skills/impeccable/scripts/live-browser.js → .claude/skills/impeccable/scripts/live-browser-dom.js
 - `collect()` --indirect_call--> `parseDesignMd()`  [INFERRED]
   .github/skills/impeccable/scripts/doctor.mjs → .github/skills/impeccable/scripts/lib/design-parser.mjs
-- `enableInlineEdit()` --indirect_call--> `own()`  [INFERRED]
-  .github/skills/impeccable/scripts/live-browser.js → .github/skills/impeccable/scripts/live-browser-dom.js
+- `sweepStaleAcceptReceiptsOnStartup()` --calls--> `getLiveDir()`  [EXTRACTED]
+  .github/skills/impeccable/scripts/live-server.mjs → .github/skills/impeccable/scripts/lib/impeccable-paths.mjs
 
 ## Import Cycles
 - None detected.
 
-## Communities (593 total, 86 thin omitted)
+## Communities (591 total, 87 thin omitted)
 
 ### Community 0 - "Asset"
-Cohesion: 0.02
-Nodes (223): AssetRead, AIProfile, AIProfileStatus, str, Reusable AI profile structure stored in `Asset.ai_profile` (JSONB). Every asset…, Lifecycle of the AI-understanding step for one asset. Deliberately separate…, AI-derived metadata for an asset. `status`/`error` are stored as plain fields…, AssetProcessingStatus (+215 more)
+Cohesion: 0.03
+Nodes (142): AssetRead, AssetSource, AssetStatus, AssetType, str, Enumerations for the assets module., Lifecycle state of an asset., How an asset came to exist in the platform. (+134 more)
 
 ### Community 1 - "User"
-Cohesion: 0.04
-Nodes (92): Base, BaseModel, Declarative base and shared abstract model for SQLAlchemy 2.x ORM models.…, Declarative base shared by all ORM models in the application., Abstract base providing a UUID primary key and audit timestamps., User ORM model for authentication and identity., A registered platform user., User (+84 more)
+Cohesion: 0.06
+Nodes (72): A registered platform user., User, UserCreate, Register a new user account., register(), get_experiment_service(), get_owned_run(), get_research_service() (+64 more)
 
 ### Community 2 - "LLMGateway"
-Cohesion: 0.03
-Nodes (116): get_llm_gateway(), LLMGateway, provider_of(), Return the shared gateway instance. A module-level singleton rather than a…, The provider segment of a LiteLLM model id. `gemini/gemini-1.5-pro` ->…, Application-level client for text generation. Stateless and cheap to construct;…, The model used when a caller does not name one., The model tried when the primary one fails, if configured. (+108 more)
+Cohesion: 0.02
+Nodes (137): AsyncClient, OpenAlex paper suggestions and the evidence-gap detector that drives them.…, Application configuration loaded from environment variables. Exposes a single…, get_llm_gateway(), LLMGateway, provider_of(), Return the shared gateway instance. A module-level singleton rather than a…, The provider segment of a LiteLLM model id. `gemini/gemini-1.5-pro` ->… (+129 more)
 
 ### Community 3 - ".github/skills/impeccable/scripts/detector/rules/checks.mjs"
 Cohesion: 0.03
-Nodes (128): checkStaticPageTypography(), ANIMATION_VALUE_KEYWORDS, borderColorsFromStyle(), borderWidthsFromStyle(), checkBorders(), checkClippedOverflow(), checkEdgeFlushCardsDOM(), checkElementBlinkingCursorDOM() (+120 more)
+Nodes (146): ANIMATION_VALUE_KEYWORDS, borderColorsFromStyle(), borderWidthsFromStyle(), buildHtmlPatternCorpora(), checkClippedOverflow(), checkEdgeFlushCardsDOM(), checkElementBlinkingCursorDOM(), checkElementClippedOverflow() (+138 more)
 
-### Community 4 - "planner/__init__.py"
-Cohesion: 0.05
-Nodes (46): Planner Agent and the LangGraph research orchestration workflow. Public surface…, AssetRetriever, build_dependencies(), get_web_provider(), MockWebResearchProvider, ABC, AsyncSession, UUID (+38 more)
+### Community 4 - "nodes.py"
+Cohesion: 0.03
+Nodes (95): AssetRetriever, build_dependencies(), _context_block(), document_score(), _first_sentences(), _general_knowledge_answer(), _general_knowledge_notice(), get_web_provider() (+87 more)
 
 ### Community 5 - ".claude/skills/impeccable/scripts/detector/rules/checks.mjs"
 Cohesion: 0.03
-Nodes (120): ANIMATION_VALUE_KEYWORDS, borderColorsFromStyle(), borderWidthsFromStyle(), checkClippedOverflow(), checkEdgeFlushCardsDOM(), checkElementBlinkingCursorDOM(), checkElementClippedOverflow(), checkElementClippedOverflowDOM() (+112 more)
+Nodes (146): ANIMATION_VALUE_KEYWORDS, borderColorsFromStyle(), borderWidthsFromStyle(), buildHtmlPatternCorpora(), checkClippedOverflow(), checkCreamPalette(), checkEdgeFlushCardsDOM(), checkElementBlinkingCursorDOM() (+138 more)
 
 ### Community 6 - "test_paper_suggestion.py"
 Cohesion: 0.06
-Nodes (53): get_paper_provider(), A configured OpenAlex provider, or `None` when no key is set. `None` is a real,…, build_relevance_note(), build_search_query(), GapDetector, OpenAlexProvider, _parse_gaps(), AsyncBaseTransport (+45 more)
+Nodes (51): get_paper_provider(), A configured OpenAlex provider, or `None` when no key is set. `None` is a real,…, build_relevance_note(), build_search_query(), GapDetector, OpenAlexProvider, _parse_gaps(), AsyncBaseTransport (+43 more)
 
 ### Community 7 - "Project"
-Cohesion: 0.04
-Nodes (91): do_run_migrations(), Alembic migration environment. Runs migrations against the application's async…, Emit migration SQL without opening a live database connection., Configure the migration context against a live sync connection., Run migrations against the database using the async engine., run_migrations_offline(), run_migrations_online(), get_storage_provider() (+83 more)
+Cohesion: 0.03
+Nodes (100): get_storage_provider(), LocalStorageProvider, Path, Strip directory components so a crafted filename can't escape the intended…, Filesystem-backed storage provider rooted at `base_dir`. Files are stored under…, Resolve a stored relative path to an absolute path, rejecting any path that…, FastAPI dependency provider for the configured storage backend. Currently…, sanitize_filename() (+92 more)
 
 ### Community 8 - ".claude/skills/impeccable/scripts/live-browser.js"
 Cohesion: 0.03
@@ -617,51 +615,51 @@ Nodes (132): acceptedDomAlreadyClean(), applyParamValue(), applyPlaceholderSizin
 
 ### Community 10 - "gateway.py"
 Cohesion: 0.05
-Nodes (68): is_terminal(), LLMAuthenticationError, LLMConfigurationError, LLMConnectionError, LLMError, LLMInvalidRequestError, LLMModelNotFoundError, LLMProviderError (+60 more)
+Nodes (77): is_retryable(), is_terminal(), LLMAuthenticationError, LLMConfigurationError, LLMConnectionError, LLMError, LLMInvalidRequestError, LLMModelNotFoundError (+69 more)
 
 ### Community 11 - "test_health_endpoint.py"
-Cohesion: 0.03
-Nodes (99): _configured_model(), Normalize a configured model id, treating blank as "not set". `FALLBACK_LLM=`…, ProviderRole, One configured model and the job it does in the fallback chain., Flatten for the health response. Contains no credentials., get_provider_health_registry(), Return the shared registry for this process (Sprint 9H: Redis-backed). A…, get_health_service() (+91 more)
+Cohesion: 0.06
+Nodes (63): _configured_model(), Normalize a configured model id, treating blank as "not set". `FALLBACK_LLM=`…, get_provider_health_registry(), Return the shared registry for this process (Sprint 9H: Redis-backed). A…, HealthService, AsyncSession, Builds the health report for one request. Takes the session rather than opening…, check_reranker_health() (+55 more)
 
 ### Community 12 - "test_llm_resilience.py"
-Cohesion: 0.04
-Nodes (107): is_retryable(), Whether `error` justifies another attempt at the same model. Checked against…, all_keys(), bad_request_error(), call(), chained(), completion(), deepseek_insufficient_balance_error() (+99 more)
+Cohesion: 0.05
+Nodes (97): all_keys(), bad_request_error(), call(), chained(), completion(), deepseek_insufficient_balance_error(), gemini_daily_quota_error(), gemini_per_minute_rate_limit_error() (+89 more)
 
 ### Community 13 - "research/service.py"
-Cohesion: 0.02
-Nodes (116): The registered agents in graph order. Used by the execution service to record…, workflow_node_order(), get_node_spec(), Look up one agent's spec by node name., AgentMessageRole, str, Enumerations for the research module. Lowercase values, matching the…, Lifecycle state of one research run. `PENDING` is the state a run is in between… (+108 more)
+Cohesion: 0.03
+Nodes (84): do_run_migrations(), Alembic migration environment. Runs migrations against the application's async…, Emit migration SQL without opening a live database connection., Configure the migration context against a live sync connection., Run migrations against the database using the async engine., run_migrations_offline(), run_migrations_online(), analyze_research_document() (+76 more)
 
 ### Community 14 - "projects/router.py"
-Cohesion: 0.05
-Nodes (48): create_project(), delete_project(), get_project(), list_projects(), delete, get, patch, post (+40 more)
+Cohesion: 0.06
+Nodes (45): create_project(), delete_project(), get_project(), list_projects(), delete, get, patch, post (+37 more)
 
 ### Community 15 - ".claude/skills/impeccable/scripts/context.mjs"
+Cohesion: 0.04
+Nodes (105): appendAutonomyCounterDirective(), appendBuildPathDirective(), appendCompRoundOpenDirective(), appendDetectorFallback(), appendImageGenDirective(), appendImageToolsDirective(), appendStalenessDirective(), appendSubagentAuthorizationDirective() (+97 more)
+
+### Community 16 - ".github/skills/impeccable/scripts/context.mjs"
 Cohesion: 0.05
 Nodes (94): appendAutonomyCounterDirective(), appendBuildPathDirective(), appendCompRoundOpenDirective(), appendDetectorFallback(), appendImageGenDirective(), appendImageToolsDirective(), appendSubagentAuthorizationDirective(), appendSurfaceBriefContext() (+86 more)
 
-### Community 16 - ".github/skills/impeccable/scripts/context.mjs"
+### Community 17 - "auth/service.py"
 Cohesion: 0.04
-Nodes (95): appendAutonomyCounterDirective(), appendBuildPathDirective(), appendCompRoundOpenDirective(), appendDetectorFallback(), appendImageGenDirective(), appendImageToolsDirective(), appendSubagentAuthorizationDirective(), appendSurfaceBriefContext() (+87 more)
+Nodes (51): get_db(), Yield a request-scoped `AsyncSession` for use with `Depends`. Rolls back the…, AsyncSession, Persona, UUID, Data-access layer for the `User` model. Contains only persistence operations;…, Encapsulates all direct database access for `User` rows., Fetch a user by primary key, or None if not found. (+43 more)
 
-### Community 17 - "auth/router.py"
-Cohesion: 0.03
-Nodes (79): get_db(), Yield a request-scoped `AsyncSession` for use with `Depends`. Rolls back the…, AsyncSession, Persona, Encapsulates all direct database access for `User` rows., Fetch a user by email, or None if not found., Insert a new user row and flush to populate generated fields., UserRepository (+71 more)
-
-### Community 18 - "ExecutionJob"
-Cohesion: 0.03
-Nodes (111): _enum_values(), ExecutionAttempt, ExecutionJob, ExecutionJob ORM model -- durable state for the future execution launcher.…, Persist enum members by their `.value`, not their `.name` (matches the…, Durable record of a requested (not yet necessarily launched) execution., Durable record of one concrete attempt to launch an `ExecutionJob` via Docker…, datetime (+103 more)
+### Community 18 - "ExecutionAttempt"
+Cohesion: 0.08
+Nodes (56): ExecutionAttempt, Durable record of one concrete attempt to launch an `ExecutionJob` via Docker…, get_execution_job_route(), list_execution_jobs_route(), AsyncSession, get, UUID, HTTP routes for the execution module (Sprint 16 Phase 7B.23). Read-only:… (+48 more)
 
 ### Community 19 - ".github/skills/impeccable/scripts/live/svelte-component.mjs"
+Cohesion: 0.06
+Nodes (77): bakeParamValues(), collectAllSelectors(), collectSelectorsFromNodes(), collectUnusedSelectors(), escapeRegExp(), formatBody(), isToggleOn(), normalizeSelector() (+69 more)
+
+### Community 20 - "Settings"
 Cohesion: 0.07
-Nodes (59): collectUnusedSelectors(), FORBIDDEN, verifyAcceptedSource(), applyLegacyDeferredAcceptsOnStartup(), buildPropsScriptV2(), loadSvelteCompiler(), appendCssToSvelteStyle(), appendSanitizedCssRule() (+51 more)
+Nodes (22): Configuration package exposing the application settings singleton., get_settings(), field_validator, model_validator, Self, A bare `TAVILY_API_KEY=` in .env means "not configured". Without this it parses…, A bare `OPENALEX_API_KEY=` in .env means "not configured". Same rationale as…, Strongly-typed application settings sourced from environment variables. (+14 more)
 
-### Community 20 - "settings.py"
-Cohesion: 0.04
-Nodes (51): Configuration package exposing the application settings singleton., get_settings(), field_validator, model_validator, Self, Application configuration loaded from environment variables. Exposes a single…, A bare `TAVILY_API_KEY=` in .env means "not configured". Without this it parses…, A bare `OPENALEX_API_KEY=` in .env means "not configured". Same rationale as… (+43 more)
-
-### Community 21 - "synthesis.py"
+### Community 21 - "test_embeddings.py"
 Cohesion: 0.05
-Nodes (62): Render the evidence block list exactly as the model will see it. Reads each…, Render the user half of the grounded synthesis request. The system half is…, Render the user half of the unsourced synthesis request. The system half is…, render_grounded_evidence(), render_grounded_synthesis_prompt(), render_unsourced_synthesis_prompt(), Citation, EvidenceProvenance (+54 more)
+Nodes (63): Extract and validate embedding vectors from a LiteLLM response. Defensive for…, AIProfile, AIProfileStatus, str, Reusable AI profile structure stored in `Asset.ai_profile` (JSONB). Every asset…, Lifecycle of the AI-understanding step for one asset. Deliberately separate…, AI-derived metadata for an asset. `status`/`error` are stored as plain fields…, EmbeddingStatus (+55 more)
 
 ### Community 22 - "connectSSE"
 Cohesion: 0.06
@@ -672,24 +670,24 @@ Cohesion: 0.06
 Nodes (83): abortSvelteComponentInjection(), applyParamDefaults(), applySavedSessionMeta(), buildInsertPlaceholderSnapshotFromDom(), checkpointPayload(), clampVariantIndex(), clearHandled(), clearMountErrorCard() (+75 more)
 
 ### Community 24 - "tasks.py"
-Cohesion: 0.05
-Nodes (86): get_document_understanding_service(), Factory for `QwenDocumentUnderstandingService`, matching the…, get_asset_processing_service(), AsyncSession, Factory for `AssetProcessingService`, used by the Celery bridge in…, get_embedding_provider(), Dependency provider for the configured embedding backend. Returns…, Detects stale `LAUNCHING` jobs and enqueues one recovery task per job (Sprint… (+78 more)
+Cohesion: 0.06
+Nodes (58): Stop and clear LiteLLM's process-global async logging worker. Root cause…, reset_litellm_logging_worker_for_task_boundary(), cleanup_temp_files(), _find_failed_asset_ids(), task, UUID, Placeholder periodic (Celery Beat) tasks for future scheduled maintenance. None…, Re-enqueue every asset stuck at `processing_status=FAILED`. The one task here… (+50 more)
 
 ### Community 25 - "test_execution_docker_policy.py"
 Cohesion: 0.03
-Nodes (151): _assert_no_dangerous_mount_paths(), _expected_class_expr_environment(), _expected_environment(), _expected_mounts(), Sprint 16 Phase 7B.3 -- the guard layer. THIS MODULE MUST NEVER IMPORT THE…, Independently re-derives the ONLY environment CLASS_EXPR is allowed to receive,…, OpenBLAS/OMP thread pinning (Phase 7A.5's crash finding) applies only to the…, Independently resolves every input asset itself -- never reads… (+143 more)
+Nodes (149): _assert_no_dangerous_mount_paths(), _expected_class_expr_environment(), _expected_environment(), _expected_mounts(), Sprint 16 Phase 7B.3 -- the guard layer. THIS MODULE MUST NEVER IMPORT THE…, Independently re-derives the ONLY environment CLASS_EXPR is allowed to receive,…, OpenBLAS/OMP thread pinning (Phase 7A.5's crash finding) applies only to the…, Independently resolves every input asset itself -- never reads… (+141 more)
 
 ### Community 26 - "launcher.py"
 Cohesion: 0.08
-Nodes (49): Re-derives one resource class's bounded-execution timeout (Sprint 16 Phase…, resource_class_timeout_s(), _best_effort_remove(), _bounded_text(), _classify_termination_from_evidence(), DockerUnavailableError, ExecutionOutcome, _finalize_exited_attempt() (+41 more)
+Nodes (47): Re-derives one resource class's bounded-execution timeout (Sprint 16 Phase…, resource_class_timeout_s(), _best_effort_remove(), _bounded_text(), _classify_termination_from_evidence(), DockerUnavailableError, ExecutionOutcome, _finalize_exited_attempt() (+39 more)
 
 ### Community 27 - ".github/skills/impeccable/scripts/detector/design-system.mjs"
 Cohesion: 0.06
-Nodes (75): addClampEndpoints(), addColorObject(), addDesignColor(), addFontSizeStep(), addRoundedScale(), addRoundedToken(), addSidecarColors(), addSidecarRadii() (+67 more)
+Nodes (74): addClampEndpoints(), addColorObject(), addDesignColor(), addFontSizeStep(), addRoundedScale(), addRoundedToken(), addSidecarColors(), addSidecarRadii() (+66 more)
 
 ### Community 28 - ".github/skills/impeccable/scripts/live-server.mjs"
-Cohesion: 0.06
-Nodes (72): assembleLiveBrowserScript(), assertLiveBrowserScriptParts(), LIVE_BROWSER_SCRIPT_PARTS, readLiveBrowserScriptParts(), resolveLiveBrowserScriptParts(), eventPriority(), selectAvailablePendingEvent(), acknowledgePendingEvent() (+64 more)
+Cohesion: 0.05
+Nodes (74): assembleLiveBrowserScript(), assertLiveBrowserScriptParts(), LIVE_BROWSER_SCRIPT_PARTS, readLiveBrowserScriptParts(), resolveLiveBrowserScriptParts(), eventPriority(), selectAvailablePendingEvent(), acknowledgePendingEvent() (+66 more)
 
 ### Community 29 - ".claude/skills/impeccable/scripts/detector/design-system.mjs"
 Cohesion: 0.06
@@ -697,27 +695,27 @@ Nodes (77): addClampEndpoints(), addColorObject(), addDesignColor(), addFontSize
 
 ### Community 30 - ".claude/skills/impeccable/scripts/live-server.mjs"
 Cohesion: 0.05
-Nodes (73): assembleLiveBrowserScript(), assertLiveBrowserScriptParts(), LIVE_BROWSER_SCRIPT_PARTS, readLiveBrowserScriptParts(), resolveLiveBrowserScriptParts(), eventPriority(), selectAvailablePendingEvent(), acknowledgePendingEvent() (+65 more)
+Nodes (82): assembleLiveBrowserScript(), assertLiveBrowserScriptParts(), LIVE_BROWSER_SCRIPT_PARTS, readLiveBrowserScriptParts(), resolveLiveBrowserScriptParts(), buildGenerationPreflight(), compactError(), execFileAsync (+74 more)
 
 ### Community 31 - ".claude/skills/impeccable/scripts/detector/engines/regex/detect-text.mjs"
 Cohesion: 0.07
 Nodes (45): blankAstroFrontmatterComments(), blankCommentsForMatchers(), blankCssComments(), blankCssLineComments(), blankCssLineCommentsInStyleBlocks(), blankHtmlAndCssCommentsOutsideScripts(), blankHtmlComments(), BLOCK_BRACE_PREFIX_KEYWORDS (+37 more)
 
-### Community 32 - "EmbeddingProvider"
-Cohesion: 0.10
-Nodes (12): EmbeddingProvider, NullEmbeddingProvider, ABC, Abstract interface for turning text into embedding vectors., Identifier for this provider, stored on each embedded chunk., Vector dimensionality this provider produces., Embed a batch of texts, returning one vector per input, in order., Placeholder provider: performs no real embedding. Exists so the pipeline's… (+4 more)
+### Community 32 - "EmbeddingProviderName"
+Cohesion: 0.11
+Nodes (10): NullEmbeddingProvider, Identifier for this provider, stored on each embedded chunk., Placeholder provider: performs no real embedding. Exists so the pipeline's…, EmbeddingProviderName, str, Enumerations for the knowledge base module., Identifies which embedding backend produced (or will produce) a chunk's vector.…, _enum_values() (+2 more)
 
 ### Community 33 - "test_execution_docker_reconciliation.py"
-Cohesion: 0.15
-Nodes (48): ExecutionAttemptStatus, ExecutionJobStatus, str, Enumerations for the execution module. `ExecutionCapability`,…, Lifecycle state of a persisted execution job. The authoritative status…, Lifecycle state of one `ExecutionAttempt` -- deliberately a SEPARATE, smaller…, Data-access layer for the `ExecutionJob` model. Contains only persistence…, Docker-aware crash recovery for ONE `ExecutionAttempt` (Sprint 16 Phase 7B.29)… (+40 more)
+Cohesion: 0.19
+Nodes (43): ExecutionJobStatus, Lifecycle state of a persisted execution job. The authoritative status…, Docker-aware crash recovery for ONE `ExecutionAttempt` (Sprint 16 Phase 7B.29)…, reconcile_attempt(), _assert_container_gone(), _count_assets_for_attempt(), _create_real_container(), _dispose_engine_pool_between_tests() (+35 more)
 
 ### Community 34 - "test_grounded_synthesis.py"
-Cohesion: 0.04
-Nodes (113): GraphDependencies, The strategies a single graph run executes against. Injected through the…, Build the detail response, splitting claims out of `citations`. `run.citations`…, litellm_call(), model_reply_with_claims(), asyncio, fixture, SimpleNamespace (+105 more)
+Cohesion: 0.03
+Nodes (133): Render the evidence block list exactly as the model will see it. Reads each…, Render the user half of the grounded synthesis request. The system half is…, render_grounded_evidence(), render_grounded_synthesis_prompt(), AgentMessagePayload, Citation, EvidenceProvenance, PlannedStep (+125 more)
 
-### Community 35 - "nodes.py"
-Cohesion: 0.05
-Nodes (84): build_research_graph(), The LangGraph orchestrator: builds and compiles the research workflow.…, Construct the uncompiled research graph from the agent registry. Separate from…, asset_retrieval_node(), build_citation(), _context_block(), context_builder_node(), _dependencies() (+76 more)
+### Community 35 - "planner/__init__.py"
+Cohesion: 0.03
+Nodes (87): The LangGraph orchestrator: builds and compiles the research workflow.…, The registered agents in graph order. Used by the execution service to record…, workflow_node_order(), Planner Agent and the LangGraph research orchestration workflow. Public surface…, asset_retrieval_node(), _dependencies(), _message(), paper_suggestion_node() (+79 more)
 
 ### Community 36 - ".claude/skills/impeccable/scripts/detector/browser/injected/index.mjs"
 Cohesion: 0.06
@@ -737,31 +735,31 @@ Nodes (65): addBrowserFindings(), addVisualContrastFindings(), addVisualContrast
 
 ### Community 40 - "parseAnyColor"
 Cohesion: 0.08
-Nodes (56): checkBorders(), checkColors(), checkCreamPalette(), checkElementAIPaletteDOM(), checkElementBorders(), checkElementBordersDOM(), checkElementColors(), checkElementColorsDOM() (+48 more)
+Nodes (61): checkBorders(), checkColors(), checkElementAIPaletteDOM(), checkElementBorders(), checkElementBordersDOM(), checkElementColors(), checkElementColorsDOM(), checkElementGlow() (+53 more)
 
 ### Community 41 - ".claude/skills/impeccable/scripts/detector/engines/static-html/css-cascade.mjs"
 Cohesion: 0.07
 Nodes (36): applyStaticDeclaration(), buildBorderOverrideMap(), parseShorthand(), resolveVar(), buildStaticStyleMap(), buildStaticWindow(), collectStaticCssRules(), compareStaticPriority() (+28 more)
 
 ### Community 42 - ".claude/skills/impeccable/scripts/live/svelte-component.mjs"
-Cohesion: 0.06
-Nodes (76): bakeParamValues(), collectAllSelectors(), collectSelectorsFromNodes(), collectUnusedSelectors(), escapeRegExp(), formatBody(), isToggleOn(), normalizeSelector() (+68 more)
+Cohesion: 0.07
+Nodes (56): collectUnusedSelectors(), verifyAcceptedSource(), applyLegacyDeferredAcceptsOnStartup(), buildPropsScriptV2(), loadSvelteCompiler(), appendCssToSvelteStyle(), appendSanitizedCssRule(), applyDeferredSvelteComponentAccepts() (+48 more)
 
 ### Community 43 - ".claude/skills/impeccable/scripts/doctor.mjs"
 Cohesion: 0.06
-Nodes (64): extractPlatform(), hasVisualImplementation(), loadContext(), applyFixes(), cli(), collect(), parseArgs(), readProjectRootPatterns() (+56 more)
+Nodes (64): extractPlatform(), loadContext(), applyFixes(), cli(), collect(), parseArgs(), readProjectRootPatterns(), rel() (+56 more)
 
 ### Community 44 - ".github/skills/impeccable/scripts/doctor.mjs"
-Cohesion: 0.07
-Nodes (61): extractPlatform(), loadContext(), applyFixes(), cli(), collect(), parseArgs(), readProjectRootPatterns(), rel() (+53 more)
+Cohesion: 0.09
+Nodes (42): extractPlatform(), hasVisualImplementation(), loadContext(), applyFixes(), cli(), collect(), parseArgs(), readProjectRootPatterns() (+34 more)
 
 ### Community 45 - "parseAnyColor"
-Cohesion: 0.08
-Nodes (60): checkColors(), checkElementAIPaletteDOM(), checkElementColors(), checkElementColorsDOM(), checkElementGlowDOM(), checkElementHoverContrast(), checkElementIconTile(), checkElementIconTileDOM() (+52 more)
+Cohesion: 0.09
+Nodes (53): checkBorders(), checkColors(), checkElementAIPaletteDOM(), checkElementBorders(), checkElementBordersDOM(), checkElementColors(), checkElementColorsDOM(), checkElementGlowDOM() (+45 more)
 
 ### Community 46 - ".github/skills/impeccable/scripts/hook-lib.mjs"
 Cohesion: 0.05
-Nodes (60): ACK_EXTS, ADVISORY_RULES, ALLOWED_EXTS, applyConfigSource(), applyDetectorConfigSource(), canonicalPath(), canonicalPathCache, clampByte() (+52 more)
+Nodes (62): ACK_EXTS, ADVISORY_RULES, ALLOWED_EXTS, applyConfigSource(), applyDetectorConfigSource(), applyPatchText(), canonicalPath(), canonicalPathCache (+54 more)
 
 ### Community 47 - "setLiveState"
 Cohesion: 0.10
@@ -772,12 +770,12 @@ Cohesion: 0.10
 Nodes (60): applyEditing(), beginNewLiveConfiguration(), buildLocatorForLeaf(), buildPickedAnchorSnapshot(), cancelEditing(), cancelEditingToPicking(), cancelInsertConfigure(), cleanup() (+52 more)
 
 ### Community 49 - ".claude/skills/impeccable/scripts/hook-lib.mjs"
-Cohesion: 0.03
-Nodes (149): allow(), bumpCursorDenial(), cursorBlockMessage(), deny(), detectProposedHtml(), done(), escapeRegExp(), findingSignature() (+141 more)
+Cohesion: 0.06
+Nodes (55): ACK_EXTS, ADVISORY_RULES, ALLOWED_EXTS, applyPatchText(), canonicalPath(), canonicalPathCache, clampByte(), CO_SCAN_STYLE_NAMES (+47 more)
 
 ### Community 50 - "test_claim_verification.py"
-Cohesion: 0.05
-Nodes (76): _categorical_tokens(), ClaimSupport, ClaimVerification, classify_false_insufficiency(), evidence_state_from_claim_verification(), _has_local_component_label(), _normalize_words(), str (+68 more)
+Cohesion: 0.08
+Nodes (39): ClaimSupport, Check a claimed number against the literal text cited for it. `evidence` is…, Whether a specific claim is backed by the evidence cited for it., verify_numeric_claim(), Sprint 16 Phase 8.5 -- claim-level evidence verification. The three real-text…, Real: run 084a9ed7-2573-4421-a09a-28fbbc637a0d (aguilar_cti, Phase 8.6 held-…, A component label present in the same chunk but nowhere near the claimed…, Real: run 50163fe6-5f61-4cf7-935a-70f23719aad2 (sinanian_lte). (+31 more)
 
 ### Community 51 - ".claude/skills/impeccable/scripts/modern-screenshot.umd.js"
 Cohesion: 0.09
@@ -788,24 +786,24 @@ Cohesion: 0.09
 Nodes (55): ae(), be(), bt(), Ce(), s(), Ct(), de(), dt() (+47 more)
 
 ### Community 53 - "test_startup_validation.py"
-Cohesion: 0.07
-Nodes (53): AsyncClient, is_provider_configured(), Whether `provider` has whatever credentials it needs to be tried. The one place…, _check_gemini(), _check_groq(), _check_openrouter(), ModelValidationResult, ModelValidationStatus (+45 more)
+Cohesion: 0.12
+Nodes (36): ModelValidationStatus, AsyncBaseTransport, Enum, str, Check every configured chain entry against its provider's catalogue. Runs all…, Validate the configured chain and log one summary line per entry. Called from…, What startup validation found for one configured model., run_startup_validation() (+28 more)
 
 ### Community 54 - ".claude/skills/impeccable/scripts/detector/detect-antipatterns.mjs"
 Cohesion: 0.08
 Nodes (44): confirm(), detectCli(), detectLocalFile(), dim(), fileUrlToLocalPath(), formatAdvisorySection(), formatFindings(), formatFindingsBody() (+36 more)
 
-### Community 55 - ".claude/skills/impeccable/scripts/live/event-validation.mjs"
-Cohesion: 0.12
-Nodes (26): AGENT_PHASE_SET, FORBIDDEN_MANUAL_EDIT_TEXT_CHARS, INSERT_POSITIONS, isValidId(), isValidMountVariant(), isValidVariantId(), MOUNT_ERROR_MAX_LENGTH, MOUNT_URL_MAX_LENGTH (+18 more)
+### Community 55 - ".claude/skills/impeccable/scripts/live/insert-ui.mjs"
+Cohesion: 0.05
+Nodes (39): AGENT_PHASE_SET, FORBIDDEN_MANUAL_EDIT_TEXT_CHARS, INSERT_POSITIONS, isValidId(), isValidMountVariant(), isValidVariantId(), MOUNT_ERROR_MAX_LENGTH, MOUNT_URL_MAX_LENGTH (+31 more)
 
 ### Community 56 - ".github/skills/impeccable/scripts/detector/detect-antipatterns.mjs"
 Cohesion: 0.08
-Nodes (47): confirm(), detectCli(), dim(), fileUrlToLocalPath(), formatAdvisorySection(), formatFindings(), formatFindingsBody(), formatFindingSummary() (+39 more)
+Nodes (47): confirm(), detectCli(), detectLocalFile(), dim(), fileUrlToLocalPath(), formatAdvisorySection(), formatFindings(), formatFindingsBody() (+39 more)
 
 ### Community 57 - "ProviderStatus"
-Cohesion: 0.04
-Nodes (69): _baseline_status(), _cooldown_for(), _provider_of(), ProviderHealth, ProviderStatus, Any, BaseException, Enum (+61 more)
+Cohesion: 0.03
+Nodes (70): _baseline_status(), _cooldown_for(), _provider_of(), ProviderHealth, ProviderStatus, Any, BaseException, Enum (+62 more)
 
 ### Community 58 - "el"
 Cohesion: 0.07
@@ -815,41 +813,41 @@ Nodes (53): actionLabel(), applyConfigureBarChrome(), bindConfigureCountPillTool
 Cohesion: 0.07
 Nodes (53): actionLabel(), applyConfigureBarChrome(), bindConfigureCountPillTooltip(), bindConfigureInlineControlHover(), bindConfigureModifierPillHover(), buildConfigureActionControl(), buildConfigureCountControl(), buildConfigureRow() (+45 more)
 
-### Community 60 - ".github/skills/impeccable/scripts/live/insert-ui.mjs"
-Cohesion: 0.05
-Nodes (39): AGENT_PHASE_SET, FORBIDDEN_MANUAL_EDIT_TEXT_CHARS, INSERT_POSITIONS, isValidId(), isValidMountVariant(), isValidVariantId(), MOUNT_ERROR_MAX_LENGTH, MOUNT_URL_MAX_LENGTH (+31 more)
+### Community 60 - ".github/skills/impeccable/scripts/live/event-validation.mjs"
+Cohesion: 0.12
+Nodes (26): AGENT_PHASE_SET, FORBIDDEN_MANUAL_EDIT_TEXT_CHARS, INSERT_POSITIONS, isValidId(), isValidMountVariant(), isValidVariantId(), MOUNT_ERROR_MAX_LENGTH, MOUNT_URL_MAX_LENGTH (+18 more)
 
 ### Community 61 - ".claude/skills/impeccable/scripts/live/manual-apply.mjs"
 Cohesion: 0.09
 Nodes (49): addOpToManualApplyChunk(), APPLY_EVENT_HARD_TIMEOUT_MS, APPLY_EVENT_SOFT_DEADLINE_MS, buildManualApplyAgentAction(), clearManualApplyTransaction(), collectManualApplyFiles(), compactManualApplyBatch(), compactManualApplyCandidates() (+41 more)
 
 ### Community 62 - ".github/skills/impeccable/scripts/detector/engines/static-html/css-cascade.mjs"
-Cohesion: 0.05
-Nodes (38): applyStaticDeclaration(), buildBorderOverrideMap(), parseShorthand(), resolveVar(), buildStaticStyleMap(), buildStaticWindow(), collectStaticCssRules(), collectStaticCssText() (+30 more)
+Cohesion: 0.07
+Nodes (35): applyStaticDeclaration(), buildBorderOverrideMap(), parseShorthand(), resolveVar(), buildStaticStyleMap(), buildStaticWindow(), collectStaticCssRules(), compareStaticPriority() (+27 more)
 
 ### Community 63 - ".github/skills/impeccable/scripts/live/manual-apply.mjs"
 Cohesion: 0.09
 Nodes (49): addOpToManualApplyChunk(), APPLY_EVENT_HARD_TIMEOUT_MS, APPLY_EVENT_SOFT_DEADLINE_MS, buildManualApplyAgentAction(), clearManualApplyTransaction(), collectManualApplyFiles(), compactManualApplyBatch(), compactManualApplyCandidates() (+41 more)
 
-### Community 64 - "research/schemas.py"
-Cohesion: 0.09
-Nodes (46): CrossPaperValidationException, CrossPaperComparison, Exception, UUID, Post-LLM Validator (Phase 12)., _validate_cross_paper_result(), classify_evidence_state(), Evidence-state classification (Sprint 16 Phase 8.1). A read-only projection… (+38 more)
+### Community 64 - "BaseModel"
+Cohesion: 0.05
+Nodes (95): CrossPaperValidationException, Any, CrossPaperComparison, Exception, ResearchDocumentUnderstanding, UUID, Post-LLM Validator (Phase 12)., Map-reduce pipeline to synthesize cross-paper findings using LLMGateway. (+87 more)
 
-### Community 65 - "reranking.py"
+### Community 65 - "test_execution_job_reconstruction.py"
 Cohesion: 0.06
-Nodes (30): get_reranker_provider(), HttpRerankerProvider, ABC, AsyncBaseTransport, Enum, Exception, Response, SecretStr (+22 more)
+Nodes (65): ExecutionAttemptStatus, str, Enumerations for the execution module. `ExecutionCapability`,…, Lifecycle state of one `ExecutionAttempt` -- deliberately a SEPARATE, smaller…, _enum_values(), ExecutionJob ORM model -- durable state for the future execution launcher.…, Persist enum members by their `.value`, not their `.name` (matches the…, ExecutionAttemptRead (+57 more)
 
 ### Community 66 - ".github/skills/impeccable/scripts/live-wrap.mjs"
-Cohesion: 0.13
-Nodes (38): hasGeneratedHeader(), HEADER_MARKERS, isGeneratedFile(), isGitIgnored(), resolveSourceTraits(), argVal(), buildInsertWrapperLines(), computeInsertLine() (+30 more)
+Cohesion: 0.11
+Nodes (42): hasGeneratedHeader(), HEADER_MARKERS, isGeneratedFile(), isGitIgnored(), resolveSourceTraits(), argVal(), buildInsertWrapperLines(), computeInsertLine() (+34 more)
 
 ### Community 67 - "syncPageChatFocus"
 Cohesion: 0.08
 Nodes (50): applyGlobalBarLabelState(), armPageChatForTyping(), attachSteerFocusDebug(), attachSteerFocusGuard(), buildSteerProcessingDots(), clearSteerAwaitTimer(), clearSteerFocusRecoverTimer(), collapsePageChat() (+42 more)
 
 ### Community 68 - ".github/skills/impeccable/scripts/live-accept.mjs"
-Cohesion: 0.12
-Nodes (38): acceptCli(), acceptReceiptPath(), argVal(), buildAcceptedWrappedSource(), buildCarbonizeReplacement(), decodeHtmlAttr(), deindentContent(), detectCommentSyntax() (+30 more)
+Cohesion: 0.09
+Nodes (46): IMPECCABLE_DIR, safeSessionId(), matchesTemplateExtension(), acceptCli(), acceptReceiptPath(), argVal(), buildAcceptedWrappedSource(), buildCarbonizeReplacement() (+38 more)
 
 ### Community 69 - "syncPageChatFocus"
 Cohesion: 0.08
@@ -868,12 +866,12 @@ Cohesion: 0.10
 Nodes (49): allEntryIds(), argVal(), buildRepairBatch(), candidatesForEntry(), changedFilesSinceSnapshot(), clearAppliedEntries(), collectApplyOwnedFiles(), collectRollbackFiles() (+41 more)
 
 ### Community 73 - ".github/skills/impeccable/scripts/detector/engines/regex/detect-text.mjs"
-Cohesion: 0.05
-Nodes (73): detectLocalFile(), handleStdin(), blankAstroFrontmatterComments(), blankCommentsForMatchers(), blankCssComments(), blankCssLineComments(), blankCssLineCommentsInStyleBlocks(), blankHtmlAndCssCommentsOutsideScripts() (+65 more)
+Cohesion: 0.07
+Nodes (48): blankAstroFrontmatterComments(), blankCommentsForMatchers(), blankCssComments(), blankCssLineComments(), blankCssLineCommentsInStyleBlocks(), blankHtmlAndCssCommentsOutsideScripts(), blankHtmlComments(), BLOCK_BRACE_PREFIX_KEYWORDS (+40 more)
 
 ### Community 74 - "test_unsourced_synthesis.py"
-Cohesion: 0.09
-Nodes (34): Exception, Answers from the model's own knowledge -- deliberately not evidence-bound. Not…, The model this synthesizer asks the gateway for., The synthesis model answered with something unusable. Raised rather than…, SynthesisResponseError, UnsourcedSynthesizer, litellm_call(), model_reply() (+26 more)
+Cohesion: 0.06
+Nodes (49): Prompt templates for the research workflow. No LLM is called in this sprint.…, Render the user half of the unsourced synthesis request. The system half is…, Render the full planner prompt exactly as it would be sent., Render the full router prompt exactly as it would be sent., Render the full gap-detection prompt exactly as it would be sent., render_gap_detection_prompt(), render_planner_prompt(), render_router_prompt() (+41 more)
 
 ### Community 75 - "PdfExtractor"
 Cohesion: 0.09
@@ -881,43 +879,43 @@ Nodes (32): PdfExtractor, One `ExtractedUnit` per page, via `pypdf` (pure Python
 
 ### Community 76 - "test_fallback_grounding.py"
 Cohesion: 0.10
-Nodes (45): all_three_providers(), both_providers(), call(), groq_unavailable(), prompt_of(), asyncio, Exception, fixture (+37 more)
+Nodes (47): all_three_providers(), both_providers(), call(), groq_unavailable(), prompt_of(), asyncio, Exception, fixture (+39 more)
 
 ### Community 77 - ".claude/skills/impeccable/scripts/lib/impeccable-config.mjs"
 Cohesion: 0.10
-Nodes (46): applyDetectionConfigSource(), clampByte(), cleanIgnoreValueDisplay(), cloneDetectionConfig(), cloneRawDetectionConfig(), COLOR_CHANNEL_FORMATS, colorIgnoreKey(), DEFAULT_DETECTION_CONFIG (+38 more)
+Nodes (45): applyDetectionConfigSource(), clampByte(), cleanIgnoreValueDisplay(), cloneDetectionConfig(), cloneRawDetectionConfig(), COLOR_CHANNEL_FORMATS, colorIgnoreKey(), DEFAULT_DETECTION_CONFIG (+37 more)
 
 ### Community 78 - ".github/skills/impeccable/scripts/lib/impeccable-config.mjs"
 Cohesion: 0.10
 Nodes (45): applyDetectionConfigSource(), clampByte(), cleanIgnoreValueDisplay(), cloneDetectionConfig(), cloneRawDetectionConfig(), COLOR_CHANNEL_FORMATS, colorIgnoreKey(), DEFAULT_DETECTION_CONFIG (+37 more)
 
-### Community 79 - ".github/skills/impeccable/scripts/lib/impeccable-paths.mjs"
-Cohesion: 0.07
-Nodes (58): CRITIQUE_DIR, firstExisting(), getDesignSidecarCandidates(), getDesignSidecarPath(), getImpeccableDir(), getLegacyLiveConfigPath(), getLegacyLiveServerPath(), getLegacyLiveSessionsDir() (+50 more)
+### Community 79 - ".github/skills/impeccable/scripts/live/session-store.mjs"
+Cohesion: 0.10
+Nodes (36): FORBIDDEN, verifyAcceptedFile(), completeCli(), completeThroughServer(), parseArgs(), readServerInfo(), collectManualApplyFiles(), manualApplyReplyCommand() (+28 more)
 
 ### Community 80 - ".github/skills/impeccable/scripts/detector/engines/browser/detect-url.mjs"
 Cohesion: 0.18
-Nodes (22): applyOriginScopedAuth(), basicAuthHeader(), decodeUrlComponent(), detectUrl(), launchBrowser(), measureContentHiddenAfterReveal(), runVisualContrastFallback(), serializeDesignSystemForBrowser() (+14 more)
+Nodes (23): applyOriginScopedAuth(), basicAuthHeader(), decodeUrlComponent(), detectUrl(), launchBrowser(), measureContentHiddenAfterReveal(), runVisualContrastFallback(), serializeDesignSystemForBrowser() (+15 more)
 
 ### Community 81 - ".github/skills/impeccable/scripts/hook-before-edit.mjs"
 Cohesion: 0.10
 Nodes (46): allow(), bumpCursorDenial(), cursorBlockMessage(), deny(), detectProposedHtml(), done(), escapeRegExp(), findingSignature() (+38 more)
 
 ### Community 82 - ".claude/skills/impeccable/scripts/hook-admin.mjs"
-Cohesion: 0.11
-Nodes (48): ACTIONS, addIgnoreFile(), addIgnoreRule(), addIgnoreValue(), DETECTOR_CONFIG_KEYS, detectorSection(), fileHasImpeccableHookMarker(), HOOK_MANIFEST_TARGETS (+40 more)
-
-### Community 83 - "document_understanding.py"
-Cohesion: 0.10
-Nodes (20): _dedupe_preserve_order(), DocumentUnderstandingResult, _merge_sections(), field_validator, QwenDocumentMetadata, Local AI document understanding: Qwen 3.5 4B through Ollama. Deliberately…, Tolerate the specific near-miss shapes observed from Qwen. Two coercions, both…, Document metadata plus how much of the source was analyzed. (+12 more)
-
-### Community 84 - ".github/skills/impeccable/scripts/hook-admin.mjs"
 Cohesion: 0.12
 Nodes (43): ACTIONS, addIgnoreFile(), addIgnoreRule(), addIgnoreValue(), DETECTOR_CONFIG_KEYS, detectorSection(), fileHasImpeccableHookMarker(), HOOK_MANIFEST_TARGETS (+35 more)
 
+### Community 83 - "QwenDocumentMetadata"
+Cohesion: 0.09
+Nodes (19): _dedupe_preserve_order(), DocumentUnderstandingResult, _merge_sections(), field_validator, QwenDocumentMetadata, Tolerate the specific near-miss shapes observed from Qwen. Two coercions, both…, Document metadata plus how much of the source was analyzed., Build the user prompt for one section of document text. (+11 more)
+
+### Community 84 - ".github/skills/impeccable/scripts/hook-admin.mjs"
+Cohesion: 0.11
+Nodes (47): ACTIONS, addIgnoreFile(), addIgnoreRule(), addIgnoreValue(), DETECTOR_CONFIG_KEYS, detectorSection(), fileHasImpeccableHookMarker(), HOOK_MANIFEST_TARGETS (+39 more)
+
 ### Community 85 - ".claude/skills/impeccable/scripts/live-wrap.mjs"
-Cohesion: 0.08
-Nodes (53): IMPECCABLE_DIR, extensionCache, LIVE_TEMPLATE_EXTENSIONS, matchesTemplateExtension(), mergeExtensions(), normalizeExtensionEntries(), readLiveTemplateExtensions(), resolveLiveTemplateExtensions() (+45 more)
+Cohesion: 0.13
+Nodes (38): hasGeneratedHeader(), HEADER_MARKERS, isGeneratedFile(), isGitIgnored(), resolveSourceTraits(), argVal(), buildInsertWrapperLines(), computeInsertLine() (+30 more)
 
 ### Community 86 - ".claude/skills/impeccable/SKILL.md"
 Cohesion: 0.07
@@ -956,16 +954,16 @@ Cohesion: 0.08
 Nodes (41): advance(), arg(), compRoundOpen(), flag(), forceAllowed(), gateComps(), gateHero(), gateResponsive() (+33 more)
 
 ### Community 95 - "test_relevance_gate.py"
-Cohesion: 0.06
-Nodes (49): GateDecision, get_relevance_gate(), The relevance gate: stage 3 of retrieval (Sprint 9F). Stage 1 (BGE-M3 +…, The score an item must reach, inclusive, to be accepted., Split `items` into accepted and rejected by their scores. `scores` is…, Return the configured gate. Not cached, matching `get_reranker_provider`: it…, What the gate did, in enough detail to explain any single result. Rejected…, Filters reranked evidence by its cross-encoder score. Deliberately tiny and… (+41 more)
+Cohesion: 0.05
+Nodes (51): GateDecision, get_relevance_gate(), The relevance gate: stage 3 of retrieval (Sprint 9F). Stage 1 (BGE-M3 +…, The score an item must reach, inclusive, to be accepted., Split `items` into accepted and rejected by their scores. `scores` is…, Return the configured gate. Not cached, matching `get_reranker_provider`: it…, What the gate did, in enough detail to explain any single result. Rejected…, Filters reranked evidence by its cross-encoder score. Deliberately tiny and… (+43 more)
 
-### Community 96 - ".claude/skills/impeccable/scripts/live/session-store.mjs"
-Cohesion: 0.10
-Nodes (37): safeSessionId(), FORBIDDEN, verifyAcceptedFile(), completeCli(), completeThroughServer(), parseArgs(), readServerInfo(), collectManualApplyFiles() (+29 more)
+### Community 96 - ".claude/skills/impeccable/scripts/lib/impeccable-paths.mjs"
+Cohesion: 0.06
+Nodes (62): resolveProjectRoot(), CRITIQUE_DIR, firstExisting(), getDesignSidecarCandidates(), getDesignSidecarPath(), getImpeccableDir(), getLegacyLiveAnnotationsDir(), getLegacyLiveConfigPath() (+54 more)
 
 ### Community 97 - ".claude/skills/impeccable/scripts/live-accept.mjs"
-Cohesion: 0.12
-Nodes (38): acceptCli(), acceptReceiptPath(), argVal(), buildAcceptedWrappedSource(), buildCarbonizeReplacement(), decodeHtmlAttr(), deindentContent(), detectCommentSyntax() (+30 more)
+Cohesion: 0.11
+Nodes (41): acceptCli(), acceptReceiptPath(), argVal(), buildAcceptedWrappedSource(), buildCarbonizeReplacement(), decodeHtmlAttr(), deindentContent(), detectCommentSyntax() (+33 more)
 
 ### Community 98 - "initGlobalBar"
 Cohesion: 0.09
@@ -980,16 +978,16 @@ Cohesion: 0.10
 Nodes (36): arg(), artworkTouchesEdges(), autoRegions(), BUILD_DIR, EDGE_CONTACT_MIN, energyOf(), flag(), GRID_PATH (+28 more)
 
 ### Community 101 - ".github/skills/impeccable/scripts/critique-storage.mjs"
-Cohesion: 0.12
-Nodes (34): cli(), COMMON_DEV_PORTS, devServerSignals(), gatherSignals(), gitSignals(), hasCode(), isVendoredPath(), latestCritique() (+26 more)
+Cohesion: 0.21
+Nodes (22): closeSnapshot(), coerceSlug(), fingerprintTarget(), isReadySlug(), listSnapshots(), main(), nowFilenameStamp(), parseFrontmatter() (+14 more)
 
-### Community 102 - ".github/skills/impeccable/scripts/live/accept-css.mjs"
-Cohesion: 0.20
-Nodes (23): bakeParamValues(), collectAllSelectors(), collectSelectorsFromNodes(), escapeRegExp(), formatBody(), isToggleOn(), normalizeSelector(), normalizeToggleForVar() (+15 more)
+### Community 102 - "ResearchRun"
+Cohesion: 0.06
+Nodes (48): build_citation(), context_builder_node(), _merge_key(), MockWebResearchProvider, Ordering for the merged context: real evidence first, then by the retriever's…, Derive a structured citation from a retrieved document. Every field is read…, Deterministic stand-in for a real web search API. Performs no network I/O and…, Return `limit` clearly-labelled placeholder results. (+40 more)
 
 ### Community 103 - "claim_verification_track.py"
-Cohesion: 0.08
-Nodes (25): _load(), Track C -- claim-level evidence verification (Sprint 16 Phase 8.5). Runs the…, Shared scorer for both `numeric_claims` and `categorical_claims`. Returns per-…, run(), run_claim_support(), run_contamination(), run_sufficiency(), Sprint 16 Phase 8.1 evaluation harness. Deliberately isolated from `app/`: this… (+17 more)
+Cohesion: 0.12
+Nodes (15): _load(), Track C -- claim-level evidence verification (Sprint 16 Phase 8.5). Runs the…, Shared scorer for both `numeric_claims` and `categorical_claims`. Returns per-…, run(), run_claim_support(), run_contamination(), run_sufficiency(), binary_confusion() (+7 more)
 
 ### Community 104 - ".claude/skills/impeccable/scripts/font-match.mjs"
 Cohesion: 0.11
@@ -1035,21 +1033,21 @@ Nodes (35): addManualContextText(), canRestoreManualEditElement(), collectEditab
 Cohesion: 0.07
 Nodes (35): addManualContextText(), canRestoreManualEditElement(), collectEditableTextRows(), visit(), collectManualContextPieces(), walk(), contextElementForManualEdit(), copyEditContainerContext() (+27 more)
 
-### Community 115 - "test_semantic_search.py"
-Cohesion: 0.22
-Nodes (18): FakeEmbeddingProvider, _make_asset_with_chunks(), asyncio, Sprint 9C: semantic search unit tests. The ranking tests (TEST 9-12) run…, Three chunks, three different directions; the query vector points exactly at…, No project_id means "search everything I own", not "search everything" --…, A near-unit vector with one dominant dimension, so cosine distance between two…, Returns a fixed, scripted vector for whatever query text arrives. (+10 more)
+### Community 115 - "health/service.py"
+Cohesion: 0.05
+Nodes (42): describe_providers(), has_usable_provider(), ProviderRole, One configured model and the job it does in the fallback chain., Flatten for the health response. Contains no credentials., Report every configured provider's state without calling any. Purely a read of…, Whether any configured provider could serve a request right now. "Could" is…, get_health_service() (+34 more)
 
 ### Community 116 - "KnowledgeBaseService"
-Cohesion: 0.07
-Nodes (35): get_knowledge_base_service(), AsyncSession, FastAPI dependency providers for the knowledge base module., FastAPI dependency provider for `KnowledgeBaseService`., One stage-1 candidate offered to the reranker. Carries full identity, not just…, RerankCandidate, get_chunk(), list_chunks() (+27 more)
+Cohesion: 0.05
+Nodes (62): get_knowledge_base_service(), AsyncSession, FastAPI dependency providers for the knowledge base module., FastAPI dependency provider for `KnowledgeBaseService`., KnowledgeChunk, A chunk of extracted text from an asset, pending (future) embedding., get_chunk(), list_chunks() (+54 more)
 
 ### Community 117 - "test_execution_timeout_cancellation.py"
 Cohesion: 0.20
 Nodes (34): The smallest possible cancellation entry point (Sprint 16 Phase 7B.28) --…, request_execution_cancellation(), execute_approved_launch(), Drives ONE `ExecutionAttempt(PENDING_CREATE)` through the real Docker lifecycle…, test_request_execution_cancellation_import_unaffected(), _assert_container_gone(), _dispose_engine_pool_between_tests(), docker_client() (+26 more)
 
 ### Community 118 - "test_execution_job_reconciliation.py"
-Cohesion: 0.20
-Nodes (34): Record a bounded diagnostic on every `ExecutionJob` still at `VALIDATING` past…, reconcile_stale_validating_execution_jobs(), _fresh_timestamp(), _isolated_engine_and_clean_baseline(), _make_job(), _make_owner_and_project(), _make_pending_create_attempt(), project() (+26 more)
+Cohesion: 0.15
+Nodes (42): Record a bounded diagnostic on every `ExecutionJob` still at `VALIDATING` past…, Detects stale `CREATED`/`RUNNING` attempts and enqueues one Docker-aware…, reconcile_stale_docker_managed_attempts(), reconcile_stale_validating_execution_jobs(), _fresh_timestamp(), _imported_module_roots(), _isolated_engine_and_clean_baseline(), _make_job() (+34 more)
 
 ### Community 119 - ".claude/skills/impeccable/reference/live.md"
 Cohesion: 0.06
@@ -1064,28 +1062,28 @@ Cohesion: 0.06
 Nodes (31): autoprefixer, devDependencies, autoprefixer, jsdom, postcss, tailwindcss, @testing-library/jest-dom, @testing-library/react (+23 more)
 
 ### Community 122 - "test_execution_attempt_reconciliation.py"
-Cohesion: 0.22
-Nodes (30): Record a bounded diagnostic on every `ExecutionAttempt` still at…, reconcile_stale_pending_execution_attempts(), _fresh_timestamp(), _isolated_engine_and_clean_baseline(), _make_attempt(), _make_job(), _make_owner_and_project(), project() (+22 more)
+Cohesion: 0.05
+Nodes (89): Record a bounded diagnostic on every `ExecutionAttempt` still at…, Entry point for the worker's `worker_ready` signal handler (Sprint 16 Phase…, Entry point for the worker's `worker_ready` signal handler. Never raises -- a…, Fail every `ResearchRun` stuck at `RUNNING` past the stale threshold. Returns…, reconcile_execution_jobs_on_startup(), reconcile_stale_pending_execution_attempts(), reconcile_stale_research_runs(), reconcile_stale_research_runs_on_startup() (+81 more)
 
 ### Community 123 - ".claude/skills/impeccable/scripts/live.mjs"
-Cohesion: 0.19
-Nodes (16): parseCliOptions(), resolveTargetSelection(), livePathGlobToRegex(), parseTargetOptions(), parseTargetPath(), TargetArgError, __dirname, ensureServerRunning() (+8 more)
+Cohesion: 0.13
+Nodes (25): parseCliOptions(), resolveTargetSelection(), livePathGlobToRegex(), parseTargetOptions(), parseTargetPath(), TargetArgError, __dirname, ensureServerRunning() (+17 more)
 
 ### Community 124 - ".claude/skills/impeccable/scripts/live-poll.mjs"
-Cohesion: 0.10
-Nodes (38): completionAckForAcceptResult(), completionTypeForAcceptResult(), PREVIEW_MODES_WITHOUT_SOURCE_MARKERS, acceptInstructions(), bootInstructions(), deferredWrapperInstructions(), generateInstructions(), insertScaffoldInstructions() (+30 more)
-
-### Community 125 - "resolveProjectRoot"
-Cohesion: 0.29
-Nodes (13): resolveProjectRoot(), getLegacyLiveAnnotationsDir(), getSurfaceBriefDir(), listSurfaceBriefs(), normalizeRouteTarget(), normalizeSurfaceTarget(), parseSurfaceBrief(), resolveSurfaceBrief() (+5 more)
-
-### Community 126 - ".github/skills/impeccable/scripts/live-poll.mjs"
 Cohesion: 0.14
 Nodes (29): completionAckForAcceptResult(), completionTypeForAcceptResult(), PREVIEW_MODES_WITHOUT_SOURCE_MARKERS, augmentEventWithAcceptHandling(), buildAcceptScriptArgs(), buildPollReplyPayload(), completeAcceptHandling(), DEFAULT_EVENT_LEASE_MS (+21 more)
 
-### Community 127 - ".claude/skills/impeccable/scripts/lib/impeccable-paths.mjs"
-Cohesion: 0.12
-Nodes (32): resolveProjectRoot(), CRITIQUE_DIR, firstExisting(), getDesignSidecarCandidates(), getDesignSidecarPath(), getImpeccableDir(), getLegacyLiveAnnotationsDir(), getLegacyLiveConfigPath() (+24 more)
+### Community 125 - ".github/skills/impeccable/scripts/lib/surface-briefs.mjs"
+Cohesion: 0.35
+Nodes (11): getSurfaceBriefDir(), listSurfaceBriefs(), normalizeRouteTarget(), normalizeSurfaceTarget(), parseSurfaceBrief(), resolveSurfaceBrief(), SURFACE_BRIEF_VERSION, surfaceBriefPathForTarget() (+3 more)
+
+### Community 126 - ".github/skills/impeccable/scripts/live-poll.mjs"
+Cohesion: 0.10
+Nodes (38): completionAckForAcceptResult(), completionTypeForAcceptResult(), PREVIEW_MODES_WITHOUT_SOURCE_MARKERS, acceptInstructions(), bootInstructions(), deferredWrapperInstructions(), generateInstructions(), insertScaffoldInstructions() (+30 more)
+
+### Community 127 - ".claude/skills/impeccable/scripts/live/source-lock.mjs"
+Cohesion: 0.50
+Nodes (7): isLiveServerPidReachable(), clearStaleLock(), readLock(), releaseOwnLock(), sleepSync(), sourceLockPath(), withSourceLockSync()
 
 ### Community 128 - ".github/skills/impeccable/scripts/live-inject.mjs"
 Cohesion: 0.13
@@ -1100,8 +1098,8 @@ Cohesion: 0.40
 Nodes (4): Any, Outcome of one reranker liveness probe. Contains no user content., A plain, JSON-safe dict for the health endpoint., RerankerHealth
 
 ### Community 131 - "test_reranking.py"
-Cohesion: 0.09
-Nodes (50): Whether stage 2 actually ran, and if not, why. Carried through to the API…, The reranker responded, but the response could not be used., RerankerResponseError, RerankingStatus, _candidates(), _cleanup_chunks(), FakeEmbeddingProvider, _mock_provider() (+42 more)
+Cohesion: 0.05
+Nodes (80): get_reranker_provider(), HttpRerankerProvider, ABC, Enum, Exception, Response, Second-stage reranking: BGE-Reranker-v2-m3 (Sprint 9D). Stage 2 of two-stage…, One stage-1 candidate offered to the reranker. Carries full identity, not just… (+72 more)
 
 ### Community 132 - ".claude/skills/impeccable/scripts/concept-seed.mjs"
 Cohesion: 0.12
@@ -1112,8 +1110,8 @@ Cohesion: 0.11
 Nodes (18): ExtractionNotSupportedError, _format_row(), JsonExtractor, OcrRequiredError, ABC, Exception, Text extraction framework. Defines `TextExtractor`, the interface every…, Abstract interface for pulling normalized content out of raw file bytes. (+10 more)
 
 ### Community 134 - "test_execution_real_docker_lifecycle.py"
-Cohesion: 0.14
-Nodes (33): ApprovedLaunchSpec, Proof that every Phase 7B.2 Part C/G check passed. Every field here is fixed or…, Proves the allowlist property structurally: even a caller with direct access to…, test_approved_spec_constructor_rejects_unknown_kwargs(), _assert_container_gone(), _attempts_for_job(), _dispose_engine_pool_between_tests(), docker_client() (+25 more)
+Cohesion: 0.12
+Nodes (37): main(), Sprint 16 Phase 8.0 -- genuinely separate OS process crash simulation. Called…, _docker_create_kwargs(), Pure translation, no Docker/network I/O -- independently testable. Only fields…, ApprovedLaunchSpec, Proof that every Phase 7B.2 Part C/G check passed. Every field here is fixed or…, Proves the allowlist property structurally: even a caller with direct access to…, test_approved_spec_constructor_rejects_unknown_kwargs() (+29 more)
 
 ### Community 135 - "CLAUDE.md"
 Cohesion: 0.07
@@ -1140,8 +1138,8 @@ Cohesion: 0.15
 Nodes (27): CANDIDATE_SCAN_IGNORED, consumeTargetArg(), CONTEXT_FALLBACK_DIRS, DESIGN_NAMES, DEV_CONFIG_MARKERS, discoverAppCandidates(), enterLiveRoot(), exists() (+19 more)
 
 ### Community 141 - "claim_pipeline_track.py"
-Cohesion: 0.12
-Nodes (24): detect_primary_supporting_contamination(), True when a primary-paper claim is backed only by supporting-paper sources.…, _detect_insufficiency(), extract_claims(), ExtractedClaim, ExtractionResult, InsufficiencyAssertion, Sprint 16 Phase 8.6 -- free-text answer -> structured claim. Evaluation-scoped… (+16 more)
+Cohesion: 0.19
+Nodes (14): detect_primary_supporting_contamination(), True when a primary-paper claim is backed only by supporting-paper sources.…, _load(), Track D -- Sprint 16 Phase 8.6: answer -> extraction -> binding -> verification…, Aggregate one dataset's case records into the required, separated metrics., _resolve(), run(), score_free_text_case() (+6 more)
 
 ### Community 142 - "dependencies"
 Cohesion: 0.07
@@ -1160,12 +1158,12 @@ Cohesion: 0.15
 Nodes (26): analyzeSourceHint(), buildCandidatesForOp(), buildContextHintsByRef(), buildManualEditEvidence(), collectSearchFiles(), countOps(), decodeBasicHtml(), escapeRegExp() (+18 more)
 
 ### Community 146 - "experiment.py"
-Cohesion: 0.07
-Nodes (34): _ExpressionTimeoutError, new_plan_id(), parse_test_cases(), parse_test_cases_csv(), parse_test_cases_json(), parse_test_cases_xlsx(), plan_parameter_sweep(), prepare_input_output_series() (+26 more)
+Cohesion: 0.06
+Nodes (34): _ExpressionTimeoutError, new_plan_id(), parse_test_cases(), parse_test_cases_csv(), parse_test_cases_json(), parse_test_cases_xlsx(), prepare_input_output_series(), datetime (+26 more)
 
-### Community 147 - "test_research_run_reconciliation.py"
-Cohesion: 0.18
-Nodes (24): Fail every `ResearchRun` stuck at `RUNNING` past the stale threshold. Returns…, reconcile_stale_research_runs(), main(), Sprint 9J Phase 17: reconcile the genuinely worker-killed run right now,…, clean_ambient_stale_runs(), _fresh_timestamp(), _make_run(), asyncio (+16 more)
+### Community 147 - "AssetProcessingStatus"
+Cohesion: 0.09
+Nodes (41): AssetProcessingStatus, State of the extract -> chunk -> (future) embed pipeline for an asset. Distinct…, KnowledgeChunkRepository, AsyncSession, UUID, Data-access layer for the `KnowledgeChunk` model. Contains only persistence…, Encapsulates all direct database access for `KnowledgeChunk` rows., Fetch a chunk by primary key, or None if not found. (+33 more)
 
 ### Community 148 - "Responsive Design"
 Cohesion: 0.08
@@ -1185,35 +1183,35 @@ Nodes (26): checkBorders(), checkCreamPalette(), checkElementBorders(), checkEle
 
 ### Community 152 - "extractFindingIgnoreValue"
 Cohesion: 0.23
-Nodes (14): cleanIgnoreValueDisplay(), extractFindingIgnoreValue(), extractFindingIgnoreValueRaw(), extractMotionIgnoreValue(), filterFindings(), findingMatchesScopedIgnoreFile(), formatFindingIgnoreHint(), isAdvisoryFinding() (+6 more)
+Nodes (13): cleanIgnoreValueDisplay(), extractFindingIgnoreValue(), extractFindingIgnoreValueRaw(), extractMotionIgnoreValue(), filterFindings(), findingMatchesScopedIgnoreFile(), formatFindingIgnoreHint(), formatFindingLine() (+5 more)
 
 ### Community 153 - "collectBrowserFindings"
 Cohesion: 0.12
 Nodes (25): checkEdgeFlushCardsDOM(), checkElementBlinkingCursorDOM(), checkElementPseudoStripeDOM(), checkElementTextOverflowDOM(), checkFirstViewportColumnOverflowDOM(), checkRepeatedContainerTextDOM(), checkRepeatedContainerTextFromDoc(), checkTextOcclusionDOM() (+17 more)
 
 ### Community 154 - ".claude/skills/impeccable/scripts/detector/engines/static-html/detect-html.mjs"
-Cohesion: 0.09
+Cohesion: 0.08
 Nodes (42): mergeDesignSystemFindings(), applyOriginScopedAuth(), basicAuthHeader(), createBrowserDetector(), decodeUrlComponent(), detectUrl(), launchBrowser(), measureContentHiddenAfterReveal() (+34 more)
 
 ### Community 155 - ".claude/skills/impeccable/scripts/live-manual-edit-evidence.mjs"
-Cohesion: 0.13
-Nodes (30): hasGeneratedHeader(), HEADER_MARKERS, isGeneratedFile(), isGitIgnored(), analyzeSourceHint(), buildCandidatesForOp(), buildContextHintsByRef(), buildManualEditEvidence() (+22 more)
+Cohesion: 0.15
+Nodes (26): analyzeSourceHint(), buildCandidatesForOp(), buildContextHintsByRef(), buildManualEditEvidence(), collectSearchFiles(), countOps(), decodeBasicHtml(), escapeRegExp() (+18 more)
 
 ### Community 156 - "collectBrowserFindings"
 Cohesion: 0.12
 Nodes (25): checkEdgeFlushCardsDOM(), checkElementBlinkingCursorDOM(), checkElementPseudoStripeDOM(), checkElementTextOverflowDOM(), checkFirstViewportColumnOverflowDOM(), checkRepeatedContainerTextDOM(), checkRepeatedContainerTextFromDoc(), checkTextOcclusionDOM() (+17 more)
 
-### Community 157 - "semantic_search"
-Cohesion: 0.18
-Nodes (12): post, Two-stage semantic search over the current user's knowledge chunks. Stage 1…, semantic_search(), KnowledgeChunkRead, Pydantic v2 response schemas for the knowledge base module. There are no…, Response body for `POST /knowledge-base/search`., Public representation of a knowledge chunk. `embedding` is intentionally…, Request body for `POST /knowledge-base/search`. `candidate_k` is stage 1's pool… (+4 more)
+### Community 157 - ".claude/skills/impeccable/scripts/hook-before-edit.mjs"
+Cohesion: 0.10
+Nodes (46): allow(), bumpCursorDenial(), cursorBlockMessage(), deny(), detectProposedHtml(), done(), escapeRegExp(), findingSignature() (+38 more)
 
-### Community 158 - "build_equations"
-Cohesion: 0.05
-Nodes (68): build_equations(), _build_system_equation(), _computable(), _dump(), _parse_system_equation(), Expr, Equations a synthesis answer carries: validated, then rearranged. The model…, Exactly the expression's symbols: a variable the expression does not use is… (+60 more)
+### Community 158 - "equations.py"
+Cohesion: 0.09
+Nodes (35): _build_system_equation(), _computable(), _dump(), _parse_system_equation(), Expr, Equations a synthesis answer carries: validated, then rearranged. The model…, Exactly the expression's symbols: a variable the expression does not use is…, Rearrange for every input symbol, all within one parse-time budget: a… (+27 more)
 
 ### Community 159 - "ExtractionFailedError"
-Cohesion: 0.12
-Nodes (18): _clean_text(), ExtractedDocument, ExtractedUnit, ExtractionFailedError, _format_row_labeled(), _looks_like_binary_garbage(), The normalized result of extracting one asset's content. `warnings` records…, All unit text concatenated, for callers that genuinely need the whole document… (+10 more)
+Cohesion: 0.10
+Nodes (22): _clean_text(), ExtractedDocument, ExtractedUnit, ExtractionFailedError, _format_row_labeled(), _looks_like_binary_garbage(), The normalized result of extracting one asset's content. `warnings` records…, All unit text concatenated, for callers that genuinely need the whole document… (+14 more)
 
 ### Community 160 - ".claude/skills/impeccable/reference/document.md"
 Cohesion: 0.08
@@ -1251,17 +1249,17 @@ Nodes (24): clearStoredManualApplyState(), fetchPendingCount(), handleManualEdit
 Cohesion: 0.21
 Nodes (20): Analysis, analyzeAttributes(), analyzeFragment(), analyzeNode(), analyzeSvelteMarkup(), applyReplacements(), classifyEachKey(), classifyRoots() (+12 more)
 
-### Community 169 - "get_logger"
-Cohesion: 0.08
-Nodes (22): _elapsed_ms(), get_tracker(), NodeExecutionTracker, NullTracker, ABC, Any, BaseException, RunnableConfig (+14 more)
+### Community 169 - ".github/skills/impeccable/scripts/detector/engines/static-html/detect-html.mjs"
+Cohesion: 0.11
+Nodes (27): mergeDesignSystemFindings(), runTextContentAnalyzers(), collectStaticCssText(), resolveLinkedCssPath(), checkStaticPageTypography(), detectHtml(), STATIC_ELEMENT_RULES, checkCreamPalette() (+19 more)
 
 ### Community 170 - ".claude/skills/impeccable/reference/onboard.md"
 Cohesion: 0.09
 Nodes (22): Assess Onboarding Needs, Context Over Ceremony, Contextual Help, Design Onboarding Experiences, Documentation & Help, Empty State Design, Feature Discovery & Adoption, Guided Tours & Walkthroughs (+14 more)
 
-### Community 171 - "LocalStorageProvider"
-Cohesion: 0.17
-Nodes (10): LocalStorageProvider, ABC, Path, UUID, Storage abstraction for asset file persistence. `StorageProvider` is the…, Persist file content and return its backend-specific storage path/key., Strip directory components so a crafted filename can't escape the intended…, Filesystem-backed storage provider rooted at `base_dir`. Files are stored under… (+2 more)
+### Community 171 - "StorageProvider"
+Cohesion: 0.16
+Nodes (9): ABC, UUID, Storage abstraction for asset file persistence. `StorageProvider` is the…, Abstract interface for asset binary storage backends., Persist file content and return its backend-specific storage path/key., Read and return the full file content for a given storage path., Delete the file at the given storage path, if it exists., Return whether a file exists at the given storage path. (+1 more)
 
 ### Community 172 - "checkQuality"
 Cohesion: 0.10
@@ -1281,11 +1279,11 @@ Nodes (23): borderColorsFromStyle(), borderWidthsFromStyle(), checkElementGptBor
 
 ### Community 176 - "runHook"
 Cohesion: 0.17
-Nodes (20): appendDesignSystemNote(), appendDesignSystemNoteOnce(), bumpEditCount(), commitFooterShown(), consumeSessionNoticeFlag(), dedupeAgainstCache(), depthIsSet(), ensureFile() (+12 more)
+Nodes (20): appendDesignSystemNote(), appendDesignSystemNoteOnce(), bumpEditCount(), consumeSessionNoticeFlag(), dedupeAgainstCache(), depthIsSet(), ensureFile(), ensureSession() (+12 more)
 
 ### Community 177 - ".claude/skills/impeccable/scripts/critique-storage.mjs"
-Cohesion: 0.12
-Nodes (34): cli(), COMMON_DEV_PORTS, devServerSignals(), gatherSignals(), gitSignals(), hasCode(), isVendoredPath(), latestCritique() (+26 more)
+Cohesion: 0.13
+Nodes (32): cli(), COMMON_DEV_PORTS, devServerSignals(), gatherSignals(), gitSignals(), hasCode(), isVendoredPath(), latestCritique() (+24 more)
 
 ### Community 178 - ".claude/skills/impeccable/scripts/live/sveltekit-adapter.mjs"
 Cohesion: 0.19
@@ -1296,32 +1294,32 @@ Cohesion: 0.27
 Nodes (8): applyNuxtLiveAdapter(), buildNuxtPlugin(), detectNuxtProject(), nuxt, NUXT_PLUGIN_MARKER, NUXT_PLUGIN_NAME, removeNuxtLiveAdapter(), buildLiveScriptSrc()
 
 ### Community 180 - ".github/skills/impeccable/scripts/live.mjs"
-Cohesion: 0.13
-Nodes (25): parseCliOptions(), resolveTargetSelection(), livePathGlobToRegex(), parseTargetOptions(), parseTargetPath(), TargetArgError, __dirname, ensureServerRunning() (+17 more)
+Cohesion: 0.19
+Nodes (16): parseCliOptions(), resolveTargetSelection(), livePathGlobToRegex(), parseTargetOptions(), parseTargetPath(), TargetArgError, __dirname, ensureServerRunning() (+8 more)
 
 ### Community 181 - ".github/skills/impeccable/scripts/live/sveltekit-adapter.mjs"
 Cohesion: 0.19
 Nodes (20): firstExistingFile(), applySvelteKitLiveAdapter(), buildSvelteLiveRootComponent(), defaultSvelteLayout(), detectSvelteKitProject(), ensureSvelteLiveRootComponent(), escapeRegExp(), fileIncludes() (+12 more)
 
-### Community 182 - "_parse_response"
-Cohesion: 0.15
-Nodes (20): AsyncBaseTransport, SecretStr, Live web search through Tavily's search API. Posts to Tavily's REST endpoint…, Return up to `limit` real web results, best first., TavilyWebResearchProvider, _parse_response(), TopicRelation, Pull the answer, citation ids, status, claims, equations, topic relation and… (+12 more)
+### Community 182 - "build_equations"
+Cohesion: 0.09
+Nodes (42): build_equations(), Validate the model's `equations` entries and rearrange each one. Each kept…, _parse_response(), TopicRelation, Pull the answer, citation ids, status, claims, equations, topic relation and…, _as_sympy(), Expr, parametrize (+34 more)
 
 ### Community 183 - "ExperimentPlanCreateFromEquation"
-Cohesion: 0.11
-Nodes (21): ExperimentPlanCreateFromEquation, ExperimentPlanUpdateRequest, ExperimentSweepRequest, ExperimentVariantCreateRequest, Every field optional -- only supplied fields are changed, and each change is…, A parameter sweep spec -- turned into planned variants, never executed (Part J)., asyncio, fixture (+13 more)
+Cohesion: 0.07
+Nodes (40): plan_parameter_sweep(), Expand a sweep spec (Part J) into PLANNED variants -- never executed. Raises…, ConstraintSource, ExperimentGoal, ExperimentHypothesisRef, ExperimentPlanCreateFromEquation, ExperimentPlanUpdateRequest, ExperimentSweepRequest (+32 more)
 
 ### Community 184 - "experiment_service.py"
-Cohesion: 0.07
-Nodes (41): analyze_mutability(), build_variables_from_equation(), classify_variable_role(), Map a `ResearchVariable.role` free-text field onto the closed `VariableRole`…, Walk the Part D evidence hierarchy in order, stopping at the first source that…, Turn a parsed equation into `ExperimentVariable`s (Part E). Every RHS symbol is…, ConstraintSource, ExperimentGoal (+33 more)
+Cohesion: 0.09
+Nodes (25): analyze_mutability(), build_variables_from_equation(), classify_variable_role(), Map a `ResearchVariable.role` free-text field onto the closed `VariableRole`…, Walk the Part D evidence hierarchy in order, stopping at the first source that…, Turn a parsed equation into `ExperimentVariable`s (Part E). Every RHS symbol is…, ExperimentOutput, ExperimentPlanChange (+17 more)
 
-### Community 185 - "tasks/router.py"
-Cohesion: 0.18
-Nodes (12): get_task_service(), AsyncSession, FastAPI dependency provider for `TaskService`., get_task(), list_tasks(), get, UUID, HTTP routes for task CRUD, scoped to the authenticated user. `DELETE` performs… (+4 more)
+### Community 185 - "auth/router.py"
+Cohesion: 0.08
+Nodes (28): login(), get, post, TokenPair, HTTP routes for registration, login, token refresh, and current user., Authenticate with email and password and receive a token pair., Exchange a valid refresh token for a new access/refresh token pair., Return the currently authenticated user. (+20 more)
 
-### Community 186 - "Persona"
-Cohesion: 0.15
-Nodes (12): Persona, str, Who the user is, which decides the add-ons shown by default. Visibility only:…, UUID, Data-access layer for the `User` model. Contains only persistence operations;…, Fetch a user by primary key, or None if not found., asyncio, Persona storage and the effective-persona rule (spec section 1). (+4 more)
+### Community 186 - "test_persona.py"
+Cohesion: 0.38
+Nodes (6): asyncio, Persona storage and the effective-persona rule (spec section 1)., Existing and new users keep today's experience unless they choose., test_new_user_defaults_to_researcher(), test_project_override_wins_over_owner_persona(), test_project_without_override_inherits_owner_persona()
 
 ### Community 187 - "Operate mode depth (and Read notes)"
 Cohesion: 0.10
@@ -1340,8 +1338,8 @@ Cohesion: 0.15
 Nodes (19): COMPOSITION_GRAMMAR_PREFIXES, COMPOSITION_SURFACES, compositionContentHash(), validateCompositionCatalog(), validateCompositionEntry(), CONCEPT_BREADTHS, CONCEPT_STATUSES, CONCEPT_STRENGTHS (+11 more)
 
 ### Community 191 - "ProjectType"
-Cohesion: 0.08
-Nodes (36): ProjectStatus, ProjectType, str, Project ORM model — the central workspace entity every other domain (Assets,…, The kind of work a project is oriented around., Lifecycle state of a project., Pydantic v2 request/response schemas for the projects module., instant_retries() (+28 more)
+Cohesion: 0.09
+Nodes (35): ProjectStatus, ProjectType, str, Project ORM model — the central workspace entity every other domain (Assets,…, The kind of work a project is oriented around., Lifecycle state of a project., instant_retries(), isolated_provider_health() (+27 more)
 
 ### Community 192 - "Operate mode depth (and Read notes)"
 Cohesion: 0.10
@@ -1368,20 +1366,20 @@ Cohesion: 0.21
 Nodes (20): docker_rm_f(), main(), name(), now_iso(), parse_result_line(), part_c_to_g_workloads(), part_e_cpu_comparison(), part_i_concurrency() (+12 more)
 
 ### Community 198 - "test_execution_front_door.py"
-Cohesion: 0.09
-Nodes (47): get_execution_job_route(), list_execution_jobs_route(), AsyncSession, get, UUID, HTTP routes for the execution module (Sprint 16 Phase 7B.23). Read-only:…, List the current user's execution jobs, newest first., Fetch one job together with every attempt made against it. (+39 more)
+Cohesion: 0.14
+Nodes (32): ExperimentExecuteRequest, Body of `POST /experiments/{plan_id}/execute` (Sprint 16 Phase 7B.23) -- names…, launch_execution_job(), The launch task a `PENDING` job actually runs through (Sprint 16 Phase 7B.23).…, _verify(), Plain `def`, not `async def` -- `launch_execution_job`'s body calls…, test_t7_t8_real_front_door_produces_14(), _dispose_engine_pool_between_tests() (+24 more)
 
-### Community 199 - "TaskRepository"
-Cohesion: 0.17
-Nodes (8): AsyncSession, UUID, Encapsulates all direct database access for `Task` rows., Fetch a task by primary key, or None if not found., List tasks owned by a user, with optional filters. Archived tasks are excluded…, Insert a new task row and flush to populate generated fields., TaskRepository, AsyncSession
+### Community 199 - ".github/skills/impeccable/scripts/live/insert-ui.mjs"
+Cohesion: 0.09
+Nodes (13): canCreateInsert(), clampPlaceholderSize(), computeInsertPosition(), groupSiblingRows(), hitSiblingInsertGap(), horizontalOverlap(), insertCreateDisabledReason(), insertLineCoords() (+5 more)
 
 ### Community 200 - ".claude/skills/impeccable/scripts/generate-image.mjs"
 Cohesion: 0.16
 Nodes (16): arg(), crc32(), hash32(), hexRgb(), hslToRgb(), keyChroma(), palette(), plateId (+8 more)
 
 ### Community 201 - "ImageExtractor"
-Cohesion: 0.21
-Nodes (12): ImageExtractor, OCRs a standalone image (PNG/JPEG/GIF/WEBP) into a single `ExtractedUnit`…, _make_text_image(), The Phase 3 diagram's exact case: page 1 native text, page 2 scanned. Both must…, A PNG containing real, readable rendered text (via a proper TTF font, not PIL's…, JPEG regression (Sprint 12.5 Phase 3): unchanged behavior, exercised explicitly…, test_image_extractor_corrupt_bytes_fail_cleanly(), test_image_extractor_ocr_disabled_reports_ocr_required() (+4 more)
+Cohesion: 0.16
+Nodes (15): ImageExtractor, OCRs a standalone image (PNG/JPEG/GIF/WEBP) into a single `ExtractedUnit`…, OcrUnavailableError, Exception, OCR cannot run at all on this deployment: disabled by configuration, or the…, _make_text_image(), The Phase 3 diagram's exact case: page 1 native text, page 2 scanned. Both must…, A PNG containing real, readable rendered text (via a proper TTF font, not PIL's… (+7 more)
 
 ### Community 202 - ".claude/skills/impeccable/scripts/lib/font-fingerprint.mjs"
 Cohesion: 0.19
@@ -1411,17 +1409,17 @@ Nodes (18): tanstackStart, applyTanStackLiveAdapter(), buildTanStackLiveRootComp
 Cohesion: 0.32
 Nodes (19): bench_name(), docker_rm_f(), main(), now_iso(), part_a_host_evidence(), part_c_network_isolation(), part_d_filesystem_isolation(), part_e_env_isolation() (+11 more)
 
-### Community 209 - "AssetValidationError"
-Cohesion: 0.15
-Nodes (18): AssetValidationError, Exception, Upload validation: MIME type, extension, and file size. Ownership validation (a…, Reject a file whose extension and declared MIME type disagree. Both values…, Raised when an uploaded file fails MIME type, extension, or size checks., Ensure the file's extension is permitted, returning it lowercased., validate_extension(), validate_extension_matches_mime() (+10 more)
+### Community 209 - ".github/skills/impeccable/scripts/lib/staleness.mjs"
+Cohesion: 0.14
+Nodes (23): DESIGN_SIDECAR_SCHEMA_VERSION, PRODUCT_DEPRECATED_SECTIONS, PRODUCT_SCHEMA_VERSION, PRODUCT_V4_SECTIONS, readProductSchemaVersion(), readSidecarSchemaVersion(), BUILD_PATH_VALUES, checkBuildPathUnset() (+15 more)
 
-### Community 210 - ".claude/skills/impeccable/scripts/live/insert-ui.mjs"
-Cohesion: 0.09
-Nodes (13): canCreateInsert(), clampPlaceholderSize(), computeInsertPosition(), groupSiblingRows(), hitSiblingInsertGap(), horizontalOverlap(), insertCreateDisabledReason(), insertLineCoords() (+5 more)
+### Community 210 - ".claude/skills/impeccable/scripts/live/accept-css.mjs"
+Cohesion: 0.20
+Nodes (23): bakeParamValues(), collectAllSelectors(), collectSelectorsFromNodes(), escapeRegExp(), formatBody(), isToggleOn(), normalizeSelector(), normalizeToggleForVar() (+15 more)
 
 ### Community 211 - "is_reformulation_safe"
-Cohesion: 0.23
-Nodes (17): is_reformulation_safe(), Any, QueryReformulation, Safe LLM Query Understanding & Reformulation. Implements the validated query…, Safely reformulate a query using the LLMGateway and deterministic validation.…, Structured output for query understanding and reformulation., Deterministically validate that a reformulation preserves constraints., reformulate_query() (+9 more)
+Cohesion: 0.26
+Nodes (15): is_reformulation_safe(), Any, QueryReformulation, Safe LLM Query Understanding & Reformulation. Implements the validated query…, Structured output for query understanding and reformulation., Deterministically validate that a reformulation preserves constraints., test_ambiguity_caught(), test_dropped_comparison() (+7 more)
 
 ### Community 212 - ".claude/skills/impeccable/scripts/lib/image-metrics.mjs"
 Cohesion: 0.23
@@ -1475,21 +1473,21 @@ Nodes (15): createLiveBrowserSessionState(), clearHandled(), clearScrollY(), cle
 Cohesion: 0.18
 Nodes (16): CODEX_HARNESSES, commandPrefixForSkillsDir(), __dirname, findHarnessDirs(), findOpencodeCommandsDirs(), generatePinnedOpencodeCommand(), generatePinnedSkill(), HARNESS_DIRS (+8 more)
 
-### Community 225 - "TaskPriority"
-Cohesion: 0.18
-Nodes (13): str, Enumerations for the tasks module., Lifecycle state of a task. `ARCHIVED` is the soft-delete state: `DELETE…, Execution priority of a task., The category of work a task represents., TaskPriority, TaskStatus, TaskType (+5 more)
+### Community 225 - "Task"
+Cohesion: 0.05
+Nodes (66): get_owned_task(), get_task_service(), AsyncSession, UUID, FastAPI dependency providers for the tasks module. `get_task_service` builds a…, FastAPI dependency provider for `TaskService`., Resolve a task by id, ensuring it belongs to the current user., str (+58 more)
 
 ### Community 226 - "Persona-Based Features — Design"
 Cohesion: 0.10
 Nodes (19): 1. Persona, 2. Paper suggestions, 3. Add & re-run, 4. Reports base (`modules/reports`), 5. Synopsis (Student), 6. Build plan (Builder), 7. Error handling, 8. Testing (+11 more)
 
-### Community 227 - "validate_numeric_constraint"
-Cohesion: 0.07
-Nodes (25): _assert_expression_is_safe(), check_all_constraints(), Expr, Reject anything that is not plainly arithmetic/comparison syntax, before it…, Validate every constraint whose referenced symbols all have a numeric…, Deterministically check one constraint expression (e.g. 'c*X + d != 0' or…, validate_numeric_constraint(), ExperimentConstraint (+17 more)
+### Community 227 - "parse_equation"
+Cohesion: 0.06
+Nodes (31): _assert_expression_is_safe(), check_all_constraints(), EquationParseError, parse_equation(), The equation could not be parsed. Never silently swallowed -- the caller must…, Reject anything that is not plainly arithmetic/comparison syntax, before it…, Parse `Y = (a*X + b) / (c*X + d)` (or `(aX+b)/(cX+d)` without an explicit `Y…, Validate every constraint whose referenced symbols all have a numeric… (+23 more)
 
 ### Community 228 - "ExecutionJobRepository"
-Cohesion: 0.06
-Nodes (86): ExecutionJobRepository, Encapsulates all direct database access for `ExecutionJob` rows., Insert a new execution job row and flush to populate generated fields., ExecutionJobCreate, Payload for persisting a new execution job., prepare_approved_launch(), Atomically claims a durable `ExecutionJob`, reconstructs its `LaunchRequest`,…, main() (+78 more)
+Cohesion: 0.09
+Nodes (63): ExecutionJobRepository, Encapsulates all direct database access for `ExecutionJob` rows., ExecutionJobNotEligibleError, prepare_approved_launch(), Raised when `claim_pending_job` could not claim the job -- either it was never…, Atomically claims a durable `ExecutionJob`, reconstructs its `LaunchRequest`,…, _attempts_for_job(), _dispose_engine_pool_between_tests() (+55 more)
 
 ### Community 229 - "Test generation (plan → generate → heal)"
 Cohesion: 0.12
@@ -1507,17 +1505,17 @@ Nodes (21): args, buffer, cwd, pageUrlFilter, remaining, compactManualLogText(),
 Cohesion: 0.21
 Nodes (16): appendOriginToDirective(), buildTagBlock(), commentClose(), commentOpen(), detectLineEnding(), findCspMetaTags(), getAttr(), insertTag() (+8 more)
 
-### Community 233 - "reconciliation.py"
-Cohesion: 0.14
-Nodes (25): Sprint 9J: recovers `ResearchRun` rows orphaned by a worker interruption.…, Detects stale `CREATED`/`RUNNING` attempts and enqueues one Docker-aware…, Entry point for the worker's `worker_ready` signal handler (Sprint 16 Phase…, reconcile_execution_jobs_on_startup(), reconcile_stale_docker_managed_attempts(), _double(), _imported_module_roots(), asyncio (+17 more)
+### Community 233 - "ExecutionJob"
+Cohesion: 0.06
+Nodes (46): ExecutionJob, Durable record of a requested (not yet necessarily launched) execution., datetime, UUID, Data-access layer for the `ExecutionJob` model. Contains only persistence…, Every job still at `LAUNCHING` whose `updated_at` is before `cutoff` --…, PRIVATE -- Sprint 16 Phase 7B.20/7B.21's self-loop recovery claim. Calling this…, Atomically transitions a job `RUNNING -> CANCEL_REQUESTED` (Sprint 16 Phase… (+38 more)
 
 ### Community 234 - ".claude/skills/impeccable/scripts/lib/surface-briefs.mjs"
-Cohesion: 0.35
-Nodes (11): getSurfaceBriefDir(), listSurfaceBriefs(), normalizeRouteTarget(), normalizeSurfaceTarget(), parseSurfaceBrief(), resolveSurfaceBrief(), SURFACE_BRIEF_VERSION, surfaceBriefPathForTarget() (+3 more)
+Cohesion: 0.29
+Nodes (13): getSurfaceBriefDir(), listSurfaceBriefs(), normalizeRouteTarget(), normalizeSurfaceTarget(), parseSurfaceBrief(), resolveSurfaceBrief(), SURFACE_BRIEF_VERSION, surfaceBriefPathForTarget() (+5 more)
 
-### Community 235 - "Task"
-Cohesion: 0.20
-Nodes (10): get_owned_task(), UUID, FastAPI dependency providers for the tasks module. `get_task_service` builds a…, Resolve a task by id, ensuring it belongs to the current user., A unit of work inside a project that future AI execution attaches to., Task, delete_task(), delete (+2 more)
+### Community 235 - "FastAPI"
+Cohesion: 0.14
+Nodes (17): docs_urls_for(), lifespan(), get, FastAPI application entrypoint. Creates and configures the FastAPI app:…, Return basic API metadata., API-documentation route paths for the given configuration (Sprint 11.3, SEC-2).…, Manage application startup and shutdown events., root() (+9 more)
 
 ### Community 236 - ".claude/skills/impeccable/reference/animate.md"
 Cohesion: 0.12
@@ -1559,9 +1557,9 @@ Nodes (10): createLiveBrowserDomHelpers(), cssId(), liveUiRoot(), makeFrozenAnch
 Cohesion: 0.28
 Nodes (15): Backup-EnvFile(), Get-BackendHealth(), Resolve-Cloudflared(), Set-EnvValue(), Show-Status(), Start-CloudflareTunnel(), Start-Seminar(), Start-TunnelSupervisor() (+7 more)
 
-### Community 246 - "TaskService"
-Cohesion: 0.31
-Nodes (6): UUID, Coordinates task creation, retrieval, updates, listing, and archival., Create a new task, validating the caller owns the target project., Fetch a task, ensuring it belongs to the given user., List the current user's tasks, optionally filtered., TaskService
+### Community 246 - "verify_categorical_claim"
+Cohesion: 0.13
+Nodes (18): _categorical_tokens(), ClaimVerification, _has_local_component_label(), _normalize_words(), Claim-level evidence verification (Sprint 16 Phase 8.5). Phase 8.4 found three…, True if a run of `min_words` consecutive claim words appears verbatim in…, Lowercase, digit-group, number-word-normalize, and drop stopwords. Order-…, True if every normalized content token of the claim co-occurs in one evidence… (+10 more)
 
 ### Community 247 - "TestCalibration"
 Cohesion: 0.21
@@ -1600,16 +1598,16 @@ Cohesion: 0.23
 Nodes (14): CHANNELS, chunk(), crc32(), crcTable, decodePng(), encodePng(), isPng(), loadRaster() (+6 more)
 
 ### Community 256 - "ExperimentPlanService"
-Cohesion: 0.15
-Nodes (20): now_utc(), _baseline_variant(), ExperimentPlanService, ExperimentPlanValidationError, ExperimentPlan, ExperimentPlanCreateFromEquation, ExperimentPlanCreateFromUnderstanding, ExperimentPlanUpdateRequest (+12 more)
+Cohesion: 0.14
+Nodes (22): now_utc(), Raw trace data for the frontend to render with Plotly.js -- the backend never…, VisualizationSeries, _baseline_variant(), ExperimentPlanService, ExperimentPlanValidationError, ExperimentPlan, ExperimentPlanCreateFromEquation (+14 more)
 
 ### Community 257 - "Global Constraints"
 Cohesion: 0.20
 Nodes (9): Documented deviation from the spec text, Global Constraints, Paper Suggestions (OpenAlex) Implementation Plan, Task 1: OpenAlex settings, Task 2: `GapDetectionResponse` schema, gap-detection prompt, and `paper_suggestion.py`, Task 3: Graph wiring — `paper_suggestion` node, routing, and registry, Task 4: Persist `suggested_papers` — migration, model, schema, service, Task 5: Frontend panel (+1 more)
 
-### Community 258 - "ocr_image"
-Cohesion: 0.21
-Nodes (11): _detect_and_correct_orientation(), ocr_image(), OcrOutcome, OcrUnavailableError, Exception, OCR: recovering text from an image via Tesseract (Sprint 12.5). Deliberately…, Run OCR on one image's raw bytes and apply the quality gate. Synchronous and…, OCR cannot run at all on this deployment: disabled by configuration, or the… (+3 more)
+### Community 258 - "_detect_and_correct_orientation"
+Cohesion: 0.67
+Nodes (3): _detect_and_correct_orientation(), Rotate `image` upright first if Tesseract OSD confidently detects it is not…, Image
 
 ### Community 259 - "New visual work"
 Cohesion: 0.14
@@ -1619,17 +1617,17 @@ Nodes (14): 1. Decide what is already true, 2. Ask what will change the work, 3.
 Cohesion: 0.14
 Nodes (13): Animation Performance, Assess Performance Issues, Core Web Vitals Optimization, Cumulative Layout Shift (CLS < 0.1), Interaction to Next Paint (INP < 200ms), Largest Contentful Paint (LCP < 2.5s), Loading Performance, Network Optimization (+5 more)
 
-### Community 261 - "analyze_research_document"
-Cohesion: 0.29
-Nodes (7): analyze_research_document(), AnalyzeDocumentRequest, AsyncSession, ResearchDocumentUnderstanding, UUID, Research document analysis pipeline (Sprint 16 Phase 1). Performs a full-…, Analyze a single research document against a user goal.
+### Community 261 - "runHook"
+Cohesion: 0.18
+Nodes (19): appendDesignSystemNote(), appendDesignSystemNoteOnce(), bumpEditCount(), consumeSessionNoticeFlag(), dedupeAgainstCache(), depthIsSet(), ensureFile(), ensureSession() (+11 more)
 
 ### Community 262 - ".claude/skills/impeccable/scripts/embed-prompt.mjs"
 Cohesion: 0.19
 Nodes (12): args, buf, crc32(), crcTable, file, imageType(), parsePng(), pngChunk() (+4 more)
 
-### Community 263 - "checkHtmlPatterns"
-Cohesion: 0.14
-Nodes (18): buildHtmlPatternCorpora(), checkHtmlPatterns(), collectMarqueeKeyframes(), collectPulseKeyframes(), cssLengthToPx(), enclosingCssSelector(), indexInSourceRanges(), infiniteAnimationNames() (+10 more)
+### Community 263 - ".claude/skills/impeccable/scripts/lib/template-extensions.mjs"
+Cohesion: 0.19
+Nodes (12): IMPECCABLE_DIR, extensionCache, LIVE_TEMPLATE_EXTENSIONS, matchesTemplateExtension(), mergeExtensions(), normalizeExtensionEntries(), readLiveTemplateExtensions(), resolveLiveTemplateExtensions() (+4 more)
 
 ### Community 264 - "Browser Automation with playwright-cli"
 Cohesion: 0.14
@@ -1651,13 +1649,13 @@ Nodes (12): args, buf, crc32(), crcTable, file, imageType(), parsePng(), pngChun
 Cohesion: 0.36
 Nodes (10): astro, detectAstroProject(), fileExists(), findConfigFile(), hasAnyDependency(), literalConfigFiles(), readPackageDeps(), detectNextProject() (+2 more)
 
-### Community 269 - "test_cross_paper_real.py"
-Cohesion: 0.13
-Nodes (30): Any, ResearchDocumentUnderstanding, Map-reduce pipeline to synthesize cross-paper findings using LLMGateway., synthesize_cross_paper(), AnalyzeDocumentRequest, ResearchDocumentUnderstanding, ResearchGap, ResearchGoal (+22 more)
+### Community 269 - "extractFindingIgnoreValue"
+Cohesion: 0.23
+Nodes (14): cleanIgnoreValueDisplay(), extractFindingIgnoreValue(), extractFindingIgnoreValueRaw(), extractMotionIgnoreValue(), filterFindings(), findingMatchesScopedIgnoreFile(), formatFindingIgnoreHint(), isAdvisoryFinding() (+6 more)
 
-### Community 270 - "Visualization"
-Cohesion: 0.29
-Nodes (5): Any, model_validator, Self, A chart or diagram the synthesis model produced because the question asked for…, Visualization
+### Community 270 - ".github/skills/impeccable/scripts/context-signals.mjs"
+Cohesion: 0.24
+Nodes (12): cli(), COMMON_DEV_PORTS, devServerSignals(), gatherSignals(), gitSignals(), hasCode(), isVendoredPath(), latestCritique() (+4 more)
 
 ### Community 271 - "checkElementDesignSystemDOM"
 Cohesion: 0.15
@@ -1676,20 +1674,20 @@ Cohesion: 0.15
 Nodes (13): browserColorsClose(), browserDesignSystemConfig(), browserHasDirectText(), browserPrimaryFont(), browserRadiusTokens(), browserSampleText(), checkBrowserDesignSystemSources(), checkElementDesignSystemDOM() (+5 more)
 
 ### Community 275 - ".github/skills/impeccable/scripts/lib/template-extensions.mjs"
-Cohesion: 0.18
-Nodes (14): IMPECCABLE_DIR, extensionCache, LIVE_TEMPLATE_EXTENSIONS, matchesTemplateExtension(), mergeExtensions(), normalizeExtensionEntries(), readLiveTemplateExtensions(), resolveLiveTemplateExtensions() (+6 more)
+Cohesion: 0.33
+Nodes (7): extensionCache, LIVE_TEMPLATE_EXTENSIONS, mergeExtensions(), normalizeExtensionEntries(), readLiveTemplateExtensions(), resolveLiveTemplateExtensions(), safeReadJson()
 
 ### Community 276 - ".github/skills/impeccable/scripts/live/frameworks/index.mjs"
 Cohesion: 0.17
 Nodes (11): COMMENT_SYNTAXES, FRAMEWORKS, INJECT_KINDS, PREVIEW_MODES, SOURCE_TRAIT_DEFAULTS, STYLE_MODES, TAG_PATCH_KIND, nextjs (+3 more)
 
-### Community 277 - ".github/skills/impeccable/scripts/live/source-lock.mjs"
-Cohesion: 0.50
-Nodes (7): isLiveServerPidReachable(), clearStaleLock(), readLock(), releaseOwnLock(), sleepSync(), sourceLockPath(), withSourceLockSync()
+### Community 277 - ".github/skills/impeccable/scripts/lib/impeccable-paths.mjs"
+Cohesion: 0.12
+Nodes (30): resolveProjectRoot(), CRITIQUE_DIR, firstExisting(), getDesignSidecarCandidates(), getDesignSidecarPath(), getImpeccableDir(), getLegacyLiveAnnotationsDir(), getLegacyLiveConfigPath() (+22 more)
 
-### Community 278 - "TaskUpdate"
-Cohesion: 0.29
-Nodes (6): patch, Partially update a task owned by the current user., update_task(), Payload for partially updating a task. Unset fields are left untouched., TaskUpdate, Apply a partial update to an already-authorized task.
+### Community 278 - "relevance_track.py"
+Cohesion: 0.22
+Nodes (10): Sprint 16 Phase 8.1 evaluation harness. Deliberately isolated from `app/`: this…, _apply_gate_at_threshold(), auto_calibrate(), load_rows(), Track A -- relevance-gate evaluation (Sprint 16 Phase 8.1). Exercises the REAL,…, Run the real gate; `threshold=None` means gate OFF (accept all)., Scan observed scores, pick the threshold maximizing F1 on this corpus. This is…, run() (+2 more)
 
 ### Community 279 - ".claude/skills/impeccable/reference/critique.md"
 Cohesion: 0.17
@@ -1706,10 +1704,6 @@ Nodes (11): Accessibility Resilience, Assess Hardening Needs, Edge Cases & Bound
 ### Community 282 - ".claude/skills/impeccable/scripts/lib/roll-selection.mjs"
 Cohesion: 0.29
 Nodes (10): challengerTickets(), compositionTickets(), emptyMatch(), modeAllows(), rank(), RATING_TICKETS, selectApprovedChallengers(), pickRound() (+2 more)
-
-### Community 283 - ".claude/skills/impeccable/scripts/live/generation-preflight.mjs"
-Cohesion: 0.35
-Nodes (9): buildGenerationPreflight(), compactError(), execFileAsync, insertTarget(), normalizeTarget(), replaceTarget(), runGenerationPreflight(), sourceResolutionCache (+1 more)
 
 ### Community 284 - "AIKDAP Frontend Foundation — Design Spec"
 Cohesion: 0.17
@@ -1744,8 +1738,8 @@ Cohesion: 0.17
 Nodes (11): Accessibility Resilience, Assess Hardening Needs, Edge Cases & Boundary Conditions, Error Handling, Hardening Dimensions, Input Validation & Sanitization, Internationalization (i18n), Performance Resilience (+3 more)
 
 ### Community 292 - "renderGroupedTemplate"
-Cohesion: 0.36
-Nodes (10): clampGroupedToBudget(), clampLastLine(), clampToBudget(), directiveFooter(), footerFallbacks(), formatDedupedFindingLine(), formatFindingLine(), isFindingLine() (+2 more)
+Cohesion: 0.42
+Nodes (9): clampGroupedToBudget(), clampLastLine(), clampToBudget(), directiveFooter(), footerFallbacks(), formatDedupedFindingLine(), isFindingLine(), renderGroupedTemplate() (+1 more)
 
 ### Community 293 - ".github/skills/impeccable/scripts/lib/roll-selection.mjs"
 Cohesion: 0.29
@@ -1771,9 +1765,9 @@ Nodes (10): 1. Establish the system, 2. Gather the evidence, 3. Triage, 4. Polis
 Cohesion: 0.18
 Nodes (10): Assess Current State, Color Refinement, Composition Refinement, Motion Reduction, Plan Refinement, Refine the Design, Simplification, Verify Quality (+2 more)
 
-### Community 299 - ".claude/skills/impeccable/scripts/lib/staleness-notice.mjs"
+### Community 299 - "test_cors_startup_guard.py"
 Cohesion: 0.33
-Nodes (10): appendStalenessDirective(), collectBootFindings(), buildStalenessDirective(), cachePath(), filterFreshFindings(), pruneCache(), readCache(), readJson() (+2 more)
+Nodes (10): Refuse an unsafe production CORS configuration (Sprint 11.2, SEC-1).…, validate_cors_configuration(), Sprint 11.2 (SEC-1): production must never boot with the CORS wildcard fallback…, The wildcard fallback stays available for local dev convenience., The guard is production-specific, not `not development`., _settings(), test_development_with_no_cors_origins_is_unaffected(), test_production_with_explicit_origins_starts_normally() (+2 more)
 
 ### Community 300 - ".claude/skills/impeccable/scripts/detect-csp.mjs"
 Cohesion: 0.20
@@ -1816,8 +1810,8 @@ Cohesion: 0.70
 Nodes (4): isStopEvent(), main(), readStdin(), stdinIsStop()
 
 ### Community 311 - ".github/skills/impeccable/scripts/live/generation-preflight.mjs"
-Cohesion: 0.30
-Nodes (10): buildGenerationPreflight(), compactError(), execFileAsync, insertTarget(), normalizeTarget(), replaceTarget(), runGenerationPreflight(), sourceResolutionCache (+2 more)
+Cohesion: 0.35
+Nodes (9): buildGenerationPreflight(), compactError(), execFileAsync, insertTarget(), normalizeTarget(), replaceTarget(), runGenerationPreflight(), sourceResolutionCache (+1 more)
 
 ### Community 312 - ".github/skills/impeccable/scripts/palette.mjs"
 Cohesion: 0.24
@@ -1827,9 +1821,9 @@ Nodes (7): args, buildWeights(), hashUnit(), pickSeed(), seed, SEEDS, weightedPi
 Cohesion: 0.33
 Nodes (7): DocxExtractor, Paragraphs grouped under their most recent heading (`section`), plus tables…, _make_docx(), `paragraphs` is (text, style_name_or_None); style "Heading 1" etc. marks a…, test_docx_corrupted_fails_cleanly(), test_docx_paragraphs_and_headings_extracted_with_section(), test_docx_table_rendered_header_labelled()
 
-### Community 314 - "checkHtmlPatterns"
-Cohesion: 0.12
-Nodes (30): buildHtmlPatternCorpora(), checkGlow(), checkHtmlPatterns(), collectCssCustomProps(), collectMarqueeKeyframes(), collectPulseKeyframes(), cssLengthToPx(), cssTextHasDarkRootBg() (+22 more)
+### Community 314 - "evidence_state_from_claim_verification"
+Cohesion: 0.25
+Nodes (11): evidence_state_from_claim_verification(), Project a claim verdict onto the existing `EvidenceState` taxonomy. Reuses…, classify_evidence_state(), EvidenceState, str, Independent trust classification for one evidence item. Priority order in…, Derive an `EvidenceState` from existing, already-computed signals. Args:…, A SUPPORTED verdict is always passed to `classify_evidence_state` as an… (+3 more)
 
 ### Community 315 - "Generate Combined Critique Report"
 Cohesion: 0.20
@@ -1872,12 +1866,12 @@ Cohesion: 0.33
 Nodes (10): appendStalenessDirective(), collectBootFindings(), buildStalenessDirective(), cachePath(), filterFreshFindings(), pruneCache(), readCache(), readJson() (+2 more)
 
 ### Community 325 - "checkHeadingRhythmDOM"
-Cohesion: 0.62
-Nodes (7): checkHeadingRhythmDOM(), clusterTop(), edgeAbove(), edgeBelow(), hasOwnTopBoundary(), isVisibleFlow(), overlapsX()
+Cohesion: 0.22
+Nodes (14): checkHeadingRhythmDOM(), clusterTop(), edgeAbove(), edgeBelow(), hasOwnTopBoundary(), insideSmallCard(), isVisibleFlow(), overlapsX() (+6 more)
 
-### Community 326 - "tasks/service.py"
-Cohesion: 0.33
-Nodes (6): ProjectAccessDeniedError, Exception, Business logic for task creation, retrieval, update, and archival. Ownership is…, Raised when a task does not exist or is not owned by the caller., Raised when the caller does not own the project a task belongs to., TaskNotFoundError
+### Community 326 - "claim_extraction.py"
+Cohesion: 0.29
+Nodes (10): _detect_insufficiency(), extract_claims(), ExtractedClaim, ExtractionResult, InsufficiencyAssertion, Sprint 16 Phase 8.6 -- free-text answer -> structured claim. Evaluation-scoped…, Drop the backend-appended sections, keep only the model's own prose., Turn one real synthesis answer into structured claims. `run_citation_ids` are… (+2 more)
 
 ### Community 327 - ".github/skills/impeccable/scripts/live/frameworks/nuxt.mjs"
 Cohesion: 0.27
@@ -1887,9 +1881,9 @@ Nodes (8): applyNuxtLiveAdapter(), buildNuxtPlugin(), detectNuxtProject(), nuxt,
 Cohesion: 0.42
 Nodes (9): Assert-RerankerFiles(), Get-RerankerArguments(), Get-RerankerProcess(), Get-RerankerTask(), Register-Reranker(), Start-Reranker(), Stop-Reranker(), Test-RerankerHealth() (+1 more)
 
-### Community 329 - "_imported_module_roots"
-Cohesion: 0.47
-Nodes (6): _imported_module_roots(), Path, AST-based, not substring matching -- prose in a docstring that mentions Docker…, No Celery task, queue, or route is introduced here. Asserted by AST,…, test_reconciliation_implementation_imports_nothing_forbidden(), test_reconciliation_module_defines_no_celery_task()
+### Community 329 - "Persona"
+Cohesion: 0.22
+Nodes (8): Persona, str, User ORM model for authentication and identity., Who the user is, which decides the add-ons shown by default. Visibility only:…, asyncio, Effective persona on project responses (spec section 1)., test_from_project_resolves_effective_persona(), test_project_override_is_set_resolved_and_cleared_through_the_api()
 
 ### Community 330 - "Common Cognitive Load Violations"
 Cohesion: 0.22
@@ -1903,9 +1897,9 @@ Nodes (9): Color & materials, Components & controls, iOS platform, Layout & stru
 Cohesion: 0.53
 Nodes (9): monorepoOwnsPath(), escapeRegExp(), groupOwns(), matchesNegation(), matchGlobSegments(), rec(), normalizeWorkspacePattern(), positiveOwns() (+1 more)
 
-### Community 333 - "_imported_module_roots"
-Cohesion: 0.47
-Nodes (6): _imported_module_roots(), Path, AST-based, not substring matching -- prose in a docstring that mentions Docker…, AST-based, deliberately NOT a `sys.modules` check -- `conftest.py` imports…, test_reconciliation_implementation_imports_nothing_forbidden(), test_reconciliation_module_defines_no_celery_task()
+### Community 333 - "classify_false_insufficiency"
+Cohesion: 0.27
+Nodes (10): classify_false_insufficiency(), str, Tell a genuine evidence gap apart from a model that had the answer.…, Distinguishes a genuine evidence gap from a model that had the answer and…, SufficiencyVerdict, Real: run 637d6cf1-1f5e-470e-9332-431b6e0ca575 (vaniscak_c2). Qwen declined to…, Real: run 80f5f264-a55a-4e72-a4ce-78e7a5c73b3b (aguilar_cti, unanswerable/SQuAD…, test_false_insufficiency_when_evidence_has_the_value() (+2 more)
 
 ### Community 334 - "Cookies"
 Cohesion: 0.22
@@ -1939,13 +1933,13 @@ Nodes (9): Color & materials, Components & controls, iOS platform, Layout & stru
 Cohesion: 0.53
 Nodes (9): monorepoOwnsPath(), escapeRegExp(), groupOwns(), matchesNegation(), matchGlobSegments(), rec(), normalizeWorkspacePattern(), positiveOwns() (+1 more)
 
-### Community 342 - "reset_litellm_logging_worker_for_task_boundary"
-Cohesion: 0.50
-Nodes (4): Stop and clear LiteLLM's process-global async logging worker. Root cause…, reset_litellm_logging_worker_for_task_boundary(), check_num_ctx_passthrough(), Assert the Ollama passthrough; run with `python -m scripts.check_qwen_num_ctx`.
+### Community 342 - "renderGroupedTemplate"
+Cohesion: 0.36
+Nodes (10): clampGroupedToBudget(), clampLastLine(), clampToBudget(), directiveFooter(), footerFallbacks(), formatDedupedFindingLine(), formatFindingLine(), isFindingLine() (+2 more)
 
 ### Community 343 - ".process_asset"
-Cohesion: 0.50
-Nodes (3): UUID, Fire-and-forget the existing standalone `generate_ai_metadata` Celery task…, Extract, chunk, and store knowledge chunks for one asset. Idempotent: rerunning…
+Cohesion: 0.33
+Nodes (4): UUID, Fire-and-forget the existing standalone `generate_ai_metadata` Celery task…, Best-effort embedding generation for one asset's chunks. One batch call for all…, Extract, chunk, and store knowledge chunks for one asset. Idempotent: rerunning…
 
 ### Community 344 - "Global Constraints"
 Cohesion: 0.20
@@ -2027,17 +2021,13 @@ Nodes (7): Extract Flow, Step 1: Discover the Design System, Step 2: Identify Pa
 Cohesion: 0.25
 Nodes (8): Cadence, Confirm and stop, Phase 1: Discovery interview, Phase 2: Resolve the design direction, Phase 3: Write the brief, Round 1: purpose, people, and outcome, Round 2: material, behavior, and boundaries, Shape
 
-### Community 365 - "worker.py"
-Cohesion: 0.13
-Nodes (17): async_sessionmaker, AsyncEngine, _build_engine(), _build_session_factory(), configure_for_worker_process(), AsyncSession, Async SQLAlchemy engine, session factory, and FastAPI DB dependency. A single…, Constructs the async engine -- factored out (Sprint 16 Phase 8.0) so… (+9 more)
+### Community 365 - "session.py"
+Cohesion: 0.27
+Nodes (9): async_sessionmaker, AsyncEngine, _build_engine(), _build_session_factory(), configure_for_worker_process(), AsyncSession, Async SQLAlchemy engine, session factory, and FastAPI DB dependency. A single…, Constructs the async engine -- factored out (Sprint 16 Phase 8.0) so… (+1 more)
 
 ### Community 366 - "AIKDAP: An Autonomous Multi-Agent AI Work Operating System for Unified Knowledge Discovery and Analytics"
 Cohesion: 0.25
 Nodes (7): 1. Introduction & Motive, 2. Methodology & Architecture (What We Are Doing), 3. Implementation Details (What We Have Implemented), 4. Value Proposition (What We Offer the Users), 5. Conclusion, Abstract, AIKDAP: An Autonomous Multi-Agent AI Work Operating System for Unified Knowledge Discovery and Analytics
-
-### Community 367 - "create_task"
-Cohesion: 0.40
-Nodes (5): create_task(), post, Create a new task within a project owned by the current user., Payload for creating a new task within a project., TaskCreate
 
 ### Community 371 - "Impeccable Asset Producer"
 Cohesion: 0.29
@@ -2078,10 +2068,6 @@ Nodes (6): Checks, Entry Atomicity, Impeccable Manual Edit Applier, Input Contra
 ### Community 380 - "checkHeadingRhythmDOM"
 Cohesion: 0.62
 Nodes (7): checkHeadingRhythmDOM(), clusterTop(), edgeAbove(), edgeBelow(), hasOwnTopBoundary(), isVisibleFlow(), overlapsX()
-
-### Community 381 - "normalizeGitHubEvent"
-Cohesion: 0.43
-Nodes (7): applyPatchText(), envProjectDir(), looksLikeApplyPatch(), normalizeGitHubEvent(), normalizeGrokEvent(), normalizeHookEvent(), parseGitHubToolArgs()
 
 ### Community 382 - ".claude/skills/impeccable/scripts/live-browser-ignores.js"
 Cohesion: 0.52
@@ -2169,7 +2155,7 @@ Nodes (5): 1. Newton (Frontend Developer), 2. Nicolas (Backend & ML Engineer), 3
 
 ### Community 408 - "ProviderHealthRegistry"
 Cohesion: 0.07
-Nodes (23): _Observation, ProviderHealthRegistry, The mutable record behind one model. Internal to the registry., Remembers how each model last behaved. Guarded by a lock: the API process…, Note that a real call to `model` succeeded. Clears any prior failure outright…, Whether the gateway should skip `model` for now., Forget everything. For tests, and for nothing else. Without this, one test's…, A real synthesizer over a real gateway with a Groq fallback. (+15 more)
+Nodes (25): The models to try, in order. The primary is always included, even when its…, is_provider_configured(), _Observation, ProviderHealthRegistry, The mutable record behind one model. Internal to the registry., Remembers how each model last behaved. Guarded by a lock: the API process…, Note that a real call to `model` succeeded. Clears any prior failure outright…, Whether the gateway should skip `model` for now. (+17 more)
 
 ### Community 410 - "run_condition.py"
 Cohesion: 0.47
@@ -2177,7 +2163,7 @@ Nodes (5): extract_synthesis_event(), main(), Path, Sprint 16 Phase 8.4 -- prima
 
 ### Community 413 - "test_orchestrator.py"
 Cohesion: 0.04
-Nodes (100): get_research_graph(), Return the process-wide compiled research graph. Compiled once and reused:…, The routable retrieval agents, in graph order., retrieval_agents(), degraded_warnings(), Human-readable notices for every non-critical failure so far. Read by the…, BrokenAssetRetriever, BrokenPlanner (+92 more)
+Nodes (101): build_research_graph(), get_research_graph(), Return the process-wide compiled research graph. Compiled once and reused:…, Construct the uncompiled research graph from the agent registry. Separate from…, degraded_warnings(), Human-readable notices for every non-critical failure so far. Read by the…, BrokenAssetRetriever, BrokenPlanner (+93 more)
 
 ### Community 414 - "Diagnostic Scan"
 Cohesion: 0.33
@@ -2195,9 +2181,9 @@ Nodes (5): Before you finish, Scope is sovereign, The amplification, The skeleto
 Cohesion: 0.33
 Nodes (5): After approval: the comp becomes a spec, Generate three compositional options, One approval point, Plates and provenance, Visualize: Direction Comps & Asset Production
 
-### Community 418 - ".claude/skills/impeccable/scripts/hook.mjs"
-Cohesion: 0.70
-Nodes (4): isStopEvent(), main(), readStdin(), stdinIsStop()
+### Community 418 - "readConfig"
+Cohesion: 0.18
+Nodes (14): applyConfigSource(), applyDetectorConfigSource(), cloneDefaultConfig(), detectorSection(), hookSection(), isStopEvent(), numberOr(), readConfig() (+6 more)
 
 ### Community 420 - "3. Heal"
 Cohesion: 0.33
@@ -2353,17 +2339,17 @@ Nodes (4): checkElementRadialSpotlight(), checkElementRadialSpotlightDOM(), elem
 
 ## Knowledge Gaps
 - **1971 isolated node(s):** `HERE`, `STATE_PATH`, `PHASES`, `MOCKS_DIR`, `HERO_MIN` (+1966 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 4202 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **86 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 4204 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **87 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `BaseModel` connect `User` to `Asset`, `planner/__init__.py`, `test_paper_suggestion.py`, `Project`, `test_health_endpoint.py`, `research/service.py`, `projects/router.py`, `test_cross_paper_real.py`, `Visualization`, `auth/router.py`, `ExecutionJob`, `experiment.py`, `synthesis.py`, `TaskUpdate`, `test_execution_docker_policy.py`, `semantic_search`, `build_equations`, `ExperimentPlanCreateFromEquation`, `experiment_service.py`, `tasks/router.py`, `ProjectType`, `research/schemas.py`, `test_execution_front_door.py`, `ExecutionAttemptRepository`, `document_understanding.py`, `is_reformulation_safe`, `TaskPriority`, `validate_numeric_constraint`, `ExecutionJobRepository`, `Task`, `create_task`?**
+- **Why does `BaseModel` connect `BaseModel` to `Asset`, `User`, `ExperimentPlanService`, `Project`, `research/service.py`, `projects/router.py`, `ExecutionAttempt`, `experiment.py`, `test_embeddings.py`, `test_execution_docker_policy.py`, `equations.py`, `EmbeddingProviderName`, `test_grounded_synthesis.py`, `planner/__init__.py`, `ExperimentPlanCreateFromEquation`, `experiment_service.py`, `auth/router.py`, `ProjectType`, `test_execution_job_reconstruction.py`, `test_execution_front_door.py`, `ExecutionAttemptRepository`, `Persona`, `QwenDocumentMetadata`, `is_reformulation_safe`, `Task`, `parse_equation`, `ResearchRun`, `ExecutionJob`, `health/service.py`, `KnowledgeBaseService`?**
   _High betweenness centrality (0.012) - this node is a cross-community bridge._
-- **Why does `LLMGateway` connect `LLMGateway` to `Asset`, `analyze_research_document`, `test_paper_suggestion.py`, `gateway.py`, `test_health_endpoint.py`, `test_llm_resilience.py`, `research/service.py`, `synthesis.py`, `ProviderHealthRegistry`, `test_orchestrator.py`, `test_grounded_synthesis.py`, `nodes.py`, `ProviderStatus`, `test_unsourced_synthesis.py`, `test_fallback_grounding.py`, `is_reformulation_safe`, `document_understanding.py`, `reset_litellm_logging_worker_for_task_boundary`, `test_relevance_gate.py`?**
-  _High betweenness centrality (0.011) - this node is a cross-community bridge._
-- **Why does `User` connect `User` to `Asset`, `test_reranking.py`, `test_execution_real_docker_lifecycle.py`, `Project`, `projects/router.py`, `auth/router.py`, `ExecutionJob`, `tasks.py`, `test_execution_docker_policy.py`, `semantic_search`, `test_execution_docker_reconciliation.py`, `ExperimentPlanCreateFromEquation`, `experiment_service.py`, `tasks/router.py`, `Persona`, `ProjectType`, `test_execution_front_door.py`, `ExecutionAttemptRepository`, `ExecutionJobRepository`, `Task`, `create_task`, `test_semantic_search.py`, `KnowledgeBaseService`, `test_execution_timeout_cancellation.py`, `test_execution_job_reconciliation.py`, `test_execution_attempt_reconciliation.py`?**
+- **Why does `LLMGateway` connect `LLMGateway` to `test_grounded_synthesis.py`, `planner/__init__.py`, `nodes.py`, `ResearchRun`, `gateway.py`, `test_health_endpoint.py`, `test_fallback_grounding.py`, `research/service.py`, `test_llm_resilience.py`, `test_unsourced_synthesis.py`, `is_reformulation_safe`, `test_embeddings.py`, `ProviderHealthRegistry`, `tasks.py`, `test_orchestrator.py`, `test_relevance_gate.py`, `ProviderStatus`?**
+  _High betweenness centrality (0.010) - this node is a cross-community bridge._
+- **Why does `User` connect `User` to `Asset`, `test_reranking.py`, `test_execution_real_docker_lifecycle.py`, `Project`, `research/service.py`, `projects/router.py`, `auth/service.py`, `ExecutionAttempt`, `test_execution_docker_policy.py`, `test_execution_docker_reconciliation.py`, `ExperimentPlanCreateFromEquation`, `auth/router.py`, `test_persona.py`, `ProjectType`, `BaseModel`, `test_execution_job_reconstruction.py`, `test_execution_front_door.py`, `ExecutionAttemptRepository`, `Persona`, `Task`, `ExecutionJobRepository`, `ExecutionJob`, `KnowledgeBaseService`, `test_execution_timeout_cancellation.py`, `test_execution_job_reconciliation.py`, `test_execution_attempt_reconciliation.py`?**
   _High betweenness centrality (0.006) - this node is a cross-community bridge._
 - **Are the 70 inferred relationships involving `LLMGateway` (e.g. with `GraphDependencies` and `reformulate_query()`) actually correct?**
   _`LLMGateway` has 70 INFERRED edges - model-reasoned connections that need verification._
