@@ -36,6 +36,8 @@ import uuid
 from collections.abc import Callable, Coroutine
 from typing import Any, TypeVar
 
+from celery import chord, group
+
 from app.core.config import settings
 from app.core.llm import LLMError
 from app.core.logging.logger import get_logger
@@ -53,11 +55,16 @@ from app.modules.assets.processing.extractors import (
 from app.modules.assets.processing.pipeline import get_asset_processing_service
 from app.modules.assets.repository import AssetRepository
 from app.modules.assets.storage import get_storage_provider
+from app.modules.assets.validators import AssetValidationError
 from app.modules.execution.repository import ExecutionJobRepository
 from app.modules.execution.service import prepare_approved_launch, recover_interrupted_retry_attempt
 from execution_launcher.launcher import execute_approved_launch, reconcile_attempt
 from app.modules.knowledge_base.embeddings import get_embedding_provider
 from app.modules.knowledge_base.repository import KnowledgeChunkRepository
+from app.modules.research.enums import ResearchRunStatus
+from app.modules.research.models import ResearchRun
+from app.modules.research.paper_import import PaperDownloadError, download_oa_pdf
+from app.modules.research.repository import ResearchRunRepository
 from app.modules.research.service import ResearchExecutionService
 from app.workers.celery_app import celery_app
 from execution_launcher.models import InputResolutionError, SecurityBlocked
@@ -386,6 +393,188 @@ def execute_research_run(self, run_id: str, workspace_context: dict[str, Any] | 
 async def _run_research(run_id: uuid.UUID, workspace_context: dict[str, Any] | None = None) -> None:
     async with async_session_factory() as session:
         await ResearchExecutionService(session).execute(run_id, workspace_context)
+
+
+# ---------------------------------------------------------------------------
+# Milestone 10 step 3: Add & re-run
+#
+# One `import_suggested_paper` task per selected paper (download ->
+# existing upload validators -> Asset(source=IMPORTED) -> existing
+# extract/chunk/embed pipeline, run inline so this task can observe the
+# final `processing_status`), fed into a `chord` whose callback
+# (`finalize_paper_import`) starts exactly one re-run once every paper
+# has reached a final state -- and only if at least one succeeded.
+# ---------------------------------------------------------------------------
+
+
+def dispatch_paper_import(run_id: str, papers: list[dict[str, Any]]) -> None:
+    """Fire the import chord for one run's selected papers.
+
+    The only place `celery.chord`/`celery.group` are constructed --
+    `ResearchService.import_papers` calls this rather than importing
+    Celery primitives itself, the same separation `start_run` keeps by
+    importing `execute_research_run` locally instead of calling
+    `.delay()` on something it constructs.
+    """
+    chord(group(import_suggested_paper.s(run_id, paper) for paper in papers))(
+        finalize_paper_import.s(run_id)
+    )
+
+
+@celery_app.task(name="workers.import_suggested_paper", bind=True, max_retries=0)
+@log_task_execution
+def import_suggested_paper(self, run_id: str, paper: dict[str, Any]) -> dict[str, Any]:
+    """Download, validate, and process one OpenAlex-suggested paper as a
+    project asset.
+
+    Never retries and never raises for a paper-specific failure (bad
+    link, not a PDF, too large, extraction failed): each is a normal
+    outcome for one paper among several selected, recorded on
+    `run.suggested_papers[].import_status` and returned so the chord's
+    callback can still start a re-run with the papers that succeeded.
+    """
+    return _run_task_loop(_import_paper(uuid.UUID(run_id), paper))
+
+
+async def _import_paper(run_id: uuid.UUID, paper: dict[str, Any]) -> dict[str, Any]:
+    # Imported locally, not at module scope: `app.modules.assets.service`
+    # itself imports `process_uploaded_asset` from this module at import
+    # time, so a top-level `from app.modules.assets.service import
+    # AssetService` here would form a circular import. Same fix already
+    # used by `_run_task_loop`'s local import of `app.core.llm.gateway`.
+    from app.modules.assets.service import AssetService, DuplicateAssetError
+
+    openalex_id = paper["openalex_id"]
+    async with async_session_factory() as session:
+        await _update_paper_import_status(session, run_id, openalex_id, status="processing")
+
+        try:
+            content = await download_oa_pdf(
+                paper["oa_pdf_url"],
+                timeout=settings.paper_import_download_timeout,
+                max_bytes=settings.max_upload_size_mb * 1024 * 1024,
+                max_redirects=settings.paper_import_max_redirects,
+            )
+        except PaperDownloadError as exc:
+            await _update_paper_import_status(
+                session, run_id, openalex_id, status="failed", error=str(exc)
+            )
+            return {"openalex_id": openalex_id, "status": "failed", "asset_id": None, "reason": str(exc)}
+
+        run = await ResearchRunRepository(session).get_by_id(run_id)
+        if run is None:
+            reason = "The research run no longer exists."
+            await _update_paper_import_status(session, run_id, openalex_id, status="failed", error=reason)
+            return {"openalex_id": openalex_id, "status": "failed", "asset_id": None, "reason": reason}
+
+        storage = get_storage_provider()
+        file_name = f"{openalex_id.rsplit('/', 1)[-1]}.pdf"
+        try:
+            asset = await AssetService(session, storage).create_imported_asset(
+                owner_id=run.owner_id,
+                project_id=run.project_id,
+                content=content,
+                file_name=file_name,
+                mime_type="application/pdf",
+                title=paper.get("title") or file_name,
+            )
+        except (AssetValidationError, DuplicateAssetError) as exc:
+            await _update_paper_import_status(
+                session, run_id, openalex_id, status="failed", error=str(exc)
+            )
+            return {"openalex_id": openalex_id, "status": "failed", "asset_id": None, "reason": str(exc)}
+
+        await get_asset_processing_service(session, storage).process_asset(asset.id)
+        await session.refresh(asset)
+
+        if asset.processing_status is AssetProcessingStatus.COMPLETED:
+            await _update_paper_import_status(
+                session, run_id, openalex_id, status="added", asset_id=str(asset.id)
+            )
+            return {"openalex_id": openalex_id, "status": "added", "asset_id": str(asset.id), "reason": None}
+
+        reason = asset.processing_error or f"Processing ended in status '{asset.processing_status.value}'."
+        await _update_paper_import_status(session, run_id, openalex_id, status="failed", error=reason)
+        return {"openalex_id": openalex_id, "status": "failed", "asset_id": None, "reason": reason}
+
+
+async def _update_paper_import_status(
+    session,
+    run_id: uuid.UUID,
+    openalex_id: str,
+    *,
+    status: str,
+    asset_id: str | None = None,
+    error: str | None = None,
+) -> None:
+    """Mutate one entry of `run.suggested_papers` in place.
+
+    JSONB mutation needs a whole-list reassignment for SQLAlchemy's
+    change tracking to see it (mutating a nested dict in place would be
+    silently lost) -- so this rebuilds the list rather than editing the
+    matched entry's dict directly.
+    """
+    run = await ResearchRunRepository(session).get_by_id(run_id)
+    if run is None or not run.suggested_papers:
+        return
+    updated = []
+    for entry in run.suggested_papers:
+        if entry.get("openalex_id") == openalex_id:
+            entry = {**entry, "import_status": status}
+            if asset_id is not None:
+                entry["imported_asset_id"] = asset_id
+            if error is not None:
+                entry["import_error"] = error
+        updated.append(entry)
+    run.suggested_papers = updated
+    await session.commit()
+
+
+@celery_app.task(name="workers.finalize_paper_import", bind=True, max_retries=0)
+@log_task_execution
+def finalize_paper_import(self, results: list[dict[str, Any]], run_id: str) -> dict[str, Any]:
+    """Chord callback: once every selected paper has reached a final
+    state, start exactly one re-run with the original query -- only if
+    at least one paper was added."""
+    return _run_task_loop(_finalize_import(results, uuid.UUID(run_id)))
+
+
+async def _finalize_import(results: list[dict[str, Any]], run_id: uuid.UUID) -> dict[str, Any]:
+    added = [result for result in results if result.get("status") == "added"]
+    if not added:
+        logger.info("paper_import_all_failed", run_id=str(run_id), paper_count=len(results))
+        return {"status": "all_failed", "run_id": str(run_id)}
+
+    async with async_session_factory() as session:
+        runs = ResearchRunRepository(session)
+        run = await runs.get_by_id(run_id)
+        if run is None:
+            logger.error("paper_import_source_run_missing", run_id=str(run_id))
+            return {"status": "source_run_missing", "run_id": str(run_id)}
+
+        new_run = ResearchRun(
+            project_id=run.project_id,
+            owner_id=run.owner_id,
+            task_id=run.task_id,
+            parent_run_id=run.id,
+            query=run.query,
+            status=ResearchRunStatus.PENDING,
+            include_assets=True,
+            include_web=run.include_web,
+            max_results=run.max_results,
+        )
+        created = await runs.create(new_run)
+        await session.commit()
+        new_run_id = created.id
+
+    execute_research_run.delay(str(new_run_id))
+    logger.info(
+        "paper_import_rerun_started",
+        source_run_id=str(run_id),
+        rerun_id=str(new_run_id),
+        added_paper_count=len(added),
+    )
+    return {"status": "rerun_started", "run_id": str(run_id), "rerun_id": str(new_run_id)}
 
 
 @celery_app.task(name="workers.recover_execution_job_retry", bind=True)
