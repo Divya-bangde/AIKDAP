@@ -7,6 +7,8 @@ type ResearchRunDetail = components["schemas"]["ResearchRunDetail"];
 type ResearchRunRead = components["schemas"]["ResearchRunRead"];
 type AnalyzeDocumentRequest = components["schemas"]["AnalyzeDocumentRequest"];
 type ResearchDocumentUnderstanding = components["schemas"]["ResearchDocumentUnderstanding"];
+type PaperImportRequest = { openalex_ids: string[] };
+type PaperImportAccepted = components["schemas"]["PaperImportAccepted"];
 
 export function startResearchRun(payload: ResearchRunCreate) {
   return request<ResearchRunAccepted>("/api/v1/research/run", {
@@ -42,4 +44,11 @@ export function analyzeResearchDocument(
       body: payload,
     }
   );
+}
+
+export function importSuggestedPapers(runId: string, openalexIds: string[]) {
+  return request<PaperImportAccepted>(`/api/v1/research/runs/${runId}/papers/import`, {
+    method: "POST",
+    body: { openalex_ids: openalexIds } satisfies PaperImportRequest,
+  });
 }

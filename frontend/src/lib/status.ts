@@ -66,6 +66,14 @@ const MAPS: Record<string, Record<string, (value: string) => { variant: Variant;
     failed: badge("destructive"),
     skipped: badge("muted"),
   },
+  // Milestone 10 step 3 (Add & re-run): per-card status on
+  // `PaperSuggestionsPanel` while a selected paper is imported.
+  paperImport: {
+    queued: badge("muted", "Queued"),
+    processing: badge("secondary", "Processing"),
+    added: badge("success", "Added"),
+    failed: badge("destructive", "Failed"),
+  },
   reranking: {
     completed: badge("success"),
     unavailable: badge("warning"),
