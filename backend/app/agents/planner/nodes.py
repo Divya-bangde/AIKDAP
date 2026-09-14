@@ -47,6 +47,7 @@ from app.agents.planner.prompts import (
     render_router_prompt,
     render_synthesis_prompt,
 )
+from app.agents.planner.paper_suggestion import OpenAlexProvider
 from app.agents.planner.state import (
     FAILURE_KEY_SUFFIX,
     PROVENANCE_KEYS,
@@ -440,6 +441,15 @@ def get_web_provider() -> WebResearchProvider:
             api_key=settings.tavily_api_key, timeout=settings.tavily_timeout
         )
     return MockWebResearchProvider()
+
+
+def get_paper_provider() -> OpenAlexProvider | None:
+    """Live OpenAlex search when a key is configured, else None (paper suggestions disabled)."""
+    if settings.openalex_api_key is not None:
+        return OpenAlexProvider(
+            api_key=settings.openalex_api_key, timeout=settings.openalex_timeout
+        )
+    return None
 
 
 @dataclass(frozen=True)

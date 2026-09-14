@@ -338,3 +338,64 @@ def render_synthesis_prompt(*, objective: str, query: str, context: str) -> str:
             ),
         )
     )
+
+
+# ---------------------------------------------------------------------------
+# Evidence-gap detection for paper suggestions (Milestone 10 step 2)
+# ---------------------------------------------------------------------------
+#
+# Reached only after synthesis has already produced `final_answer` --
+# this never influences that answer, it only looks at it afterward to
+# decide whether OpenAlex is worth searching. Kept entirely separate
+# from `GROUNDED_SYNTHESIS_SYSTEM_PROMPT` so extending or tuning this
+# can never perturb the grounded-synthesis contract.
+
+GAP_DETECTION_SYSTEM_PROMPT = """You are the AIKDAP evidence-gap detector.
+
+You are given a question and the answer AIKDAP already produced for it.
+Your only job is to identify what additional evidence -- if any -- would
+meaningfully strengthen that answer. You do not answer the question
+yourself and you do not critique its wording.
+
+Respond with a single JSON object and nothing else:
+
+{
+  "gaps": [
+    {
+      "gap_type": "a short label, e.g. 'missing baseline comparison'",
+      "classification": "required" | "helpful" | "optional" | "ambiguous",
+      "description": "what is missing, in plain language",
+      "why_needed": "why this matters for answering the question well",
+      "search_intent": "a short phrase suitable for a literature search, or null"
+    }
+  ]
+}
+
+Rules:
+- If the answer is already well supported and nothing more would meaningfully help, return {"gaps": []}. Do not invent a gap to have something to report.
+- "required" means the answer is not trustworthy without it; "helpful" means it would add confidence or depth; "optional" means it is nice-to-have; "ambiguous" means you cannot tell.
+- Never invent facts about what a missing source would say -- describe only what is absent."""
+
+GAP_DETECTION_USER_TEMPLATE = """Question:
+{query}
+
+Answer given:
+{answer}
+
+Grounding status: {grounding_status}
+
+Identify any evidence gaps a reader would still need filled, if any."""
+
+
+def render_gap_detection_prompt(*, query: str, answer: str, grounding_status: str) -> str:
+    """Render the full gap-detection prompt exactly as it would be sent."""
+    return "\n\n".join(
+        (
+            GAP_DETECTION_SYSTEM_PROMPT,
+            GAP_DETECTION_USER_TEMPLATE.format(
+                query=query,
+                answer=answer or "(no answer produced)",
+                grounding_status=grounding_status or "unknown",
+            ),
+        )
+    )

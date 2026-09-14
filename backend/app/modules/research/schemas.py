@@ -492,6 +492,18 @@ class ResearchGap(BaseModel):
     why_needed: str
     search_intent: str | None = None
 
+class GapDetectionResponse(BaseModel):
+    """The JSON-schema-enforced envelope `GapDetector` requests.
+
+    Reuses `ResearchGap` rather than defining a second gap shape, so a
+    "missing information" item means the same thing everywhere in the
+    codebase, whether it came from per-document analysis
+    (`analyze_document`) or from `paper_suggestion_node`'s own
+    post-synthesis check.
+    """
+
+    gaps: list[ResearchGap] = Field(default_factory=list)
+
 class ResearchConflict(BaseModel):
     description: str
     sources: list[str]
