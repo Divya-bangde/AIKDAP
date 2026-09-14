@@ -138,6 +138,25 @@ class Settings(BaseSettings):
             return None
         return value
 
+    #: OpenAlex Works API. Unconfigured means paper suggestions are
+    #: skipped entirely (see `agents.planner.graph`'s `paper_suggestion`
+    #: routing) rather than answered with simulated results.
+    openalex_api_key: SecretStr | None = None
+    openalex_timeout: float = Field(default=20.0, gt=0)
+
+    @field_validator("openalex_api_key", mode="before")
+    @classmethod
+    def blank_openalex_key_is_unset(cls, value: object) -> object:
+        """A bare `OPENALEX_API_KEY=` in .env means "not configured".
+
+        Same rationale as `blank_tavily_key_is_unset`: without this it
+        parses as `SecretStr("")` rather than `None`, and an empty key
+        would switch on a "configured" provider that can only ever fail.
+        """
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
+
     #: Model used when a caller does not name one — the primary in the
     #: fallback chain.
     default_llm: str = "gemini/gemini-pro-latest"
