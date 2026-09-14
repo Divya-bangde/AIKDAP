@@ -3936,9 +3936,9 @@
     "semantic_hash": ""
   },
   "frontend/src/features/research/ResearchResult.tsx": {
-    "mtime": 1789208110.3946557,
-    "seen": 1789208394.0081246,
-    "ast_hash": "28b6e4b9387ec2d768965dde63204ba5",
+    "mtime": 1789366842.4525924,
+    "seen": 1789367589.8950796,
+    "ast_hash": "0004ea626429f8b03443002e50414308",
     "semantic_hash": ""
   },
   "frontend/src/features/research/ResearchRunView.test.tsx": {
@@ -4224,9 +4224,9 @@
     "semantic_hash": ""
   },
   "frontend/src/types/api.d.ts": {
-    "mtime": 1789311123.7921414,
-    "seen": 1789311902.8200016,
-    "ast_hash": "b469f2dfdb66f2ce478dc43f6cefd545",
+    "mtime": 1789366770.6274061,
+    "seen": 1789367589.9036188,
+    "ast_hash": "1744808d78452c2092bab9424e8a1335",
     "semantic_hash": ""
   },
   "frontend/src/types/citation.ts": {
@@ -5385,6 +5385,18 @@
     "mtime": 1789363986.2064006,
     "seen": 1789366622.9022048,
     "ast_hash": "2f1ae4e97b7dbdaead81b8a4a20e6761",
+    "semantic_hash": ""
+  },
+  "frontend/src/features/research/PaperSuggestionsPanel.test.tsx": {
+    "mtime": 1789366783.9720986,
+    "seen": 1789367589.892566,
+    "ast_hash": "ab977868f1b54e158cc9c57c9201497b",
+    "semantic_hash": ""
+  },
+  "frontend/src/features/research/PaperSuggestionsPanel.tsx": {
+    "mtime": 1789366825.4642446,
+    "seen": 1789367589.892566,
+    "ast_hash": "abaa561d30bdc9771ba4ab4c522ce1da",
     "semantic_hash": ""
   }
 }

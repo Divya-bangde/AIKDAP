@@ -5370,15 +5370,15 @@
     "semantic_hash": ""
   },
   "backend/app/agents/planner/paper_suggestion.py": {
-    "mtime": 1789364670.4231598,
-    "seen": 1789366622.7766526,
-    "ast_hash": "29d323ca8884986dd8e10ce08f502f3c",
+    "mtime": 1789368097.4415083,
+    "seen": 1789368266.3048098,
+    "ast_hash": "1a1b70d9ead09e1c1c4193d6cf627058",
     "semantic_hash": ""
   },
   "backend/tests/test_paper_suggestion.py": {
-    "mtime": 1789364607.0862806,
-    "seen": 1789366622.8074644,
-    "ast_hash": "aaa1b2b0aac39b55886c6e0e2c0b6139",
+    "mtime": 1789368104.0402927,
+    "seen": 1789368266.3618174,
+    "ast_hash": "ba32161108635331fca39da0bf8e9641",
     "semantic_hash": ""
   },
   "docs/superpowers/plans/2026-09-14-paper-suggestions.md": {
