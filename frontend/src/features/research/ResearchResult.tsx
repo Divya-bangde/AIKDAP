@@ -16,6 +16,7 @@ import { CitationList } from "@/features/research/CitationList";
 import { EvidenceDrawer } from "@/features/research/EvidenceDrawer";
 import { EvidenceFunnel } from "@/features/research/EvidenceFunnel";
 import { EvidenceGapPanel, GeneralKnowledgeAnswer } from "@/features/research/EvidenceGapPanel";
+import { PaperSuggestionsPanel, type SuggestedPaper } from "@/features/research/PaperSuggestionsPanel";
 import { EvidenceWorkspace } from "@/features/research/EvidenceWorkspace";
 import { fadeUp } from "@/lib/motion";
 import { asSynthesisOutput } from "@/types/research-meta";
@@ -34,6 +35,7 @@ export function ResearchResult({ run }: { run: ResearchRunDetail }) {
 
   const citations = (run.citations ?? []).map(asCitation);
   const claims = run.claims ?? [];
+  const suggestedPapers = (run.suggested_papers ?? []) as unknown as SuggestedPaper[];
   const steps = run.steps ?? [];
   const synthesisStep = steps.find((step) => step.node_name === "synthesis");
   const synthesis = asSynthesisOutput(synthesisStep?.output_payload ?? null);
@@ -89,6 +91,8 @@ export function ResearchResult({ run }: { run: ResearchRunDetail }) {
            * there, instead of leaving "insufficient evidence" as a
            * dead end. */}
           <EvidenceGapPanel projectId={run.project_id} query={run.query} runId={run.id} />
+
+          {suggestedPapers.length > 0 && <PaperSuggestionsPanel papers={suggestedPapers} />}
 
           {/* A declined answer can still carry claims (Sprint 16 Phase
            * 8.7) -- the model may state something in its explanation
@@ -252,6 +256,8 @@ export function ResearchResult({ run }: { run: ResearchRunDetail }) {
         <EvidenceFunnel steps={steps} citations={citations} />
 
         <EvidenceWorkspace query={run.query} claims={claims} citations={citations} onSelectCitation={openEvidence} />
+
+        {suggestedPapers.length > 0 && <PaperSuggestionsPanel papers={suggestedPapers} />}
 
         {citations.length > 0 ? (
           <CitationList citations={citations} onSelect={openEvidence} />

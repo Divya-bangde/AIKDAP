@@ -2255,6 +2255,10 @@ export interface components {
             equations?: {
                 [key: string]: unknown;
             }[] | null;
+            /** Suggested Papers */
+            suggested_papers?: {
+                [key: string]: unknown;
+            }[] | null;
             /** Error Message */
             error_message: string | null;
             /** Celery Task Id */
@@ -2334,6 +2338,10 @@ export interface components {
             } | null;
             /** Equations */
             equations?: {
+                [key: string]: unknown;
+            }[] | null;
+            /** Suggested Papers */
+            suggested_papers?: {
                 [key: string]: unknown;
             }[] | null;
             /** Error Message */
