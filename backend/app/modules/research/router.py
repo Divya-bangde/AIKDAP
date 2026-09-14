@@ -56,6 +56,8 @@ from app.modules.research.schemas import (
     ResearchStepRead,
     CrossPaperComparison,
     CrossPaperAnalysisRequest,
+    PaperImportAccepted,
+    PaperImportRequest,
 )
 from app.modules.research.service import (
     ProjectAccessDeniedError,
@@ -63,6 +65,8 @@ from app.modules.research.service import (
     ResearchService,
     TaskAccessDeniedError,
     UnsourcedSynthesisFailedError,
+    PaperNotOpenAccessError,
+    UnknownSuggestedPaperError,
 )
 
 router = APIRouter(prefix="/research", tags=["Research"])
@@ -169,6 +173,34 @@ async def create_unsourced_run_route(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="The unsourced answer could not be generated.",
         ) from exc
+
+
+@router.post(
+    "/runs/{run_id}/papers/import",
+    response_model=PaperImportAccepted,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def import_suggested_papers_route(
+    data: PaperImportRequest,
+    run: ResearchRun = Depends(get_owned_run),
+    service: ResearchService = Depends(get_research_service),
+) -> PaperImportAccepted:
+    """Import selected OpenAlex-suggested papers as project assets and,
+    once every one reaches a final state, start exactly one re-run
+    (Milestone 10 step 3: Add & re-run)."""
+    try:
+        papers = await service.import_papers(run, data.openalex_ids)
+    except UnknownSuggestedPaperError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"'{exc}' is not a suggested paper for this run.",
+        ) from exc
+    except PaperNotOpenAccessError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"'{exc}' has no open-access PDF to import.",
+        ) from exc
+    return PaperImportAccepted(run_id=run.id, papers=papers)
 
 
 @router.post("/documents/{asset_id}/analyze", response_model=ResearchDocumentUnderstanding)

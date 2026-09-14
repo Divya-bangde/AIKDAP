@@ -104,6 +104,31 @@ class ResearchRunAccepted(BaseModel):
         )
 
 
+class PaperImportRequest(BaseModel):
+    """Payload for importing selected OpenAlex-suggested papers."""
+
+    openalex_ids: list[str] = Field(min_length=1)
+
+
+class PaperImportStatus(BaseModel):
+    """One paper's status immediately after the import request is accepted."""
+
+    openalex_id: str
+    status: Literal["queued"]
+
+
+class PaperImportAccepted(BaseModel):
+    """Immediate `202` response: every requested paper has been validated
+    and queued. Poll `GET /research/runs/{run_id}` -- each paper's
+    entry in `suggested_papers` reports `import_status` as it
+    progresses (`queued` -> `processing` -> `added`/`failed`), and
+    `rerun_run_id` appears once the linked re-run starts.
+    """
+
+    run_id: uuid.UUID
+    papers: list[PaperImportStatus]
+
+
 # ---------------------------------------------------------------------------
 # Grounded synthesis claims (Sprint 16 Phase 8.7)
 # ---------------------------------------------------------------------------

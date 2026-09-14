@@ -73,6 +73,14 @@ class UnsourcedSynthesisFailedError(Exception):
     """
 
 
+class UnknownSuggestedPaperError(Exception):
+    """Raised when a requested id is not one of the run's suggested papers."""
+
+
+class PaperNotOpenAccessError(Exception):
+    """Raised when a requested paper has no open-access PDF to import."""
+
+
 class ResearchService:
     """Request-scoped coordination of research run creation and retrieval."""
 
@@ -287,6 +295,49 @@ class ResearchService:
             provider=result.provider,
         )
         return created
+
+    async def import_papers(self, run: ResearchRun, openalex_ids: list[str]) -> list[dict[str, Any]]:
+        """Validate the requested papers and dispatch the import chord.
+
+        `run` is already ownership-checked by the caller (`get_owned_run`
+        resolved it from the path), matching `create_unsourced_run`'s
+        contract above. Every id must belong to `run.suggested_papers`
+        and carry a non-null `oa_pdf_url` -- never an arbitrary
+        client-supplied URL (Milestone 10 step 3).
+        """
+        available = {paper["openalex_id"]: paper for paper in run.suggested_papers or []}
+        selected: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        for openalex_id in openalex_ids:
+            if openalex_id in seen:
+                continue
+            seen.add(openalex_id)
+            paper = available.get(openalex_id)
+            if paper is None:
+                raise UnknownSuggestedPaperError(openalex_id)
+            if not paper.get("oa_pdf_url"):
+                raise PaperNotOpenAccessError(openalex_id)
+            selected.append(paper)
+
+        updated = []
+        for entry in run.suggested_papers:
+            if entry["openalex_id"] in seen:
+                entry = {**entry, "import_status": "queued"}
+            updated.append(entry)
+        run.suggested_papers = updated
+        await self._session.commit()
+
+        logger.info(
+            "paper_import_dispatched",
+            run_id=str(run.id),
+            openalex_ids=sorted(seen),
+        )
+
+        from app.workers.tasks import dispatch_paper_import
+
+        dispatch_paper_import(str(run.id), selected)
+
+        return [{"openalex_id": paper["openalex_id"], "status": "queued"} for paper in selected]
 
     async def get_owned_run(self, owner_id: uuid.UUID, run_id: uuid.UUID) -> ResearchRun:
         """Fetch a run, ensuring it belongs to the given user."""
