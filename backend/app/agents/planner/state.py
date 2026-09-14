@@ -35,6 +35,10 @@ class ResearchNode(str, enum.Enum):
     WEB_RESEARCH = "web_research"
     CONTEXT_BUILDER = "context_builder"
     SYNTHESIS = "synthesis"
+    #: Milestone 10 step 2: suggests OpenAlex papers for a gap in the
+    #: final answer. Not in `RETRIEVAL_NODES` -- the router never
+    #: dispatches to it, and it contributes no evidence to `context`.
+    PAPER_SUGGESTION = "paper_suggestion"
 
 
 #: Nodes the router may dispatch to. Used by the planner to build the
@@ -298,6 +302,16 @@ class ResearchState(TypedDict, total=False):
     # `schemas.TopicRelation` value). Decided on the first synthesis pass,
     # against the project's own evidence, and kept through the fallback.
     topic_relation: str
+
+    # --- Paper suggestion node output (Milestone 10 step 2): papers
+    # --- OpenAlex suggested to help close a gap in the answer. Never
+    # --- read by synthesis -- this node runs strictly after it.
+    suggested_papers: list[dict[str, Any]]
+    # Whether a configured OpenAlex provider makes `paper_suggestion`
+    # worth entering at all. Set once, in `synthesis_node`, so
+    # `route_after_synthesis` stays a pure function of state -- the
+    # same pattern `web_fallback` already uses.
+    paper_suggestion_eligible: bool
 
     # --- Per-node side output that is not part of the main flow:
     # --- degraded-mode notices, non-critical node failures, and

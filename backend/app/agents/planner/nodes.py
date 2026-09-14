@@ -47,7 +47,6 @@ from app.agents.planner.prompts import (
     render_router_prompt,
     render_synthesis_prompt,
 )
-from app.agents.planner.paper_suggestion import OpenAlexProvider
 from app.agents.planner.state import (
     FAILURE_KEY_SUFFIX,
     PROVENANCE_KEYS,
@@ -72,6 +71,12 @@ from app.agents.planner.synthesis import (  # noqa: F401 - re-exported for calle
     UnsourcedSynthesizer,
     _insufficient_answer,
     get_synthesizer,
+)
+from app.agents.planner.paper_suggestion import (
+    GapDetector,
+    OpenAlexProvider,
+    build_relevance_note,
+    build_search_query,
 )
 from app.core.logging.logger import get_logger
 from app.core.config.settings import settings
@@ -490,6 +495,15 @@ class GraphDependencies:
     #: configuration, which never calls a model, and in test fakes that do
     #: not exercise it -- such a run ends `insufficient_evidence`.
     unsourced_synthesizer: UnsourcedSynthesizer | None = None
+    #: OpenAlex search for `paper_suggestion_node`. `None` means
+    #: unconfigured -- `route_after_synthesis` never reaches
+    #: `paper_suggestion` in that case, so this is only ever read once
+    #: it is already non-`None`.
+    paper_provider: OpenAlexProvider | None = None
+    #: The evidence-gap detector `paper_suggestion_node` runs before
+    #: searching OpenAlex. `None` in test fakes that never exercise
+    #: this path; a real run gets `GapDetector()` from `build_dependencies`.
+    gap_detector: GapDetector | None = None
 
 
 def build_dependencies(session: AsyncSession) -> GraphDependencies:
@@ -504,6 +518,8 @@ def build_dependencies(session: AsyncSession) -> GraphDependencies:
         # The same gateway/model configuration the manual `/unsourced`
         # path uses -- and none at all when synthesis is configured offline.
         unsourced_synthesizer=UnsourcedSynthesizer() if settings.synthesis_grounded else None,
+        paper_provider=get_paper_provider(),
+        gap_detector=GapDetector(),
     )
 
 
@@ -1021,6 +1037,7 @@ async def synthesis_node(state: ResearchState, config: RunnableConfig) -> dict[s
         "visualization": visualization,
         "equations": equations,
         "web_fallback": web_fallback,
+        "paper_suggestion_eligible": dependencies.paper_provider is not None,
         "topic_relation": topic_relation,
         # The graph's terminal node, so this is where the shared state
         # records the run reaching a successful end. The database row
@@ -1098,6 +1115,79 @@ async def synthesis_node(state: ResearchState, config: RunnableConfig) -> dict[s
     }
 
 
+async def paper_suggestion_node(state: ResearchState, config: RunnableConfig) -> dict[str, Any]:
+    """Suggest OpenAlex papers that could fill a gap in the final answer.
+
+    Reached only when `route_after_synthesis` found `paper_suggestion_eligible`
+    (an OpenAlex key is configured). `final_answer`, `citations`,
+    `visualization`, and `equations` are already settled by this point
+    and are never read for grounding purposes here, nor written to --
+    see `paper_suggestion.py`'s module docstring for why papers found
+    here can never become evidence.
+    """
+    dependencies = _dependencies(config)
+    gap_detector = dependencies.gap_detector or GapDetector()
+    answer = state.get("final_answer") or ""
+
+    gaps = await gap_detector.detect(
+        query=state["query"], answer=answer, grounding_status=state.get("grounding_status", "")
+    )
+
+    logger.info(
+        "research_node_paper_suggestion",
+        run_id=state.get("run_id"),
+        gap_count=len(gaps),
+    )
+
+    if not gaps:
+        return {
+            "step": {
+                "node": ResearchNode.PAPER_SUGGESTION.value,
+                "title": "Suggest supporting papers",
+                "summary": "No evidence gaps identified; no papers suggested.",
+                "output": {"gap_count": 0, "paper_count": 0},
+            }
+        }
+
+    if dependencies.paper_provider is None:
+        # Only reachable when a node is invoked directly (as some tests
+        # do) rather than through `route_after_synthesis`, which already
+        # guards this. Handled the same way as "no gaps" rather than
+        # asserting, so a direct call degrades gracefully instead of
+        # crashing on an internal invariant a caller cannot see.
+        return {
+            "step": {
+                "node": ResearchNode.PAPER_SUGGESTION.value,
+                "title": "Suggest supporting papers",
+                "summary": "OpenAlex is not configured; no papers suggested.",
+                "output": {"gap_count": len(gaps), "paper_count": 0},
+            }
+        }
+
+    note = build_relevance_note(gaps)
+    papers = await dependencies.paper_provider.search(
+        query=build_search_query(state["query"], gaps), limit=5
+    )
+    suggested = [{**paper, "relevance_note": f"{note}. {paper['relevance_note']}"} for paper in papers]
+
+    return {
+        "suggested_papers": suggested,
+        "step": {
+            "node": ResearchNode.PAPER_SUGGESTION.value,
+            "title": "Suggest supporting papers",
+            "summary": (
+                f"Identified {len(gaps)} evidence gap(s); "
+                f"suggested {len(suggested)} paper(s) from OpenAlex."
+            ),
+            "output": {
+                "gap_count": len(gaps),
+                "paper_count": len(suggested),
+                "gaps": [gap.model_dump() for gap in gaps],
+            },
+        },
+    }
+
+
 # ---------------------------------------------------------------------------
 # Conditional edges
 # ---------------------------------------------------------------------------
@@ -1125,14 +1215,19 @@ SYNTHESIS_DONE = "done"
 
 
 def route_after_synthesis(state: ResearchState) -> str:
-    """Loop back through web research once, when synthesis asked for it.
+    """Loop back through web research once, when synthesis asked for it;
+    otherwise fall through to paper suggestion when it is worth trying.
 
-    The decision is made in `synthesis_node`, which alone knows the
-    grounding outcome and whether the web provider is live; this only
-    reads it, so routing stays a pure function of state.
+    The web-fallback decision is made in `synthesis_node`, which alone
+    knows the grounding outcome and whether the web provider is live;
+    `paper_suggestion_eligible` is set there too, for the same reason
+    (only `synthesis_node` has the injected dependencies). This only
+    reads both, so routing stays a pure function of state.
     """
     if state.get("web_fallback"):
         return ResearchNode.WEB_RESEARCH.value
+    if state.get("paper_suggestion_eligible"):
+        return ResearchNode.PAPER_SUGGESTION.value
     return SYNTHESIS_DONE
 
 

@@ -23,6 +23,7 @@ from langchain_core.runnables import RunnableConfig
 from app.agents.planner.nodes import (
     asset_retrieval_node,
     context_builder_node,
+    paper_suggestion_node,
     planner_node,
     router_node,
     synthesis_node,
@@ -119,6 +120,16 @@ AGENT_REGISTRY: dict[str, NodeSpec] = {
         handler=synthesis_node,
         critical=True,
         description="Produces the final answer with structured citations.",
+    ),
+    ResearchNode.PAPER_SUGGESTION.value: NodeSpec(
+        name=ResearchNode.PAPER_SUGGESTION.value,
+        title="Suggest supporting papers",
+        handler=paper_suggestion_node,
+        critical=False,
+        description=(
+            "Searches OpenAlex for papers that could fill an evidence gap "
+            "in the answer. Never contributes evidence to synthesis."
+        ),
     ),
 }
 

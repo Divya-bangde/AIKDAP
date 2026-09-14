@@ -54,6 +54,7 @@ from app.modules.research.enums import (
     ResearchRunStatus,
     ResearchStepStatus,
 )
+from app.modules.research.schemas import ResearchGap
 from app.modules.research.models import ResearchRun
 from app.modules.research.repository import ResearchStepRepository
 from app.modules.research.service import ResearchExecutionService, ResearchStepTracker
@@ -67,6 +68,7 @@ EXPECTED_AGENTS = {
     "asset_retrieval",
     "context_builder",
     "synthesis",
+    "paper_suggestion",
 }
 
 
@@ -114,6 +116,35 @@ class BrokenPlanner:
 
     async def plan(self, request):
         raise RuntimeError("planner backend unavailable")
+
+
+class FakeGapDetector:
+    """Returns a fixed gap list without calling a model."""
+
+    name = "fake_gap_detector"
+
+    def __init__(self, gaps: list[ResearchGap]) -> None:
+        self._gaps = gaps
+
+    async def detect(self, *, query, answer, grounding_status):
+        return self._gaps
+
+
+class FakePaperProvider:
+    """Returns a fixed paper list and records every call it received."""
+
+    name = "fake_paper_provider"
+
+    def __init__(self, papers: list[dict] | None = None, *, fail: bool = False) -> None:
+        self._papers = papers or []
+        self._fail = fail
+        self.calls: list[dict] = []
+
+    async def search(self, *, query, limit):
+        self.calls.append({"query": query, "limit": limit})
+        if self._fail:
+            raise RuntimeError("openalex unavailable")
+        return self._papers
 
 
 def make_dependencies(**overrides: Any) -> GraphDependencies:
@@ -314,11 +345,15 @@ def test_registry_contains_all_current_agents():
 
 
 def test_registry_marks_retrieval_agents_non_critical():
-    """Only the routable retrieval agents may be non-critical."""
+    """Retrieval agents are non-critical; so is `paper_suggestion` -- it
+    contributes no evidence to synthesis (see `NodeSpec.is_retrieval`),
+    so its failure must never fail the run even though the router never
+    dispatches to it."""
     assert set(retrieval_agents()) == {"web_research", "asset_retrieval"}
-    for name in retrieval_agents():
+    non_critical = set(retrieval_agents()) | {"paper_suggestion"}
+    for name in non_critical:
         assert get_node_spec(name).critical is False
-    for name in EXPECTED_AGENTS - set(retrieval_agents()):
+    for name in EXPECTED_AGENTS - non_critical:
         assert get_node_spec(name).critical is True
 
 
@@ -736,8 +771,9 @@ async def test_successful_run_persists_answer_citations_and_steps(session, proje
         "context_builder",
         "synthesis",
         "web_research",
+        "paper_suggestion",
     ]
-    *executed, web = steps
+    *executed, web, papers = steps
     for step in executed:
         assert step.status is ResearchStepStatus.COMPLETED
         assert step.duration_ms is not None
@@ -745,6 +781,8 @@ async def test_successful_run_persists_answer_citations_and_steps(session, proje
         assert step.title and step.summary
     assert web.status is ResearchStepStatus.SKIPPED
     assert web.summary.startswith("Not needed")
+    assert papers.status is ResearchStepStatus.SKIPPED
+    assert papers.summary == "No OpenAlex API key is configured (set OPENALEX_API_KEY)."
 
     # No registered node silently disappears from the trace.
     assert {s.node_name for s in steps} == EXPECTED_AGENTS
@@ -938,3 +976,101 @@ async def test_non_critical_failure_with_a_skipped_node_still_completes(
     assert steps["web_research"].status is ResearchStepStatus.SKIPPED
     assert run.status is ResearchRunStatus.COMPLETED
     assert run.final_answer
+
+
+# ---------------------------------------------------------------------------
+# TEST 10, 11, 12, 13 — paper_suggestion: gaps drive it, failure is non-critical
+# ---------------------------------------------------------------------------
+
+
+def _gap(description: str = "no comparison against a simple baseline") -> ResearchGap:
+    return ResearchGap(
+        gap_type="baseline comparison",
+        classification="required",
+        description=description,
+        why_needed="to judge whether the reported gain is real",
+    )
+
+
+@pytest.mark.asyncio
+async def test_paper_suggestion_runs_and_persists_papers_when_gaps_are_found():
+    """TEST 10 -- gaps found + a configured provider -> papers persisted."""
+    tracker = RecordingTracker()
+    paper_provider = FakePaperProvider(
+        papers=[
+            {
+                "openalex_id": "https://openalex.org/W1",
+                "title": "A relevant paper",
+                "authors": ["A. Author"],
+                "year": 2022,
+                "cited_by_count": 10,
+                "landing_url": "https://example.org/w1",
+                "oa_pdf_url": None,
+                "relevance_note": "Abstract: ...",
+            }
+        ]
+    )
+    dependencies = make_dependencies(
+        gap_detector=FakeGapDetector([_gap()]), paper_provider=paper_provider
+    )
+    graph = build_research_graph().compile()
+
+    final_state = await graph.ainvoke(initial_state(), config=make_config(dependencies, tracker))
+
+    assert final_state["suggested_papers"][0]["openalex_id"] == "https://openalex.org/W1"
+    assert "Suggested to help address" in final_state["suggested_papers"][0]["relevance_note"]
+    assert paper_provider.calls[0]["query"].startswith(QUERY)
+    assert "no comparison against a simple baseline" in paper_provider.calls[0]["query"]
+    assert ("paper_suggestion", "RuntimeError", False) not in tracker.failed
+    assert "paper_suggestion" in [node for node, _ in tracker.succeeded]
+
+
+@pytest.mark.asyncio
+async def test_paper_suggestion_skips_openalex_search_when_no_gaps_are_found():
+    """TEST 11 -- no gaps -> the node completes without calling OpenAlex."""
+    paper_provider = FakePaperProvider(papers=[{"openalex_id": "should-not-be-used"}])
+    dependencies = make_dependencies(gap_detector=FakeGapDetector([]), paper_provider=paper_provider)
+    graph = build_research_graph().compile()
+
+    final_state = await graph.ainvoke(initial_state(), config=make_config(dependencies))
+
+    assert not final_state.get("suggested_papers")
+    assert paper_provider.calls == []
+
+
+@pytest.mark.asyncio
+async def test_paper_suggestion_node_never_runs_without_an_openalex_key():
+    """TEST 12 -- unconfigured (default deps) -> the node is never entered."""
+    tracker = RecordingTracker()
+    graph = build_research_graph().compile()
+
+    await graph.ainvoke(initial_state(), config=make_config(make_dependencies(), tracker))
+
+    assert "paper_suggestion" not in tracker.started
+
+
+@pytest.mark.asyncio
+async def test_paper_suggestion_failure_is_non_critical():
+    """TEST 13 -- OpenAlex down/timing out fails only this step."""
+    tracker = RecordingTracker()
+    dependencies = make_dependencies(
+        gap_detector=FakeGapDetector([_gap()]), paper_provider=FakePaperProvider(fail=True)
+    )
+    graph = build_research_graph().compile()
+
+    final_state = await graph.ainvoke(initial_state(), config=make_config(dependencies, tracker))
+
+    assert final_state["final_answer"], "the answer must be unaffected by a paper-suggestion failure"
+    assert not final_state.get("suggested_papers")
+    assert ("paper_suggestion", "RuntimeError", False) in tracker.failed
+
+
+@pytest.mark.asyncio
+async def test_paper_suggestion_skip_reason_via_the_execution_service(session, project):
+    """TEST 14 -- end to end through the real database: skip reason persisted."""
+    run = await _run_to_completion(session, project, dependencies=make_dependencies())
+
+    steps = {s.node_name: s for s in await ResearchStepRepository(session).list_by_run(run.id)}
+    assert steps["paper_suggestion"].status is ResearchStepStatus.SKIPPED
+    assert steps["paper_suggestion"].summary == "No OpenAlex API key is configured (set OPENALEX_API_KEY)."
+    assert run.suggested_papers is None

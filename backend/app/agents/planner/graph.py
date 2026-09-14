@@ -19,6 +19,7 @@ Topology::
       -> synthesis
            |-- evidence insufficient, live web search configured, web not
            |   yet tried --> web_research -> context_builder -> synthesis
+           |-- otherwise, OpenAlex configured --> paper_suggestion -> END
            \\-- otherwise --> END
 
 External search is a fallback, not a peer source: the project's own
@@ -89,14 +90,18 @@ def build_research_graph() -> StateGraph:
 
     # The web-fallback loop. `route_after_synthesis` returns to web
     # research only once (`web_research_attempted`), so it is bounded.
+    # Once that loop settles, it either enters `paper_suggestion` (an
+    # OpenAlex key is configured) or ends the run directly.
     builder.add_conditional_edges(
         ResearchNode.SYNTHESIS.value,
         route_after_synthesis,
         {
             ResearchNode.WEB_RESEARCH.value: ResearchNode.WEB_RESEARCH.value,
+            ResearchNode.PAPER_SUGGESTION.value: ResearchNode.PAPER_SUGGESTION.value,
             SYNTHESIS_DONE: END,
         },
     )
+    builder.add_edge(ResearchNode.PAPER_SUGGESTION.value, END)
 
     return builder
 
