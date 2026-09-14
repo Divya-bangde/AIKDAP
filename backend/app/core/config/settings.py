@@ -144,6 +144,16 @@ class Settings(BaseSettings):
     openalex_api_key: SecretStr | None = None
     openalex_timeout: float = Field(default=20.0, gt=0)
 
+    #: Milestone 10 step 3 (Add & re-run): connect/read timeout for
+    #: downloading one OpenAlex open-access PDF. Same style/naming as
+    #: `openalex_timeout` above.
+    paper_import_download_timeout: float = Field(default=30.0, gt=0)
+    #: Maximum redirect hops `paper_import.download_oa_pdf` will follow;
+    #: every hop is re-validated for scheme and host (SSRF guard), so
+    #: this bounds worst-case redirect-chasing rather than trusting
+    #: httpx's own follower.
+    paper_import_max_redirects: int = Field(default=3, ge=0)
+
     @field_validator("openalex_api_key", mode="before")
     @classmethod
     def blank_openalex_key_is_unset(cls, value: object) -> object:
