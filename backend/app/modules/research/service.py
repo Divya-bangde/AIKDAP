@@ -489,6 +489,7 @@ class ResearchExecutionService:
         run.citations = final_state.get("citations") or []
         run.visualization = final_state.get("visualization")
         run.equations = final_state.get("equations") or None
+        run.suggested_papers = final_state.get("suggested_papers") or None
         # Read back as an enum so an unexpected value fails here rather
         # than being written to the column verbatim.
         grounding = final_state.get("grounding_status")
@@ -711,4 +712,6 @@ def _skip_reason(node: ResearchNode, run: ResearchRun, final_state: dict[str, An
             "The project's evidence was insufficient, but no live web search "
             "provider is configured (set TAVILY_API_KEY)."
         )
+    if node is ResearchNode.PAPER_SUGGESTION:
+        return "No OpenAlex API key is configured (set OPENALEX_API_KEY)."
     return "Not dispatched by the router for this run."

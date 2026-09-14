@@ -132,6 +132,12 @@ class ResearchRun(BaseModel):
     # (see `planner.equations`). Null when there were none.
     equations: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB, nullable=True)
 
+    # Papers OpenAlex suggested to help close a gap in the answer
+    # (Milestone 10 step 2): `paper_suggestion.SuggestedPaper` entries.
+    # Null when the step was skipped (no key) or found no gaps. Never
+    # fed into synthesis -- see `agents.planner.paper_suggestion`.
+    suggested_papers: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB, nullable=True)
+
     # The Celery task actually carrying out this run, so a run can be
     # correlated with the worker logs that executed it.
     celery_task_id: Mapped[str | None] = mapped_column(String(255), nullable=True)

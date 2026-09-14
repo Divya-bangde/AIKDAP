@@ -346,6 +346,10 @@ class ResearchRunRead(BaseModel):
     #: Validated `Equation`s the answer relies on, each with its
     #: backend-sampled `curve` (or null), when the question involved any.
     equations: list[dict[str, Any]] | None = None
+    #: OpenAlex papers suggested to help close a gap in the answer, when
+    #: any were found. Never used to ground `final_answer` -- see
+    #: `agents.planner.paper_suggestion`.
+    suggested_papers: list[dict[str, Any]] | None = None
     error_message: str | None
     celery_task_id: str | None
     started_at: datetime | None
