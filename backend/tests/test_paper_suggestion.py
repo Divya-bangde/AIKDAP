@@ -275,6 +275,32 @@ async def test_gap_detector_returns_no_gaps_for_an_empty_answer_without_calling_
     assert gateway.calls == []
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize("grounding_status", ["unsourced", "insufficient_evidence"])
+async def test_an_unsupported_answer_always_has_a_required_gap_without_asking_the_model(
+    grounding_status,
+):
+    """No project source backs the answer, so the gap is certain.
+
+    Reproduces a real run: an off-topic question answered from general
+    knowledge ("unsourced") read as complete to the model, which returned
+    no gaps -- so no papers were suggested exactly when they help most.
+    """
+    gateway = FakeGateway(json.dumps({"gaps": []}))
+    detector = GapDetector(gateway=gateway, model="fake-model")
+
+    gaps = await detector.detect(
+        query="what is the role of black holes in the universe?",
+        answer="Black holes regulate star formation ...",
+        grounding_status=grounding_status,
+    )
+
+    assert len(gaps) == 1
+    assert gaps[0].classification is GapClassification.REQUIRED
+    assert gaps[0].search_intent == "what is the role of black holes in the universe?"
+    assert gateway.calls == []
+
+
 def test_parse_gaps_degrades_to_empty_list_on_unparseable_content():
     assert _parse_gaps("not json") == []
 

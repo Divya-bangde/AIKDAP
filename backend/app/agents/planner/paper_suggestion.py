@@ -23,9 +23,15 @@ from app.agents.planner.prompts import GAP_DETECTION_SYSTEM_PROMPT, render_gap_d
 from app.core.config.settings import settings
 from app.core.llm import LLMGateway, get_llm_gateway
 from app.core.logging.logger import get_logger
-from app.modules.research.schemas import GapDetectionResponse, ResearchGap
+from app.modules.research.enums import ResearchGroundingStatus
+from app.modules.research.schemas import GapClassification, GapDetectionResponse, ResearchGap
 
 logger = get_logger(__name__)
+
+#: Outcomes where no project source backs the answer, so a gap is certain.
+_UNSUPPORTED_STATUSES = frozenset(
+    {ResearchGroundingStatus.UNSOURCED.value, ResearchGroundingStatus.INSUFFICIENT_EVIDENCE.value}
+)
 
 #: Strips a ```json ... ``` fence, the same tolerance `synthesis._parse_response` applies.
 _JSON_FENCE = re.compile(r"^\s*```(?:json)?\s*(.*?)\s*```\s*$", re.DOTALL)
@@ -111,6 +117,20 @@ class GapDetector:
         """
         if not answer.strip():
             return []
+        # An unsourced or insufficient answer has no supporting source by
+        # definition. Asking the model is the wrong test here: a fluent
+        # general-knowledge answer reads as complete and comes back with
+        # no gaps, which suppressed suggestions exactly when they help most.
+        if grounding_status in _UNSUPPORTED_STATUSES:
+            return [
+                ResearchGap(
+                    gap_type="no supporting sources",
+                    classification=GapClassification.REQUIRED,
+                    description="published research on this question",
+                    why_needed="No document in this project supports this answer.",
+                    search_intent=query,
+                )
+            ]
 
         prompt = render_gap_detection_prompt(
             query=query, answer=answer, grounding_status=grounding_status
