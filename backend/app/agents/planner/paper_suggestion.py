@@ -185,12 +185,25 @@ class OpenAlexProvider:
                 # parameter, not a header -- unlike Tavily. Still only
                 # ever read from `settings`, never hardcoded.
                 params={
-                    "search": query,
+                    # OpenAlex rejects `search=` containing `?` or `*` with a
+                    # 400: they are wildcard syntax only `search.exact=`
+                    # accepts, and a research question almost always ends
+                    # in `?`.
+                    "search": query.replace("?", " ").replace("*", " "),
                     "per_page": limit,
                     "api_key": self._api_key.get_secret_value(),
                 },
             )
-        response.raise_for_status()
+        try:
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            # httpx embeds the full request URL -- including the `api_key`
+            # query parameter -- in the message, and the execution-tracking
+            # layer persists that string to `research_steps.error_message`
+            # and serves it in the run's trace API. Re-raise scrubbed,
+            # `from None` so the original (URL-bearing) exception is not
+            # chained/logged anywhere.
+            raise RuntimeError(f"OpenAlex returned {exc.response.status_code}") from None
 
         papers: list[SuggestedPaper] = []
         for item in response.json().get("results") or []:

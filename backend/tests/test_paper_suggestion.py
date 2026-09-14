@@ -136,8 +136,26 @@ async def test_openalex_http_error_raises_for_the_non_critical_node_to_record():
         timeout=5,
         transport=httpx.MockTransport(lambda request: httpx.Response(500, json={"error": "down"})),
     )
-    with pytest.raises(httpx.HTTPStatusError):
+    # A scrubbed RuntimeError, not the raw httpx.HTTPStatusError -- whose
+    # message embeds the request URL, api_key included.
+    with pytest.raises(RuntimeError, match="500"):
         await provider.search(query="q", limit=5)
+
+
+@pytest.mark.asyncio
+async def test_query_wildcards_are_stripped_before_reaching_openalex():
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert "?" not in request.url.params["search"]
+        assert "*" not in request.url.params["search"]
+        return httpx.Response(200, json={"results": [_work()]})
+
+    provider = OpenAlexProvider(
+        api_key=SecretStr("test-key"), timeout=5, transport=httpx.MockTransport(handler)
+    )
+    papers = await provider.search(query="What improves detection? *", limit=5)
+
+    assert len(papers) == 1
+    assert papers[0]["title"] == "Deep Learning for Poultry Disease Detection"
 
 
 def test_reconstruct_abstract_orders_words_by_position():
