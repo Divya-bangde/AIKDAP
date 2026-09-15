@@ -24,8 +24,11 @@ from app.database.session import engine
 from app.modules.assets.ai_profile import AIProfile
 from app.modules.assets.enums import AssetProcessingStatus, AssetSource, AssetStatus, AssetType
 from app.modules.assets.models import Asset
+from app.modules.research.enums import ResearchStepStatus
+from app.modules.research.models import ResearchStep
 from app.workers.reconciliation import (
     STALE_REPORT_FAILURE_REASON,
+    STALE_REPORT_STEP_ERROR,
     reconcile_stale_report_generations,
 )
 
@@ -182,3 +185,37 @@ async def test_reconciling_twice_only_mutates_once(session, project):
     assert first_pass == 1
     assert second_pass == 0
     assert asset.processing_status is AssetProcessingStatus.FAILED
+
+
+def _report_step(asset: Asset, index: int, status: ResearchStepStatus) -> ResearchStep:
+    return ResearchStep(
+        asset_id=asset.id,
+        attempt=1,
+        step_index=index,
+        node_name=["collect_documents", "retrieve_evidence"][index],
+        title=["Collect project documents", "Retrieve section evidence"][index],
+        status=status,
+        started_at=datetime.now(timezone.utc),
+    )
+
+
+@pytest.mark.asyncio
+async def test_a_stale_reports_running_step_is_marked_failed_and_nothing_else_is_touched(session, project):
+    stale = await _make_report_asset(session, project, updated_at=_stale_timestamp())
+    fresh = await _make_report_asset(session, project, updated_at=_fresh_timestamp())
+    finished = _report_step(stale, 0, ResearchStepStatus.COMPLETED)
+    interrupted = _report_step(stale, 1, ResearchStepStatus.RUNNING)
+    in_progress = _report_step(fresh, 0, ResearchStepStatus.RUNNING)
+    session.add_all([finished, interrupted, in_progress])
+    await session.commit()
+
+    await reconcile_stale_report_generations()
+
+    for step in (finished, interrupted, in_progress):
+        await session.refresh(step)
+    assert interrupted.status is ResearchStepStatus.FAILED
+    assert interrupted.error_message == STALE_REPORT_STEP_ERROR == "Worker stopped before this step finished"
+    assert interrupted.completed_at is not None
+    assert finished.status is ResearchStepStatus.COMPLETED
+    assert finished.error_message is None
+    assert in_progress.status is ResearchStepStatus.RUNNING
