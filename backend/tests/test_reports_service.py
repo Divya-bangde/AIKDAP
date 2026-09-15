@@ -281,3 +281,84 @@ async def test_llm_failure_marks_the_report_asset_failed_with_a_scrubbed_error(s
         assert "secret-endpoint" not in refreshed.processing_error
         assert "super-secret" not in refreshed.processing_error
         assert refreshed.processing_error == "Report generation failed (RuntimeError)."
+
+
+@pytest.mark.asyncio
+async def test_a_db_error_mid_generation_still_marks_the_report_failed(session, project, monkeypatch):
+    """Final-review finding I1: `_generate_report`'s `except` block used
+    to set FAILED and commit on the SAME session a broken-transaction
+    error (e.g. from the KB searcher) had already poisoned -- the final
+    commit then raised `PendingRollbackError`, which escaped the
+    handler entirely and left the asset stuck at `running` forever. A
+    searcher that actually executes a failing SQL statement on the
+    session (not a mock that merely raises in Python) reproduces the
+    real "session unusable until rolled back" state; the fix must roll
+    back before writing FAILED."""
+    from sqlalchemy import text
+
+    from app.agents.reports.nodes import ReportGraphDependencies
+    from app.workers.tasks import _generate_report
+
+    session.add(_make_asset(project))
+    await session.commit()
+
+    report_asset = Asset(
+        project_id=project.id,
+        owner_id=project.owner_id,
+        title="Study Summary",
+        description=None,
+        asset_type=AssetType.SUMMARY,
+        status=AssetStatus.ACTIVE,
+        mime_type="application/json",
+        file_name="study-summary.json",
+        file_extension="json",
+        file_size=0,
+        storage_path="",
+        checksum="",
+        source=AssetSource.GENERATED,
+        version=1,
+        tags=[],
+        asset_metadata={"kind": "study_summary", "sections": []},
+        ai_profile=AIProfile().model_dump(mode="json"),
+        created_by=project.owner_id,
+        processing_status=AssetProcessingStatus.PENDING,
+    )
+    session.add(report_asset)
+    await session.commit()
+    report_asset_id = report_asset.id
+
+    class _EmptyDocumentLister:
+        async def list_processed(self, project_id):
+            return []
+
+    class _BrokenTransactionSearcher:
+        """Runs an invalid SQL statement directly on the shared session,
+        so the underlying transaction is genuinely poisoned -- exactly
+        the failure mode a mock that merely `raise`s in Python cannot
+        reproduce."""
+
+        def __init__(self, db_session) -> None:
+            self._session = db_session
+
+        async def search(self, *, owner_id, project_id, query, limit):
+            await self._session.execute(text("SELECT * FROM this_table_does_not_exist"))
+            return []
+
+    monkeypatch.setattr(
+        "app.workers.tasks.build_report_dependencies",
+        lambda worker_session: ReportGraphDependencies(
+            document_lister=_EmptyDocumentLister(),
+            section_searcher=_BrokenTransactionSearcher(worker_session),
+            llm_gateway=None,
+        ),
+    )
+
+    await _generate_report(report_asset_id)
+
+    from app.database.session import async_session_factory
+
+    async with async_session_factory() as verify_session:
+        refreshed = await AssetRepository(verify_session).get_by_id(report_asset_id)
+        assert refreshed.processing_status.value == "failed"
+        assert refreshed.processing_error is not None
+        assert refreshed.processing_error.startswith("Report generation failed (")

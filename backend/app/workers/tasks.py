@@ -832,8 +832,20 @@ async def _generate_report(asset_id: uuid.UUID) -> dict[str, str]:
                 error_type=type(exc).__name__,
                 exc_info=True,
             )
-            asset.processing_status = AssetProcessingStatus.FAILED
-            asset.processing_error = _scrub_report_error(exc)
+            # A DB error (e.g. from the KB searcher or document lister,
+            # both sharing this session) leaves the session's transaction
+            # in a failed state -- committing again without rolling back
+            # first raises `PendingRollbackError`, which would escape
+            # this handler and leave the asset stuck at `running`
+            # forever. Roll back before touching the asset again so the
+            # session is usable.
+            await session.rollback()
+            asset = await assets.get_by_id(asset_id)
+            if asset is not None:
+                asset.processing_status = AssetProcessingStatus.FAILED
+                asset.processing_error = _scrub_report_error(exc)
+            await session.commit()
+            return {"status": "ok", "asset_id": str(asset_id)}
 
         await session.commit()
 
