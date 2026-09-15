@@ -25,10 +25,18 @@ const TERMINAL_EMBEDDING_STATUSES = new Set(["completed", "failed", "not_applica
  * `ai_profile.status`/`embedding_status` only ever leave "pending" if
  * `processing_status` reached `completed` (a failed/unsupported asset
  * never gets that far, and "pending" there is permanent and correct —
- * not something to wait on). */
+ * not something to wait on).
+ *
+ * A `source: "generated"` asset (a report/synopsis) never runs the
+ * upload pipeline's AI-profile step at all -- `ReportService.
+ * generate_synopsis` creates it with a default `AIProfile()`, whose
+ * `status`/`embedding_status` stay "pending" forever. Waiting on those
+ * fields for a generated asset would never settle, so it settles as
+ * soon as `processing_status` itself reaches a terminal state. */
 export function isSettled(asset: AssetRead): boolean {
   if (!TERMINAL_PROCESSING_STATUSES.has(asset.processing_status)) return false;
   if (asset.processing_status !== "completed") return true;
+  if (asset.source === "generated") return true;
   return (
     asset.ai_profile.status !== "pending" &&
     TERMINAL_EMBEDDING_STATUSES.has(asset.ai_profile.embedding_status)
