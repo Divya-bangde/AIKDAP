@@ -85,6 +85,37 @@ async function doFetch(path: string, init: RequestInit): Promise<Response> {
   });
 }
 
+/** Shared auth/401-refresh/error handler for all authenticated request types.
+ * Builds auth header, calls doFetch, handles 401 with one silent retry, and
+ * throws on any non-ok response. Callers handle the response body parsing
+ * (JSON vs blob). */
+async function fetchWithAuthAndRetry(
+  path: string,
+  init: RequestInit,
+  auth: boolean,
+  isRetry = false,
+): Promise<Response> {
+  const headers: Record<string, string> = (init.headers as Record<string, string>) ?? {};
+  if (auth) {
+    const { accessToken } = getAuthTokens();
+    if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+  }
+
+  const response = await doFetch(path, { ...init, headers });
+
+  if (response.status === 401 && auth && !isRetry) {
+    const newToken = await refreshAccessToken();
+    if (newToken) return fetchWithAuthAndRetry(path, init, auth, true);
+    useAuthStore.getState().clear();
+  }
+
+  if (!response.ok) {
+    throw (await parseApiError(response)) satisfies ApiError;
+  }
+
+  return response;
+}
+
 /** JSON request/response. Attaches the bearer token unless
  * `auth: false`, and on a 401 attempts exactly one silent refresh +
  * retry before surfacing the error (Phase 9's "prevent refresh
@@ -101,29 +132,16 @@ async function requestInternal<T>(
   { method, body, auth }: Required<RequestOptions>,
   isRetry: boolean,
 ): Promise<T> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (auth) {
-    const { accessToken } = getAuthTokens();
-    if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
-  }
-
-  const response = await doFetch(path, {
-    method,
-    headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-
-  if (response.status === 401 && auth && !isRetry) {
-    const newToken = await refreshAccessToken();
-    if (newToken) {
-      return requestInternal<T>(path, { method, body, auth }, true);
-    }
-    useAuthStore.getState().clear();
-  }
-
-  if (!response.ok) {
-    throw (await parseApiError(response)) satisfies ApiError;
-  }
+  const response = await fetchWithAuthAndRetry(
+    path,
+    {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    },
+    auth,
+    isRetry,
+  );
 
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
@@ -136,23 +154,12 @@ async function requestInternal<T>(
 export async function requestForm<T>(
   path: string,
   formData: FormData,
-  isRetry = false,
 ): Promise<T> {
-  const headers: Record<string, string> = {};
-  const { accessToken } = getAuthTokens();
-  if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
-
-  const response = await doFetch(path, { method: "POST", headers, body: formData });
-
-  if (response.status === 401 && !isRetry) {
-    const newToken = await refreshAccessToken();
-    if (newToken) return requestForm<T>(path, formData, true);
-    useAuthStore.getState().clear();
-  }
-
-  if (!response.ok) {
-    throw (await parseApiError(response)) satisfies ApiError;
-  }
+  const response = await fetchWithAuthAndRetry(
+    path,
+    { method: "POST", body: formData },
+    true,
+  );
 
   return (await response.json()) as T;
 }
@@ -160,22 +167,12 @@ export async function requestForm<T>(
 /** Authenticated binary download -- the one shape neither `request()`
  * (always parses JSON) nor `requestForm()` (always POSTs) can make.
  * Same 401/refresh/retry contract as both. */
-export async function requestBlob(path: string, isRetry = false): Promise<Blob> {
-  const headers: Record<string, string> = {};
-  const { accessToken } = getAuthTokens();
-  if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
-
-  const response = await doFetch(path, { method: "GET", headers });
-
-  if (response.status === 401 && !isRetry) {
-    const newToken = await refreshAccessToken();
-    if (newToken) return requestBlob(path, true);
-    useAuthStore.getState().clear();
-  }
-
-  if (!response.ok) {
-    throw (await parseApiError(response)) satisfies ApiError;
-  }
+export async function requestBlob(path: string): Promise<Blob> {
+  const response = await fetchWithAuthAndRetry(
+    path,
+    { method: "GET" },
+    true,
+  );
 
   return response.blob();
 }
