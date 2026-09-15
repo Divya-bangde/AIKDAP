@@ -820,6 +820,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/reports/synopsis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate Synopsis Route
+         * @description Start generating a Study Summary or Project Synopsis for a
+         *     project's processed documents. Runs in the Celery worker; poll
+         *     `GET /assets/{asset_id}` for `processing_status`.
+         */
+        post: operations["generate_synopsis_route_api_v1_projects__project_id__reports_synopsis_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/{asset_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download Report Route
+         * @description Render a completed report to `format`, from its stored sections.
+         */
+        get: operations["download_report_route_api_v1_reports__asset_id__download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/": {
         parameters: {
             query?: never;
@@ -977,7 +1019,7 @@ export interface components {
          *     OCR, which isn't available yet.
          * @enum {string}
          */
-        AssetProcessingStatus: "pending" | "queued" | "extracting" | "chunking" | "embedding" | "completed" | "failed" | "unsupported" | "ocr_required";
+        AssetProcessingStatus: "pending" | "queued" | "running" | "extracting" | "chunking" | "embedding" | "completed" | "failed" | "unsupported" | "ocr_required";
         /**
          * AssetRead
          * @description Public representation of an asset.
@@ -2064,6 +2106,35 @@ export interface components {
             /** Refresh Token */
             refresh_token: string;
         };
+        /**
+         * ReportGenerateRequest
+         * @description Payload for `POST /projects/{project_id}/reports/synopsis`.
+         */
+        ReportGenerateRequest: {
+            kind: components["schemas"]["ReportKind"];
+        };
+        /**
+         * ReportGenerationAccepted
+         * @description 202 response: the report asset id and its initial status, so the
+         *     caller can start polling `GET /assets/{asset_id}` immediately.
+         */
+        ReportGenerationAccepted: {
+            /**
+             * Asset Id
+             * Format: uuid
+             */
+            asset_id: string;
+            status: components["schemas"]["AssetProcessingStatus"];
+        };
+        /**
+         * ReportKind
+         * @description Which synopsis to generate (spec section 5). `modules/reports` is
+         *     shared with the future build-plan feature (spec section 6); this
+         *     enum stays scoped to synopsis kinds only -- a build plan is not a
+         *     `ReportKind`, it is its own endpoint.
+         * @enum {string}
+         */
+        ReportKind: "study_summary" | "project_synopsis";
         /**
          * ResearchCertainty
          * @enum {string}
@@ -4433,6 +4504,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExecutionJobDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_synopsis_route_api_v1_projects__project_id__reports_synopsis_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportGenerateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportGenerationAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_report_route_api_v1_reports__asset_id__download_get: {
+        parameters: {
+            query: {
+                format: "docx" | "pdf";
+            };
+            header?: never;
+            path: {
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

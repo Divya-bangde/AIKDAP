@@ -156,3 +156,26 @@ export async function requestForm<T>(
 
   return (await response.json()) as T;
 }
+
+/** Authenticated binary download -- the one shape neither `request()`
+ * (always parses JSON) nor `requestForm()` (always POSTs) can make.
+ * Same 401/refresh/retry contract as both. */
+export async function requestBlob(path: string, isRetry = false): Promise<Blob> {
+  const headers: Record<string, string> = {};
+  const { accessToken } = getAuthTokens();
+  if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+
+  const response = await doFetch(path, { method: "GET", headers });
+
+  if (response.status === 401 && !isRetry) {
+    const newToken = await refreshAccessToken();
+    if (newToken) return requestBlob(path, true);
+    useAuthStore.getState().clear();
+  }
+
+  if (!response.ok) {
+    throw (await parseApiError(response)) satisfies ApiError;
+  }
+
+  return response.blob();
+}

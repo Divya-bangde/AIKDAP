@@ -20,6 +20,9 @@ const MAPS: Record<string, Record<string, (value: string) => { variant: Variant;
   assetProcessing: {
     pending: badge("muted"),
     queued: badge("secondary"),
+    // Milestone 10 step 4: a report-generation Celery job is actively
+    // writing sections for this GENERATED asset.
+    running: badge("secondary", "Generating"),
     extracting: badge("secondary", "Extracting"),
     chunking: badge("secondary", "Chunking"),
     embedding: badge("secondary", "Embedding"),
