@@ -362,3 +362,101 @@ async def test_a_db_error_mid_generation_still_marks_the_report_failed(session, 
         assert refreshed.processing_status.value == "failed"
         assert refreshed.processing_error is not None
         assert refreshed.processing_error.startswith("Report generation failed (")
+
+
+class _OneDocumentLister:
+    async def list_processed(self, project_id):
+        return [{"asset_id": "a1", "title": "t", "file_name": "f.pdf", "summary": "s", "topics": []}]
+
+
+class _AllEvidenceSearcher:
+    async def search(self, *, owner_id, project_id, query, limit):
+        return [{"asset_id": "a1", "title": "t", "file_name": "f.pdf", "snippet": "evidence"}]
+
+
+class _Gateway:
+    def __init__(self, *, raises: Exception | None = None) -> None:
+        self._raises = raises
+        self.calls = 0
+
+    async def generate(self, **kwargs):
+        from app.core.llm.gateway import LLMResponse
+
+        self.calls += 1
+        if self._raises is not None:
+            raise self._raises
+        return LLMResponse(
+            content='{"content": "Section text.", "cited_asset_ids": ["a1"]}',
+            model="fake-model",
+            provider="fake",
+            latency_ms=5,
+        )
+
+
+def _patch_dependencies(monkeypatch, gateway) -> None:
+    from app.agents.reports.nodes import ReportGraphDependencies
+
+    monkeypatch.setattr(
+        "app.workers.tasks.build_report_dependencies",
+        lambda worker_session: ReportGraphDependencies(
+            document_lister=_OneDocumentLister(),
+            section_searcher=_AllEvidenceSearcher(),
+            llm_gateway=gateway,
+        ),
+    )
+
+
+async def _steps_for(asset_id):
+    from app.database.session import async_session_factory
+    from app.modules.research.repository import ResearchStepRepository
+
+    async with async_session_factory() as verify_session:
+        return await ResearchStepRepository(verify_session).list_by_asset(asset_id)
+
+
+@pytest.mark.asyncio
+async def test_a_completed_report_run_persists_one_completed_step_per_node(project, monkeypatch, make_report_asset):
+    from app.workers.tasks import _generate_report
+
+    report = await make_report_asset(project)
+    _patch_dependencies(monkeypatch, _Gateway())
+
+    await _generate_report(report.id)
+
+    steps = await _steps_for(report.id)
+    assert [step.node_name for step in steps] == ["collect_documents", "retrieve_evidence", "write_sections", "coverage_check"]
+    assert [step.step_index for step in steps] == [0, 1, 2, 3]
+    assert {step.attempt for step in steps} == {1}
+    for step in steps:
+        assert step.status.value == "completed"
+        assert step.summary
+        assert step.duration_ms is not None
+        assert step.error_message is None
+        assert step.run_id is None
+
+
+@pytest.mark.asyncio
+async def test_a_failed_node_marks_its_step_failed_scrubbed_and_skips_the_rest(project, monkeypatch, make_report_asset):
+    from app.database.session import async_session_factory
+    from app.workers.tasks import _generate_report
+
+    report = await make_report_asset(project)
+    _patch_dependencies(monkeypatch, _Gateway(raises=RuntimeError("https://secret.example/?key=super-secret")))
+
+    await _generate_report(report.id)
+
+    steps = await _steps_for(report.id)
+    assert [(step.node_name, step.status.value) for step in steps] == [
+        ("collect_documents", "completed"),
+        ("retrieve_evidence", "completed"),
+        ("write_sections", "failed"),
+        ("coverage_check", "skipped"),
+    ]
+    failed = steps[2]
+    assert failed.error_message == "Report generation failed (RuntimeError)."
+    assert steps[3].summary == "Not run: an earlier step failed."
+
+    async with async_session_factory() as verify_session:
+        refreshed = await AssetRepository(verify_session).get_by_id(report.id)
+    assert refreshed.processing_status.value == "failed"
+    assert refreshed.asset_metadata["sections"] == []

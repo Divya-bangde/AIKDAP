@@ -59,14 +59,16 @@ from app.modules.assets.validators import AssetValidationError
 from app.modules.execution.repository import ExecutionJobRepository
 from app.modules.execution.service import prepare_approved_launch, recover_interrupted_retry_attempt
 from execution_launcher.launcher import execute_approved_launch, reconcile_attempt
+from app.agents.planner.tracking import TRACKER_CONFIG_KEY
 from app.agents.reports.graph import get_report_graph
 from app.agents.reports.nodes import build_report_dependencies
 from app.modules.knowledge_base.embeddings import get_embedding_provider
 from app.modules.knowledge_base.repository import KnowledgeChunkRepository
+from app.modules.reports.tracking import ReportStepTracker, scrub_report_error
 from app.modules.research.enums import ResearchRunStatus
 from app.modules.research.models import ResearchRun
 from app.modules.research.paper_import import PaperDownloadError, download_oa_pdf
-from app.modules.research.repository import ResearchRunRepository
+from app.modules.research.repository import ResearchRunRepository, ResearchStepRepository
 from app.modules.research.service import ResearchExecutionService
 from app.workers.celery_app import celery_app
 from execution_launcher.models import InputResolutionError, SecurityBlocked
@@ -790,15 +792,6 @@ def generate_report(self, asset_id: str) -> dict[str, str]:
     return _run_task_loop(_generate_report(uuid.UUID(asset_id)))
 
 
-#: Returned instead of the raw exception text -- never persisted
-#: verbatim, matching `paper_suggestion.OpenAlexProvider`'s and
-#: `paper_import.PaperDownloadError`'s existing scrubbing discipline.
-#: The exception type name is the only detail kept, which is never
-#: sensitive and is enough to tell failure modes apart in the UI.
-def _scrub_report_error(exc: Exception) -> str:
-    return f"Report generation failed ({type(exc).__name__})."
-
-
 async def _generate_report(asset_id: uuid.UUID) -> dict[str, str]:
     async with async_session_factory() as session:
         assets = AssetRepository(session)
@@ -810,6 +803,11 @@ async def _generate_report(asset_id: uuid.UUID) -> dict[str, str]:
         asset.processing_status = AssetProcessingStatus.RUNNING
         await session.commit()
 
+        # Each run is its own attempt, numbered after any earlier ones,
+        # so a retried report keeps every attempt's trace separately.
+        attempt = await ResearchStepRepository(session).latest_attempt(asset_id) + 1
+        tracker = ReportStepTracker(session, asset_id, attempt=attempt)
+
         try:
             dependencies = build_report_dependencies(session)
             graph = get_report_graph()
@@ -820,7 +818,7 @@ async def _generate_report(asset_id: uuid.UUID) -> dict[str, str]:
                     "owner_id": str(asset.owner_id),
                     "kind": asset.asset_metadata.get("kind"),
                 },
-                config={"configurable": {"dependencies": dependencies}},
+                config={"configurable": {"dependencies": dependencies, TRACKER_CONFIG_KEY: tracker}},
             )
             asset.asset_metadata = {**asset.asset_metadata, "sections": result["sections"]}
             asset.processing_status = AssetProcessingStatus.COMPLETED
@@ -833,17 +831,17 @@ async def _generate_report(asset_id: uuid.UUID) -> dict[str, str]:
                 exc_info=True,
             )
             # A DB error (e.g. from the KB searcher or document lister,
-            # both sharing this session) leaves the session's transaction
-            # in a failed state -- committing again without rolling back
-            # first raises `PendingRollbackError`, which would escape
-            # this handler and leave the asset stuck at `running`
-            # forever. Roll back before touching the asset again so the
-            # session is usable.
+            # both sharing this session) leaves the transaction failed;
+            # roll back before writing again, or the commit below raises
+            # `PendingRollbackError` and the asset stays `running`.
             await session.rollback()
+            await tracker.record_skipped()
             asset = await assets.get_by_id(asset_id)
             if asset is not None:
+                # Sections are only ever written on success, so a failed
+                # report never carries a partial document.
                 asset.processing_status = AssetProcessingStatus.FAILED
-                asset.processing_error = _scrub_report_error(exc)
+                asset.processing_error = scrub_report_error(exc)
             await session.commit()
             return {"status": "ok", "asset_id": str(asset_id)}
 
