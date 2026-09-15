@@ -99,6 +99,14 @@ beautifulsoup4==4.15.0
 lxml==6.1.2
 
 # ===========================
+# Report export (Milestone 10 step 4)
+# ===========================
+# PDF rendering for the Synopsis/Build Plan `GET /reports/{id}/download`
+# endpoint -- was test-only (PDF fixture generation for extractor
+# tests); now also used at runtime by `app.modules.reports.export`.
+reportlab==5.0.1
+
+# ===========================
 # OCR (Sprint 12.5)
 # ===========================
 # Decodes embedded/standalone raster images (PNG/JPEG, and the images
@@ -133,12 +141,12 @@ structlog==25.4.0
 pytest==8.4.1
 pytest-asyncio==1.1.0
 pytest-cov==6.2.1
-# Test-only: generates real, correctly-structured PDF fixtures for
+# Test fixtures: generates real, correctly-structured PDF fixtures for
 # extractor tests (Sprint 12.1) -- pypdf reads PDFs but has no text-
 # authoring API, and hand-rolling a byte-correct xref table by hand is
 # exactly the kind of fragile-and-wrong-in-a-subtle-way risk not worth
-# taking for a test suite that needs to be trusted.
-reportlab==5.0.1
+# taking for a test suite that needs to be trusted. reportlab moved to
+# runtime section (Report export) since it's also used in production code.
 
 # ===========================
 # Code Quality
