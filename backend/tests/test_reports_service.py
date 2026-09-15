@@ -9,6 +9,7 @@ import pytest
 from app.modules.assets.ai_profile import AIProfile
 from app.modules.assets.enums import AssetProcessingStatus, AssetSource, AssetStatus, AssetType
 from app.modules.assets.models import Asset
+from app.modules.assets.repository import AssetRepository
 from app.modules.reports.repository import ReportRepository
 
 
@@ -212,3 +213,71 @@ async def test_render_download_produces_docx_and_pdf_from_stored_sections(sessio
     assert pdf_media == "application/pdf"
     assert pdf_name.endswith(".pdf")
     assert len(pdf_content) > 0
+
+
+@pytest.mark.asyncio
+async def test_llm_failure_marks_the_report_asset_failed_with_a_scrubbed_error(session, project, monkeypatch):
+    from app.agents.reports.nodes import ReportGraphDependencies
+    from app.modules.assets.ai_profile import AIProfile
+    from app.modules.assets.enums import AssetSource
+    from app.workers.tasks import _generate_report
+
+    session.add(_make_asset(project))
+    await session.commit()
+
+    report_asset = Asset(
+        project_id=project.id,
+        owner_id=project.owner_id,
+        title="Study Summary",
+        description=None,
+        asset_type=AssetType.SUMMARY,
+        status=AssetStatus.ACTIVE,
+        mime_type="application/json",
+        file_name="study-summary.json",
+        file_extension="json",
+        file_size=0,
+        storage_path="",
+        checksum="",
+        source=AssetSource.GENERATED,
+        version=1,
+        tags=[],
+        asset_metadata={"kind": "study_summary", "sections": []},
+        ai_profile=AIProfile().model_dump(mode="json"),
+        created_by=project.owner_id,
+        processing_status=AssetProcessingStatus.PENDING,
+    )
+    session.add(report_asset)
+    await session.commit()
+    report_asset_id = report_asset.id
+
+    class _RaisingGateway:
+        async def generate(self, **kwargs):
+            raise RuntimeError("https://secret-endpoint.example/leak?key=super-secret")
+
+    class _EmptyDocumentLister:
+        async def list_processed(self, project_id):
+            return [{"asset_id": "a1", "title": "t", "file_name": "f.pdf", "summary": "s", "topics": []}]
+
+    class _AllEvidenceSearcher:
+        async def search(self, *, owner_id, project_id, query, limit):
+            return [{"asset_id": "a1", "title": "t", "file_name": "f.pdf", "snippet": "evidence"}]
+
+    monkeypatch.setattr(
+        "app.workers.tasks.build_report_dependencies",
+        lambda session: ReportGraphDependencies(
+            document_lister=_EmptyDocumentLister(),
+            section_searcher=_AllEvidenceSearcher(),
+            llm_gateway=_RaisingGateway(),
+        ),
+    )
+
+    await _generate_report(report_asset_id)
+
+    from app.database.session import async_session_factory
+
+    async with async_session_factory() as verify_session:
+        refreshed = await AssetRepository(verify_session).get_by_id(report_asset_id)
+        assert refreshed.processing_status.value == "failed"
+        assert "secret-endpoint" not in refreshed.processing_error
+        assert "super-secret" not in refreshed.processing_error
+        assert refreshed.processing_error == "Report generation failed (RuntimeError)."
