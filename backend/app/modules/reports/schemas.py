@@ -3,9 +3,13 @@
 import enum
 import uuid
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.modules.assets.enums import AssetProcessingStatus
+from app.modules.assets.models import Asset
+from app.modules.assets.schemas import AssetRead
+from app.modules.research.models import ResearchStep
+from app.modules.research.schemas import ResearchStepRead
 
 
 class ReportKind(str, enum.Enum):
@@ -30,3 +34,20 @@ class ReportGenerationAccepted(BaseModel):
 
     asset_id: uuid.UUID
     status: AssetProcessingStatus
+
+
+class ReportRead(AssetRead):
+    """`GET /reports/{asset_id}`: the report asset plus its persisted
+    step trace (hardening item 1), so the frontend renders a report run
+    with the same pipeline view a research run uses. A separate report
+    endpoint, rather than widening `AssetRead`, keeps the assets module
+    unaware of the research step table."""
+
+    steps: list[ResearchStepRead] = Field(default_factory=list)
+
+    @classmethod
+    def from_report(cls, asset: Asset, steps: list[ResearchStep]) -> "ReportRead":
+        return cls(
+            **AssetRead.from_model(asset).model_dump(),
+            steps=[ResearchStepRead.model_validate(step) for step in steps],
+        )

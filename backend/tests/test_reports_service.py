@@ -460,3 +460,35 @@ async def test_a_failed_node_marks_its_step_failed_scrubbed_and_skips_the_rest(p
         refreshed = await AssetRepository(verify_session).get_by_id(report.id)
     assert refreshed.processing_status.value == "failed"
     assert refreshed.asset_metadata["sections"] == []
+
+
+@pytest.mark.asyncio
+async def test_get_report_returns_the_asset_with_its_steps_and_hides_it_from_others(session, project, make_report_asset):
+    from datetime import datetime, timezone
+
+    from app.modules.reports.schemas import ReportRead
+    from app.modules.research.enums import ResearchStepStatus
+    from app.modules.research.models import ResearchStep
+
+    report = await make_report_asset(project, status=AssetProcessingStatus.COMPLETED)
+    session.add(
+        ResearchStep(
+            asset_id=report.id,
+            step_index=0,
+            node_name="collect_documents",
+            title="Collect project documents",
+            status=ResearchStepStatus.COMPLETED,
+            summary="Collected 1 processed document(s).",
+            completed_at=datetime.now(timezone.utc),
+            duration_ms=4,
+        )
+    )
+    await session.commit()
+
+    asset, steps = await ReportService(session).get_report(project.owner_id, report.id)
+    read = ReportRead.from_report(asset, steps)
+
+    assert read.id == report.id
+    assert [step.node_name for step in read.steps] == ["collect_documents"]
+    with pytest.raises(ReportNotFoundError):
+        await ReportService(session).get_report(uuid.uuid4(), report.id)

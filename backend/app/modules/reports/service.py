@@ -20,6 +20,8 @@ from app.modules.projects.repository import ProjectRepository
 from app.modules.reports.export import render_docx, render_pdf
 from app.modules.reports.repository import ReportRepository
 from app.modules.reports.schemas import ReportKind
+from app.modules.research.models import ResearchStep
+from app.modules.research.repository import ResearchStepRepository
 from app.workers.tasks import generate_report
 
 _KIND_ASSET_TYPE: dict[ReportKind, AssetType] = {
@@ -64,6 +66,7 @@ class ReportService:
         self._reports = ReportRepository(session)
         self._assets = AssetRepository(session)
         self._projects = ProjectRepository(session)
+        self._steps = ResearchStepRepository(session)
 
     async def _ensure_project_owned(self, owner_id: uuid.UUID, project_id: uuid.UUID):
         project = await self._projects.get_by_id(project_id)
@@ -128,6 +131,14 @@ class ReportService:
         if asset is None or asset.owner_id != owner_id or asset.source is not AssetSource.GENERATED:
             raise ReportNotFoundError(asset_id)
         return asset
+
+    async def get_report(
+        self, owner_id: uuid.UUID, asset_id: uuid.UUID
+    ) -> tuple[Asset, list[ResearchStep]]:
+        """Fetch an owned report asset and its step trace, in order."""
+        asset = await self.get_owned_report(owner_id, asset_id)
+        steps = await self._steps.list_by_asset(asset.id)
+        return asset, steps
 
     async def render_download(
         self, owner_id: uuid.UUID, asset_id: uuid.UUID, format: str

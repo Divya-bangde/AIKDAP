@@ -15,7 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from app.modules.assets.router import _content_disposition
 from app.modules.auth.models import User
 from app.modules.auth.security import get_current_user
-from app.modules.reports.schemas import ReportGenerateRequest, ReportGenerationAccepted
+from app.modules.reports.schemas import ReportGenerateRequest, ReportGenerationAccepted, ReportRead
 from app.modules.reports.service import (
     NoProcessedDocumentsError,
     ProjectAccessDeniedError,
@@ -44,7 +44,7 @@ async def generate_synopsis_route(
 ) -> ReportGenerationAccepted:
     """Start generating a Study Summary or Project Synopsis for a
     project's processed documents. Runs in the Celery worker; poll
-    `GET /assets/{asset_id}` for `processing_status`."""
+    `GET /reports/{asset_id}` for `processing_status`."""
     try:
         asset = await service.generate_synopsis(current_user.id, project_id, data.kind)
     except ProjectAccessDeniedError as exc:
@@ -55,6 +55,20 @@ async def generate_synopsis_route(
             detail="This project has no processed documents to report on yet.",
         ) from exc
     return ReportGenerationAccepted(asset_id=asset.id, status=asset.processing_status)
+
+
+@router.get("/reports/{asset_id}")
+async def get_report_route(
+    asset_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    service: ReportService = Depends(get_report_service),
+) -> ReportRead:
+    """A report's status, error, sections, and full step trace."""
+    try:
+        asset, steps = await service.get_report(current_user.id, asset_id)
+    except ReportNotFoundError as exc:
+        raise _REPORT_NOT_FOUND from exc
+    return ReportRead.from_report(asset, steps)
 
 
 @router.get("/reports/{asset_id}/download")
