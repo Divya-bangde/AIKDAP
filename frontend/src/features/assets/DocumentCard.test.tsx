@@ -145,4 +145,24 @@ describe("DocumentCard retry", () => {
 
     expect(screen.queryByRole("button", { name: /^retry$/i })).not.toBeInTheDocument();
   });
+
+  it("shows an error inline when the retry fails", async () => {
+    const user = userEvent.setup();
+    vi.mocked(reportsService.retryReport).mockRejectedValue({
+      status: 409,
+      message: "Only a failed report can be retried.",
+    });
+
+    renderWithProviders(
+      <DocumentCard
+        asset={makeAsset({ source: "generated", processing_status: "failed" })}
+        isSelected={false}
+        onSelect={vi.fn()}
+        projectId="project-1"
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: /^retry$/i }));
+
+    expect(await screen.findByText("Only a failed report can be retried.")).toBeInTheDocument();
+  });
 });

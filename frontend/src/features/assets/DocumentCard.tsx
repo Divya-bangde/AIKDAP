@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { messageFor } from "@/lib/api-error";
 import { formatBytes, formatRelativeTime } from "@/lib/format";
 import { isSettled } from "@/features/assets/asset-state";
 import { cn } from "@/lib/utils";
@@ -125,6 +126,11 @@ export function DocumentCard({ asset, isSelected, onSelect, projectId }: Documen
                 </Button>
               )}
             </div>
+            {retryMutation.isError && (
+              <p role="alert" className="text-xs text-destructive">
+                {messageFor(retryMutation.error)}
+              </p>
+            )}
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span className="tabular">{formatBytes(asset.file_size)}</span>
               <span>{formatRelativeTime(asset.created_at)}</span>
