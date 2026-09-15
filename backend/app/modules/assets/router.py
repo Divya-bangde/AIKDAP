@@ -19,6 +19,7 @@ from app.modules.assets.service import (
     AssetNotFoundError,
     AssetService,
     DuplicateAssetError,
+    GeneratedAssetReprocessError,
     ProjectAccessDeniedError,
     get_asset_service,
 )
@@ -136,6 +137,11 @@ async def reprocess_asset(
         asset = await service.reprocess(current_user.id, asset_id, force=force)
     except AssetNotFoundError as exc:
         raise _NOT_FOUND from exc
+    except GeneratedAssetReprocessError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Generated assets (reports) cannot be reprocessed.",
+        ) from exc
     return AssetRead.from_model(asset)
 
 

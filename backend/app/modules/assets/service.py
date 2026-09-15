@@ -57,6 +57,16 @@ class ProjectAccessDeniedError(Exception):
     """Raised when the caller does not own the project an asset belongs to."""
 
 
+class GeneratedAssetReprocessError(Exception):
+    """Raised when `reprocess` is asked to re-run the upload pipeline
+    against a `source=GENERATED` asset (e.g. a report). Generated
+    assets were never uploaded (`storage_path=""`, no file content),
+    so `process_uploaded_asset` has nothing to extract/chunk/embed --
+    reusing the generic upload pipeline here would queue the asset,
+    then fail loudly the first time the task tries to read its
+    (nonexistent) stored file."""
+
+
 class DuplicateAssetError(Exception):
     """Raised when a byte-identical file already exists (active) in the
     same project. Carries the existing asset so the caller can point
@@ -339,13 +349,30 @@ class AssetService:
         await self._session.commit()
         # Delete the file only after the DB row is committed: an orphaned
         # file is harmless, but a DB row pointing at a missing file isn't.
-        await self._storage.delete(storage_path)
+        # A GENERATED asset (e.g. a report) has `storage_path=""` -- it
+        # was never written to storage, so there is nothing to unlink.
+        # `StorageProvider._resolve("")` resolves an empty path to the
+        # storage root itself, so skipping this call for an empty path
+        # is not just an optimization: calling it would attempt to
+        # delete the storage root.
+        if storage_path:
+            await self._storage.delete(storage_path)
 
     async def get_file_for_download(
         self, current_user_id: uuid.UUID, asset_id: uuid.UUID
     ) -> tuple[Asset, bytes]:
-        """Fetch an owned asset's record and its raw file content."""
+        """Fetch an owned asset's record and its raw file content.
+
+        A `source=GENERATED` asset (e.g. a report) has no stored file
+        (`storage_path=""`) -- rendering one on demand is
+        `ReportService.render_download`'s job, not this generic
+        endpoint's, so this raises the same "not found" error a caller
+        already handles rather than reading the storage root as a
+        directory.
+        """
         asset = await self.get_owned(current_user_id, asset_id)
+        if not asset.storage_path:
+            raise AssetNotFoundError(asset_id)
         content = await self._storage.read(asset.storage_path)
         return asset, content
 
@@ -372,6 +399,9 @@ class AssetService:
         never skipped, forced or not.
         """
         asset = await self.get_owned(current_user_id, asset_id)
+
+        if asset.source is AssetSource.GENERATED:
+            raise GeneratedAssetReprocessError(asset_id)
 
         if not force and await self._already_fully_processed(asset):
             logger.info(

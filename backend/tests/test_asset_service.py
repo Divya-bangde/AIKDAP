@@ -23,7 +23,12 @@ from app.modules.assets.enums import (
     EmbeddingStatus,
 )
 from app.modules.assets.models import Asset
-from app.modules.assets.service import AssetNotFoundError, AssetService, DuplicateAssetError
+from app.modules.assets.service import (
+    AssetNotFoundError,
+    AssetService,
+    DuplicateAssetError,
+    GeneratedAssetReprocessError,
+)
 from app.modules.assets.storage import StorageProvider
 from app.modules.knowledge_base.models import KnowledgeChunk
 
@@ -389,3 +394,79 @@ async def test_create_imported_asset_deduplicates_by_checksum(session, project):
             mime_type="application/pdf",
             title="Duplicate",
         )
+
+
+# ---------------------------------------------------------------------------
+# Final-review finding I4: generic asset actions on a GENERATED report
+# asset (`storage_path=""`) must not touch storage as if it were the
+# storage root, and reprocess must reject GENERATED assets outright.
+# ---------------------------------------------------------------------------
+
+
+async def _make_generated_asset(session, project, **overrides) -> Asset:
+    return await _make_asset(
+        session,
+        project,
+        asset_type=AssetType.SUMMARY,
+        mime_type="application/json",
+        file_name="study-summary.json",
+        file_extension="json",
+        file_size=0,
+        storage_path="",
+        checksum="",
+        source=AssetSource.GENERATED,
+        asset_metadata={"kind": "study_summary", "sections": []},
+        processing_status=AssetProcessingStatus.COMPLETED,
+        **overrides,
+    )
+
+
+async def test_delete_of_a_generated_asset_skips_the_empty_storage_path(session, project):
+    """`storage_path=""` must never reach `StorageProvider.delete` --
+    `_resolve("")` treats an empty path as the storage root, and
+    `_FakeStorage.delete` here stands in for that risk: if the service
+    ever called it with `""`, it would be a no-op against a key that
+    isn't tracked, so the real assertion is that storage.delete is
+    never invoked at all."""
+    asset = await _make_generated_asset(session, project)
+    storage = _FakeStorage()
+    deleted_paths: list[str] = []
+    original_delete = storage.delete
+
+    async def _tracking_delete(path: str) -> None:
+        deleted_paths.append(path)
+        await original_delete(path)
+
+    storage.delete = _tracking_delete  # type: ignore[method-assign]
+    service = AssetService(session, storage)
+
+    await service.delete(project.owner_id, asset.id)
+
+    assert deleted_paths == []
+    with pytest.raises(AssetNotFoundError):
+        await service.get_owned(project.owner_id, asset.id)
+
+
+async def test_download_of_a_generated_asset_raises_not_found(session, project):
+    """A GENERATED asset has no stored file -- downloading it through
+    the generic assets endpoint must surface the same not-found error
+    the caller already handles, not read the storage root as a file."""
+    asset = await _make_generated_asset(session, project)
+    service = AssetService(session, _FakeStorage())
+
+    with pytest.raises(AssetNotFoundError):
+        await service.get_file_for_download(project.owner_id, asset.id)
+
+
+async def test_reprocess_of_a_generated_asset_is_rejected(session, project):
+    """Reprocessing a GENERATED asset would queue the upload pipeline
+    against an asset with no stored file to extract -- rejected before
+    ever touching `processing_status`."""
+    asset = await _make_generated_asset(session, project)
+    service = AssetService(session, _FakeStorage())
+
+    with pytest.raises(GeneratedAssetReprocessError):
+        await service.reprocess(project.owner_id, asset.id)
+
+    await session.refresh(asset)
+    assert asset.processing_status is AssetProcessingStatus.COMPLETED
