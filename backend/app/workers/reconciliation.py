@@ -33,6 +33,8 @@ from sqlalchemy import select
 from app.core.config import settings
 from app.core.logging.logger import get_logger
 from app.database.session import async_session_factory
+from app.modules.assets.enums import AssetProcessingStatus, AssetSource, AssetType
+from app.modules.assets.models import Asset
 from app.modules.execution.repository import ExecutionAttemptRepository, ExecutionJobRepository
 from app.modules.research.enums import ResearchRunStatus
 from app.modules.research.models import ResearchRun
@@ -459,6 +461,100 @@ async def reconcile_execution_jobs_on_startup() -> None:
         stale_pending_create_attempts_marked=attempts_marked,
         stale_docker_managed_attempts_enqueued=docker_managed_enqueued,
     )
+
+
+#: Persisted on every report asset this reconciles. Fixed and complete
+#: -- no interpolation -- matching `STALE_RUN_FAILURE_REASON`'s own
+#: scrubbing discipline: this string reaches `GET /reports/{asset_id}`
+#: (auth-gated, but still user-facing on `processing_error`), so it
+#: says what happened without saying anything about *why* the worker
+#: died.
+STALE_REPORT_FAILURE_REASON = (
+    "Report generation marked failed during stale-report reconciliation after "
+    "worker interruption."
+)
+
+#: The two `AssetType` values `ReportService.generate_synopsis` ever
+#: creates (see `_KIND_ASSET_TYPE` there) -- the only asset types this
+#: reconciler is scoped to.
+_REPORT_ASSET_TYPES = (AssetType.REPORT, AssetType.SUMMARY)
+
+#: `_generate_report` only ever leaves a report asset at one of these
+#: two statuses without reaching a terminal state: `pending` if the
+#: worker died before the task even started, `running` if it died mid
+#: generation.
+_STALE_REPORT_STATUSES = (AssetProcessingStatus.PENDING, AssetProcessingStatus.RUNNING)
+
+
+async def reconcile_stale_report_generations() -> int:
+    """Fail every GENERATED report `Asset` stuck at `pending`/`running`
+    past the stale threshold. Returns the number of assets reconciled.
+
+    Mirrors `reconcile_stale_research_runs`'s shape exactly (same
+    "worker died mid-job, nothing else ever revisits the row" root
+    cause, applied to `workers.tasks._generate_report` instead of
+    `ResearchExecutionService.execute`): scoped to `source=GENERATED`
+    report-kind assets (`REPORT`/`SUMMARY`) whose `updated_at` is older
+    than `settings.report_generation_stale_after_seconds`. `updated_at`
+    is the right clock here, not `created_at`: `_generate_report`
+    commits the `RUNNING` transition immediately after creation, so a
+    genuinely in-progress report always has a recent `updated_at`,
+    exactly like `started_at` for a `ResearchRun`.
+
+    Idempotent by construction, same as `reconcile_stale_research_runs`:
+    the WHERE clause only matches rows still at `pending`/`running`, and
+    this is the only function that ever moves a report asset out of
+    those statuses without also completing it.
+    """
+    cutoff = datetime.now(timezone.utc) - timedelta(
+        seconds=settings.report_generation_stale_after_seconds
+    )
+
+    async with async_session_factory() as session:
+        result = await session.execute(
+            select(Asset).where(
+                Asset.source == AssetSource.GENERATED,
+                Asset.asset_type.in_(_REPORT_ASSET_TYPES),
+                Asset.processing_status.in_(_STALE_REPORT_STATUSES),
+                Asset.updated_at < cutoff,
+            )
+        )
+        stale_assets = list(result.scalars().all())
+
+        for asset in stale_assets:
+            asset.processing_status = AssetProcessingStatus.FAILED
+            asset.processing_error = STALE_REPORT_FAILURE_REASON
+            logger.warning(
+                "report_generation_reconciled_stale",
+                asset_id=str(asset.id),
+                updated_at=asset.updated_at.isoformat() if asset.updated_at else None,
+                stale_after_seconds=settings.report_generation_stale_after_seconds,
+            )
+
+        if stale_assets:
+            await session.commit()
+
+    return len(stale_assets)
+
+
+async def reconcile_stale_report_generations_on_startup() -> None:
+    """Entry point for the worker's `worker_ready` signal handler.
+
+    Never raises -- a reconciliation failure must not prevent the
+    worker from accepting new tasks, the same non-fatal contract
+    `reconcile_stale_research_runs_on_startup` uses.
+    """
+    try:
+        count = await reconcile_stale_report_generations()
+    except Exception as exc:  # noqa: BLE001 - startup path must not crash the worker
+        logger.error(
+            "report_generation_reconciliation_failed",
+            error_type=type(exc).__name__,
+            error_message=str(exc),
+        )
+        return
+
+    logger.info("report_generation_reconciliation_summary", reconciled_count=count)
 
 
 async def reconcile_stale_research_runs_on_startup() -> None:

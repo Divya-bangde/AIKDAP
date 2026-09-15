@@ -46,6 +46,7 @@ import app.workers.scheduler  # noqa: E402,F401
 from app.workers.reconciliation import (  # noqa: E402
     reconcile_execution_jobs_on_startup,
     reconcile_stale_launching_execution_jobs,
+    reconcile_stale_report_generations_on_startup,
     reconcile_stale_research_runs_on_startup,
 )
 # reconcile_stale_docker_managed_attempts (Sprint 16 Phase 7B.29) is
@@ -81,6 +82,7 @@ async def _run_startup_reconciliation() -> None:
     Celery task it enqueues, off this loop entirely.
     """
     await reconcile_stale_research_runs_on_startup()
+    await reconcile_stale_report_generations_on_startup()
     await reconcile_execution_jobs_on_startup()
     await reconcile_stale_launching_execution_jobs()
 

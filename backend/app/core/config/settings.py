@@ -338,6 +338,25 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
     execution_job_validating_stale_after_seconds: float = Field(default=120.0, gt=0)
 
+    # ------------------------------------------------------------------
+    # Stale report-generation reconciliation (Milestone 10 step 4)
+    #
+    # `workers.tasks._generate_report` sets `processing_status=RUNNING`
+    # before invoking the report LangGraph, and only reaches its own
+    # `except`/success path if the worker process survives long enough
+    # to run it. A worker crash mid-generation leaves the asset at
+    # `running` (or, if the worker dies before the task even starts,
+    # `pending`) forever — the same "nothing ever revisits this row" gap
+    # Sprint 9J found for `ResearchRun`, reused here rather than
+    # reinvented. Sized the same way: one report section calls the LLM
+    # gateway at most once, so the worst case is a single
+    # `llm_max_retries`-bounded call chain across the fallback providers,
+    # well inside `research_run_stale_after_seconds`'s own 20-minute
+    # ceiling — reused directly rather than duplicating the same
+    # reasoning under a new number.
+    # ------------------------------------------------------------------
+    report_generation_stale_after_seconds: float = Field(default=1_200.0, gt=0)
+
     #: Whether research synthesis answers with a real model
     #: (`GroundedSynthesizer`) or extracts from the evidence without one
     #: (`ExtractiveSynthesizer`). There is deliberately no automatic
