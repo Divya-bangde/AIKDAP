@@ -7,7 +7,7 @@ Contains only persistence operations, matching the existing convention
 
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.assets.enums import AssetProcessingStatus, AssetType
@@ -42,3 +42,21 @@ class ReportRepository:
         )
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
+
+    async def claim_pending(self, asset_id: uuid.UUID) -> bool:
+        """Atomically move a report from `pending` to `running`.
+
+        One conditional UPDATE, so exactly one caller can win: a
+        duplicate or redelivered Celery message finds the row no longer
+        `pending` and gets `False` -- before any LLM call or write. The
+        caller commits."""
+        result = await self._session.execute(
+            update(Asset)
+            .where(
+                Asset.id == asset_id,
+                Asset.processing_status == AssetProcessingStatus.PENDING,
+            )
+            .values(processing_status=AssetProcessingStatus.RUNNING)
+            .execution_options(synchronize_session=False)
+        )
+        return result.rowcount == 1

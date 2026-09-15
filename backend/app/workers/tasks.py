@@ -64,6 +64,7 @@ from app.agents.reports.graph import get_report_graph
 from app.agents.reports.nodes import build_report_dependencies
 from app.modules.knowledge_base.embeddings import get_embedding_provider
 from app.modules.knowledge_base.repository import KnowledgeChunkRepository
+from app.modules.reports.repository import ReportRepository
 from app.modules.reports.tracking import ReportStepTracker, scrub_report_error
 from app.modules.research.enums import ResearchRunStatus
 from app.modules.research.models import ResearchRun
@@ -795,13 +796,16 @@ def generate_report(self, asset_id: str) -> dict[str, str]:
 async def _generate_report(asset_id: uuid.UUID) -> dict[str, str]:
     async with async_session_factory() as session:
         assets = AssetRepository(session)
-        asset = await assets.get_by_id(asset_id)
-        if asset is None:
-            logger.error("report_generation_asset_missing", asset_id=str(asset_id))
-            return {"status": "asset_missing", "asset_id": str(asset_id)}
-
-        asset.processing_status = AssetProcessingStatus.RUNNING
+        # Claim first: only a `pending` report may start. A duplicate or
+        # redelivered message -- or a missing asset -- claims nothing and
+        # exits here, before any LLM call or write.
+        claimed = await ReportRepository(session).claim_pending(asset_id)
         await session.commit()
+        if not claimed:
+            logger.info("report_generation_not_claimed", asset_id=str(asset_id))
+            return {"status": "skipped", "asset_id": str(asset_id)}
+
+        asset = await assets.get_by_id(asset_id)
 
         # Each run is its own attempt, numbered after any earlier ones,
         # so a retried report keeps every attempt's trace separately.

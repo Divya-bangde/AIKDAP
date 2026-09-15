@@ -54,6 +54,10 @@ class ReportNotReadyError(Exception):
     """Raised when a download is requested before generation finished."""
 
 
+class ReportNotRetryableError(Exception):
+    """Raised when a retry is requested for a report that has not failed."""
+
+
 def _slug(text: str) -> str:
     return "-".join(text.lower().split()) or "report"
 
@@ -139,6 +143,27 @@ class ReportService:
         asset = await self.get_owned_report(owner_id, asset_id)
         steps = await self._steps.list_by_asset(asset.id)
         return asset, steps
+
+    async def retry_report(self, owner_id: uuid.UUID, asset_id: uuid.UUID) -> Asset:
+        """Reset a failed report to `pending` and re-enqueue it.
+
+        Only a `failed` report is retryable -- anything else (pending,
+        running, completed) raises `ReportNotRetryableError`. Earlier
+        attempts' steps are kept; the new attempt appends to the trace.
+        Two concurrent retries may both enqueue, but the worker's
+        atomic `pending -> running` claim lets exactly one run.
+        """
+        asset = await self.get_owned_report(owner_id, asset_id)
+        if asset.processing_status is not AssetProcessingStatus.FAILED:
+            raise ReportNotRetryableError(asset_id)
+
+        asset.processing_status = AssetProcessingStatus.PENDING
+        asset.processing_error = None
+        asset.asset_metadata = {**asset.asset_metadata, "sections": []}
+        await self._session.commit()
+
+        generate_report.delay(str(asset.id))
+        return asset
 
     async def render_download(
         self, owner_id: uuid.UUID, asset_id: uuid.UUID, format: str

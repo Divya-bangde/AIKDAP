@@ -492,3 +492,92 @@ async def test_get_report_returns_the_asset_with_its_steps_and_hides_it_from_oth
     assert [step.node_name for step in read.steps] == ["collect_documents"]
     with pytest.raises(ReportNotFoundError):
         await ReportService(session).get_report(uuid.uuid4(), report.id)
+
+
+@pytest.mark.asyncio
+async def test_a_redelivered_generation_message_does_nothing(project, monkeypatch, make_report_asset):
+    from app.workers.tasks import _generate_report
+
+    report = await make_report_asset(project)
+    gateway = _Gateway()
+    _patch_dependencies(monkeypatch, gateway)
+
+    first = await _generate_report(report.id)
+    calls_after_first = gateway.calls
+    steps_after_first = len(await _steps_for(report.id))
+    second = await _generate_report(report.id)
+
+    assert first["status"] == "ok"
+    assert second == {"status": "skipped", "asset_id": str(report.id)}
+    assert gateway.calls == calls_after_first
+    assert len(await _steps_for(report.id)) == steps_after_first
+
+
+@pytest.mark.asyncio
+async def test_a_retried_report_records_its_second_attempt_separately(session, project, monkeypatch, make_report_asset):
+    from app.workers.tasks import _generate_report
+
+    monkeypatch.setattr("app.modules.reports.service.generate_report", type("_T", (), {"delay": staticmethod(lambda asset_id: None)}))
+    report = await make_report_asset(project)
+
+    _patch_dependencies(monkeypatch, _Gateway(raises=RuntimeError("boom")))
+    await _generate_report(report.id)
+    # `_generate_report` commits on its own session; `expire_on_commit`
+    # is False, so `session`'s identity-mapped copy of `report` needs an
+    # explicit refresh to see that session's write before this session's
+    # own `get_owned_report` reads it back.
+    await session.refresh(report)
+    await ReportService(session).retry_report(project.owner_id, report.id)
+    _patch_dependencies(monkeypatch, _Gateway())
+    await _generate_report(report.id)
+
+    steps = await _steps_for(report.id)
+    first = [step for step in steps if step.attempt == 1]
+    second = [step for step in steps if step.attempt == 2]
+    assert [step.status.value for step in first] == ["completed", "completed", "failed", "skipped"]
+    assert [step.status.value for step in second] == ["completed"] * 4
+    assert [step.step_index for step in second] == [0, 1, 2, 3]
+
+
+@pytest.mark.asyncio
+async def test_claim_pending_succeeds_exactly_once(session, project, make_report_asset):
+    report = await make_report_asset(project)
+    repository = ReportRepository(session)
+
+    assert await repository.claim_pending(report.id) is True
+    await session.commit()
+    assert await repository.claim_pending(report.id) is False
+
+
+@pytest.mark.asyncio
+async def test_retry_resets_a_failed_report_and_re_enqueues_it(session, project, monkeypatch, make_report_asset):
+    dispatched: list[str] = []
+    monkeypatch.setattr(
+        "app.modules.reports.service.generate_report",
+        type("_T", (), {"delay": staticmethod(lambda asset_id: dispatched.append(asset_id))}),
+    )
+    report = await make_report_asset(
+        project,
+        status=AssetProcessingStatus.FAILED,
+        processing_error="Report generation failed (RuntimeError).",
+    )
+
+    retried = await ReportService(session).retry_report(project.owner_id, report.id)
+
+    assert retried.processing_status is AssetProcessingStatus.PENDING
+    assert retried.processing_error is None
+    assert retried.asset_metadata["sections"] == []
+    assert dispatched == [str(report.id)]
+
+
+@pytest.mark.asyncio
+async def test_retry_refuses_a_report_that_has_not_failed_and_hides_it_from_others(session, project, monkeypatch, make_report_asset):
+    from app.modules.reports.service import ReportNotRetryableError
+
+    monkeypatch.setattr("app.modules.reports.service.generate_report", type("_T", (), {"delay": staticmethod(lambda asset_id: None)}))
+    report = await make_report_asset(project, status=AssetProcessingStatus.COMPLETED)
+
+    with pytest.raises(ReportNotRetryableError):
+        await ReportService(session).retry_report(project.owner_id, report.id)
+    with pytest.raises(ReportNotFoundError):
+        await ReportService(session).retry_report(uuid.uuid4(), report.id)

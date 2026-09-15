@@ -21,6 +21,7 @@ from app.modules.reports.service import (
     ProjectAccessDeniedError,
     ReportNotFoundError,
     ReportNotReadyError,
+    ReportNotRetryableError,
     ReportService,
     get_report_service,
 )
@@ -92,3 +93,26 @@ async def download_report_route(
         media_type=media_type,
         headers={"Content-Disposition": _content_disposition(filename)},
     )
+
+
+@router.post(
+    "/reports/{asset_id}/retry",
+    response_model=ReportGenerationAccepted,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def retry_report_route(
+    asset_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    service: ReportService = Depends(get_report_service),
+) -> ReportGenerationAccepted:
+    """Re-run a failed report. Owner-only (404 otherwise); only a
+    `failed` report is retryable (409 otherwise)."""
+    try:
+        asset = await service.retry_report(current_user.id, asset_id)
+    except ReportNotFoundError as exc:
+        raise _REPORT_NOT_FOUND from exc
+    except ReportNotRetryableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Only a failed report can be retried."
+        ) from exc
+    return ReportGenerationAccepted(asset_id=asset.id, status=asset.processing_status)
