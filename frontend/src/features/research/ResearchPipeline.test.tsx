@@ -13,6 +13,8 @@ function makeStep(overrides: Partial<ResearchStepRead>): ResearchStepRead {
   return {
     id: crypto.randomUUID(),
     run_id: "run-1",
+    asset_id: null,
+    attempt: 1,
     step_index: 0,
     node_name: "planner",
     title: "Plan the research run",

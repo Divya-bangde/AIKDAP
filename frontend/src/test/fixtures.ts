@@ -3,7 +3,9 @@ import type { components } from "@/types/api";
 type AIProfile = components["schemas"]["AIProfile"];
 type AssetRead = components["schemas"]["AssetRead"];
 type ProjectRead = components["schemas"]["ProjectRead"];
+type ReportRead = components["schemas"]["ReportRead"];
 type ResearchRunRead = components["schemas"]["ResearchRunRead"];
+type ResearchStepRead = components["schemas"]["ResearchStepRead"];
 type UserRead = components["schemas"]["UserRead"];
 
 /** A complete `AIProfile` carrying the backend's own defaults, so a
@@ -104,6 +106,45 @@ export function makeAsset(overrides: Partial<AssetRead> = {}): AssetRead {
     processing_completed_at: null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
+    ...overrides,
+  };
+}
+
+/** A GENERATED report asset (study summary) with its step trace. */
+export function makeReport(overrides: Partial<ReportRead> = {}): ReportRead {
+  return {
+    ...makeAsset({
+      title: "Study Summary",
+      asset_type: "summary",
+      source: "generated",
+      mime_type: "application/json",
+      file_name: "study-summary.json",
+      file_extension: "json",
+      file_size: 0,
+    }),
+    steps: [],
+    ...overrides,
+  };
+}
+
+/** One report-run step, completed unless overridden. */
+export function makeStep(overrides: Partial<ResearchStepRead> = {}): ResearchStepRead {
+  return {
+    id: "s1",
+    run_id: null,
+    asset_id: "a1",
+    attempt: 1,
+    step_index: 0,
+    node_name: "collect_documents",
+    title: "Collect project documents",
+    status: "completed",
+    summary: "Collected 1 processed document(s).",
+    output_payload: { document_count: 1 },
+    error_message: null,
+    started_at: new Date().toISOString(),
+    completed_at: new Date().toISOString(),
+    duration_ms: 12,
+    created_at: new Date().toISOString(),
     ...overrides,
   };
 }

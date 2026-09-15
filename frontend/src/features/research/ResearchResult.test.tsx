@@ -167,6 +167,8 @@ describe("ResearchResult", () => {
         {
           id: "step-1",
           run_id: "run-1",
+          asset_id: null,
+          attempt: 1,
           step_index: 5,
           node_name: "synthesis",
           title: "Synthesize the deliverable",
@@ -206,6 +208,8 @@ describe("ResearchResult", () => {
         {
           id: "step-1",
           run_id: "run-1",
+          asset_id: null,
+          attempt: 1,
           step_index: 5,
           node_name: "synthesis",
           title: "Synthesize the deliverable",
@@ -250,6 +254,8 @@ describe("ResearchResult", () => {
         {
           id: "step-1",
           run_id: "run-1",
+          asset_id: null,
+          attempt: 1,
           step_index: 5,
           node_name: "synthesis",
           title: "Synthesize the deliverable",
@@ -362,6 +368,8 @@ describe("ResearchResult", () => {
         {
           id: "s1",
           run_id: "run-1",
+          asset_id: null,
+          attempt: 1,
           step_index: 2,
           node_name: "asset_retrieval",
           title: "Search the project knowledge base",
@@ -377,6 +385,8 @@ describe("ResearchResult", () => {
         {
           id: "s2",
           run_id: "run-1",
+          asset_id: null,
+          attempt: 1,
           step_index: 4,
           node_name: "context_builder",
           title: "Build the working context",
@@ -425,6 +435,8 @@ describe("ResearchResult", () => {
     const synthesisStep = (outputPayload: Record<string, unknown>) => ({
       id: "step-s",
       run_id: "run-1",
+          asset_id: null,
+          attempt: 1,
       step_index: 5,
       node_name: "synthesis",
       title: "Synthesize the deliverable",

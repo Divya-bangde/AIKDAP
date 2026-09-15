@@ -11,13 +11,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ResearchPipeline } from "@/features/research/ResearchPipeline";
 import { usePolling } from "@/hooks/usePolling";
 import { messageFor } from "@/lib/api-error";
-import * as assetsService from "@/services/assets";
 import * as reportsService from "@/services/reports";
 import type { components } from "@/types/api";
 
-type AssetRead = components["schemas"]["AssetRead"];
+type ReportRead = components["schemas"]["ReportRead"];
 type ReportKind = components["schemas"]["ReportKind"];
 
 // ponytail: fixed 6-minute cap, not configurable per-report -- mirrors
@@ -39,8 +39,20 @@ const KIND_OPTIONS: { value: ReportKind; label: string; description: string }[] 
   },
 ];
 
-function isReportTerminal(asset: AssetRead): boolean {
-  return asset.processing_status === "completed" || asset.processing_status === "failed";
+function isReportTerminal(report: ReportRead): boolean {
+  return report.processing_status === "completed" || report.processing_status === "failed";
+}
+
+type ReportStep = NonNullable<ReportRead["steps"]>[number];
+
+/** The report's steps grouped by generation attempt, oldest first --
+ * each attempt is its own pipeline run (1, then +1 per retry). */
+function stepsByAttempt(steps: ReportStep[]): [number, ReportStep[]][] {
+  const groups = new Map<number, ReportStep[]>();
+  for (const step of steps) {
+    groups.set(step.attempt, [...(groups.get(step.attempt) ?? []), step]);
+  }
+  return [...groups.entries()].sort(([a], [b]) => a - b);
 }
 
 export function GenerateSynopsisDialog({
@@ -62,8 +74,8 @@ export function GenerateSynopsisDialog({
   });
 
   const reportQuery = usePolling({
-    queryKey: ["reports", "asset", assetId],
-    queryFn: () => assetsService.getAsset(assetId as string),
+    queryKey: ["reports", "report", assetId],
+    queryFn: () => reportsService.getReport(assetId as string),
     isTerminal: isReportTerminal,
     enabled: assetId !== null,
     timeoutMs: POLL_TIMEOUT_MS,
@@ -88,9 +100,9 @@ export function GenerateSynopsisDialog({
     });
   }
 
-  const asset = reportQuery.data;
-  const failed = asset?.processing_status === "failed";
-  const completed = asset?.processing_status === "completed";
+  const report = reportQuery.data;
+  const failed = report?.processing_status === "failed";
+  const completed = report?.processing_status === "completed";
   const inProgress = assetId !== null && !completed && !failed && !reportQuery.timedOut;
 
   return (
@@ -124,8 +136,26 @@ export function GenerateSynopsisDialog({
 
         {inProgress && (
           <div className="flex items-center gap-2" role="status">
-            <StatusBadge domain="assetProcessing" value={asset?.processing_status ?? "pending"} />
+            <StatusBadge domain="assetProcessing" value={report?.processing_status ?? "pending"} />
             <p className="text-sm text-muted-foreground">Generating your report…</p>
+          </div>
+        )}
+
+        {report && report.steps && report.steps.length > 0 && (
+          <div className="flex max-h-72 flex-col gap-4 overflow-y-auto rounded-lg bg-sunken p-4">
+            {stepsByAttempt(report.steps).map(([attempt, steps], index, groups) => (
+              <section key={attempt} aria-label={`Attempt ${attempt}`}>
+                {/* Headings only once a report has been retried: a
+                 * single run needs no "Attempt 1" label. */}
+                {groups.length > 1 && (
+                  <p className="mb-2 text-label uppercase text-muted-foreground">
+                    Attempt {attempt}
+                    {index === groups.length - 1 ? " (latest)" : ""}
+                  </p>
+                )}
+                <ResearchPipeline steps={steps} />
+              </section>
+            ))}
           </div>
         )}
 
@@ -137,21 +167,21 @@ export function GenerateSynopsisDialog({
 
         {failed && (
           <p role="alert" className="text-sm text-destructive">
-            {asset?.processing_error ?? "Report generation failed."}
+            {report?.processing_error ?? "Report generation failed."}
           </p>
         )}
 
-        {completed && asset && (
+        {completed && report && (
           <div className="flex gap-2" role="status">
             <Button
               variant="outline"
-              onClick={() => handleDownload(asset.id, "docx", `${asset.title}.docx`)}
+              onClick={() => handleDownload(report.id, "docx", `${report.title}.docx`)}
             >
               Download DOCX
             </Button>
             <Button
               variant="outline"
-              onClick={() => handleDownload(asset.id, "pdf", `${asset.title}.pdf`)}
+              onClick={() => handleDownload(report.id, "pdf", `${report.title}.pdf`)}
             >
               Download PDF
             </Button>

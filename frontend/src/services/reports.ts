@@ -4,12 +4,17 @@ import type { components } from "@/types/api";
 type ReportKind = components["schemas"]["ReportKind"];
 type ReportGenerateRequest = components["schemas"]["ReportGenerateRequest"];
 type ReportGenerationAccepted = components["schemas"]["ReportGenerationAccepted"];
+type ReportRead = components["schemas"]["ReportRead"];
 
 export function generateSynopsis(projectId: string, kind: ReportKind) {
   return request<ReportGenerationAccepted>(`/api/v1/projects/${projectId}/reports/synopsis`, {
     method: "POST",
     body: { kind } satisfies ReportGenerateRequest,
   });
+}
+
+export function getReport(assetId: string) {
+  return request<ReportRead>(`/api/v1/reports/${assetId}`);
 }
 
 /** Downloads a completed report and saves it through the browser,

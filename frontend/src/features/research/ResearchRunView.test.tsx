@@ -49,6 +49,8 @@ describe("ResearchRunView polling (Phase 19)", () => {
           {
             id: "s1",
             run_id: "run-1",
+            asset_id: null,
+            attempt: 1,
             step_index: 0,
             node_name: "planner",
             title: "Plan the research run",
@@ -110,6 +112,8 @@ describe("ResearchRunView polling (Phase 19)", () => {
           {
             id: "s1",
             run_id: "run-1",
+            asset_id: null,
+            attempt: 1,
             step_index: 0,
             node_name: "planner",
             title: "Plan the research run",

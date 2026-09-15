@@ -36,4 +36,12 @@ describe("reports service", () => {
     URL.createObjectURL = originalCreateObjectURL;
     URL.revokeObjectURL = originalRevokeObjectURL;
   });
+
+  it("fetches a report with its steps", async () => {
+    vi.mocked(client.request).mockResolvedValue({ id: "a1", steps: [] });
+
+    await reportsService.getReport("a1");
+
+    expect(client.request).toHaveBeenCalledWith("/api/v1/reports/a1");
+  });
 });

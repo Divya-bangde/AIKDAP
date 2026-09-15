@@ -54,6 +54,25 @@ const PRESENTATION: Record<string, StepPresentation> = {
     title: "Generating the answer",
     description: "Writing a response from verified evidence — every citation is checked against what was actually supplied.",
   },
+
+  // Report runs (Milestone 10 step 4) share this pipeline view; these
+  // are the four real `node_name`s from `backend/app/agents/reports`.
+  collect_documents: {
+    title: "Gathering your documents",
+    description: "Collecting every processed document in this project.",
+  },
+  retrieve_evidence: {
+    title: "Finding evidence for each section",
+    description: "Searching your documents for passages that support each section.",
+  },
+  write_sections: {
+    title: "Writing the report",
+    description: "Drafting each section only from that evidence — a section without evidence is marked as not covered.",
+  },
+  coverage_check: {
+    title: "Checking coverage",
+    description: "Building the references from the documents actually cited.",
+  },
 };
 
 /** Falls back to the raw `node_name` rather than a blank or invented

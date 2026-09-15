@@ -833,9 +833,29 @@ export interface paths {
          * Generate Synopsis Route
          * @description Start generating a Study Summary or Project Synopsis for a
          *     project's processed documents. Runs in the Celery worker; poll
-         *     `GET /assets/{asset_id}` for `processing_status`.
+         *     `GET /reports/{asset_id}` for `processing_status`.
          */
         post: operations["generate_synopsis_route_api_v1_projects__project_id__reports_synopsis_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/{asset_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Report Route
+         * @description A report's status, error, sections, and full step trace.
+         */
+        get: operations["get_report_route_api_v1_reports__asset_id__get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2136,6 +2156,78 @@ export interface components {
          */
         ReportKind: "study_summary" | "project_synopsis";
         /**
+         * ReportRead
+         * @description `GET /reports/{asset_id}`: the report asset plus its persisted
+         *     step trace (hardening item 1), so the frontend renders a report run
+         *     with the same pipeline view a research run uses. A separate report
+         *     endpoint, rather than widening `AssetRead`, keeps the assets module
+         *     unaware of the research step table.
+         */
+        ReportRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /**
+             * Owner Id
+             * Format: uuid
+             */
+            owner_id: string;
+            /** Title */
+            title: string;
+            /** Description */
+            description: string | null;
+            asset_type: components["schemas"]["AssetType"];
+            status: components["schemas"]["AssetStatus"];
+            /** Mime Type */
+            mime_type: string;
+            /** File Name */
+            file_name: string;
+            /** File Extension */
+            file_extension: string;
+            /** File Size */
+            file_size: number;
+            /** Checksum */
+            checksum: string;
+            source: components["schemas"]["AssetSource"];
+            /** Version */
+            version: number;
+            /** Tags */
+            tags: string[];
+            /** Metadata */
+            metadata: {
+                [key: string]: unknown;
+            };
+            ai_profile: components["schemas"]["AIProfile"];
+            /** Created By */
+            created_by: string | null;
+            processing_status: components["schemas"]["AssetProcessingStatus"];
+            /** Processing Error */
+            processing_error: string | null;
+            /** Processing Started At */
+            processing_started_at: string | null;
+            /** Processing Completed At */
+            processing_completed_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Steps */
+            steps?: components["schemas"]["ResearchStepRead"][];
+        };
+        /**
          * ResearchCertainty
          * @enum {string}
          */
@@ -2520,11 +2612,15 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Run Id */
+            run_id: string | null;
+            /** Asset Id */
+            asset_id?: string | null;
             /**
-             * Run Id
-             * Format: uuid
+             * Attempt
+             * @default 1
              */
-            run_id: string;
+            attempt: number;
             /** Step Index */
             step_index: number;
             /** Node Name */
@@ -4539,6 +4635,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReportGenerationAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_report_route_api_v1_reports__asset_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportRead"];
                 };
             };
             /** @description Validation Error */
