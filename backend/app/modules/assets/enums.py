@@ -66,6 +66,12 @@ class AssetProcessingStatus(str, enum.Enum):
 
     PENDING = "pending"
     QUEUED = "queued"
+    #: Milestone 10 step 4: a report-generation Celery job is actively
+    #: running the LangGraph pipeline for a GENERATED asset. Not part of
+    #: the extract/chunk/embed pipeline's own vocabulary (EXTRACTING/
+    #: CHUNKING/EMBEDDING) -- reports skip straight from PENDING to
+    #: RUNNING to COMPLETED/FAILED.
+    RUNNING = "running"
     EXTRACTING = "extracting"
     CHUNKING = "chunking"
     EMBEDDING = "embedding"
