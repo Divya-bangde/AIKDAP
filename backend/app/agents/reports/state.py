@@ -16,6 +16,7 @@ class ReportNode(str, enum.Enum):
     """Canonical node names for the report graph."""
 
     COLLECT_DOCUMENTS = "collect_documents"
+    RETRIEVE_EVIDENCE = "retrieve_evidence"
     WRITE_SECTIONS = "write_sections"
     COVERAGE_CHECK = "coverage_check"
 
@@ -103,6 +104,10 @@ class ReportState(TypedDict, total=False):
 
     # --- collect_documents output ---
     documents: list[ProcessedDocument]
+
+    # --- retrieve_evidence output: excerpts per section title (never
+    # --- keyed for "References", which is built, not retrieved) ---
+    evidence: dict[str, list[SectionEvidence]]
 
     # --- write_sections output (refined in place by coverage_check) ---
     sections: list[SectionResult]

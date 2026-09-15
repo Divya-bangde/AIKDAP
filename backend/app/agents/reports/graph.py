@@ -1,7 +1,8 @@
 """The report-generation LangGraph orchestrator: a small, strictly
-linear graph (spec section 4) -- collect documents, write sections,
-check coverage, done. No conditional edges, no loop-back: unlike the
-research graph, a report either completes in one pass or the run fails.
+linear graph (spec section 4) -- collect documents, retrieve evidence,
+write sections, check coverage, done. No conditional edges, no loop-back:
+unlike the research graph, a report either completes in one pass or the
+run fails.
 
 Reuses `agents.planner.tracking.instrument` so every node gets the same
 timing/logging/failure-policy wrapper the research graph's nodes get,
@@ -26,7 +27,8 @@ def build_report_graph() -> StateGraph:
         builder.add_node(name, instrument(spec))
 
     builder.add_edge(START, ReportNode.COLLECT_DOCUMENTS.value)
-    builder.add_edge(ReportNode.COLLECT_DOCUMENTS.value, ReportNode.WRITE_SECTIONS.value)
+    builder.add_edge(ReportNode.COLLECT_DOCUMENTS.value, ReportNode.RETRIEVE_EVIDENCE.value)
+    builder.add_edge(ReportNode.RETRIEVE_EVIDENCE.value, ReportNode.WRITE_SECTIONS.value)
     builder.add_edge(ReportNode.WRITE_SECTIONS.value, ReportNode.COVERAGE_CHECK.value)
     builder.add_edge(ReportNode.COVERAGE_CHECK.value, END)
 

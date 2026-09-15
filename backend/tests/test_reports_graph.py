@@ -62,16 +62,21 @@ def _section_response(content: str, cited_asset_ids: list[str]) -> str:
     return json.dumps({"content": content, "cited_asset_ids": cited_asset_ids})
 
 
-async def _run_graph(*, kind: str, gateway, searcher, documents=None):
+async def _run_graph(*, kind: str, gateway, searcher, documents=None, tracker=None):
+    from app.agents.planner.tracking import TRACKER_CONFIG_KEY
+
     dependencies = ReportGraphDependencies(
         document_lister=FakeDocumentLister(documents if documents is not None else _DOCS),
         section_searcher=searcher,
         llm_gateway=gateway,
     )
+    configurable = {"dependencies": dependencies}
+    if tracker is not None:
+        configurable[TRACKER_CONFIG_KEY] = tracker
     graph = get_report_graph()
     return await graph.ainvoke(
         {"report_id": "r1", "project_id": "p1", "owner_id": "u1", "kind": kind},
-        config={"configurable": {"dependencies": dependencies}},
+        config={"configurable": configurable},
     )
 
 
@@ -175,3 +180,64 @@ async def test_an_unparseable_llm_response_raises():
 
     with pytest.raises(Exception):
         await _run_graph(kind="study_summary", gateway=gateway, searcher=searcher)
+
+
+from app.agents.planner.tracking import NodeExecutionTracker
+
+
+class RecordingTracker(NodeExecutionTracker):
+    def __init__(self) -> None:
+        self.started: list[str] = []
+        self.succeeded: dict[str, dict] = {}
+        self.failed: list[str] = []
+
+    async def on_node_start(self, node):
+        self.started.append(node)
+
+    async def on_node_success(self, node, update, duration_ms):
+        self.succeeded[node] = update.get("step") or {}
+
+    async def on_node_failure(self, node, error, duration_ms, critical):
+        self.failed.append(node)
+
+
+_REPORT_NODES = ["collect_documents", "retrieve_evidence", "write_sections", "coverage_check"]
+
+
+@pytest.mark.asyncio
+async def test_every_report_node_runs_in_order_and_reports_a_step_summary():
+    from app.agents.reports.state import SECTION_QUERIES
+
+    evidence = {query: [{"asset_id": "a1", "title": "Poultry Disease Paper", "file_name": "poultry.pdf", "snippet": "It found X."}] for query in SECTION_QUERIES.values()}
+    tracker = RecordingTracker()
+
+    await _run_graph(
+        kind="study_summary",
+        gateway=FakeGateway(_section_response("Section text.", ["a1"])),
+        searcher=FakeSectionSearcher(evidence),
+        tracker=tracker,
+    )
+
+    assert tracker.started == _REPORT_NODES
+    assert list(tracker.succeeded) == _REPORT_NODES
+    for node in _REPORT_NODES:
+        assert tracker.succeeded[node]["summary"], node
+    assert tracker.succeeded["collect_documents"]["output"] == {"document_count": 1}
+    assert tracker.succeeded["write_sections"]["output"]["covered"] == 3
+
+
+@pytest.mark.asyncio
+async def test_a_retrieval_failure_is_recorded_against_retrieve_evidence_and_stops_the_run():
+    class _FailingSearcher:
+        async def search(self, **kwargs):
+            raise RuntimeError("search backend down")
+
+    tracker = RecordingTracker()
+    gateway = FakeGateway(_section_response("unused", []))
+
+    with pytest.raises(RuntimeError):
+        await _run_graph(kind="study_summary", gateway=gateway, searcher=_FailingSearcher(), tracker=tracker)
+
+    assert tracker.started == ["collect_documents", "retrieve_evidence"]
+    assert tracker.failed == ["retrieve_evidence"]
+    assert gateway.calls == []

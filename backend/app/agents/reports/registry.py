@@ -5,7 +5,12 @@ a report has no useful partial output, so any node's failure must abort
 the whole run (spec section 7)."""
 
 from app.agents.planner.registry import NodeSpec
-from app.agents.reports.nodes import collect_documents_node, coverage_check_node, write_sections_node
+from app.agents.reports.nodes import (
+    collect_documents_node,
+    coverage_check_node,
+    retrieve_evidence_node,
+    write_sections_node,
+)
 from app.agents.reports.state import ReportNode
 
 REPORT_AGENT_REGISTRY: dict[str, NodeSpec] = {
@@ -16,12 +21,19 @@ REPORT_AGENT_REGISTRY: dict[str, NodeSpec] = {
         critical=True,
         description="Gathers every processed document's AI-profile summary and topics.",
     ),
+    ReportNode.RETRIEVE_EVIDENCE.value: NodeSpec(
+        name=ReportNode.RETRIEVE_EVIDENCE.value,
+        title="Retrieve section evidence",
+        handler=retrieve_evidence_node,
+        critical=True,
+        description="Searches the project's documents for evidence for each section.",
+    ),
     ReportNode.WRITE_SECTIONS.value: NodeSpec(
         name=ReportNode.WRITE_SECTIONS.value,
         title="Write report sections",
         handler=write_sections_node,
         critical=True,
-        description="Retrieves evidence and writes each section, one LLM call per section.",
+        description="Writes each section from its evidence, one LLM call per section.",
     ),
     ReportNode.COVERAGE_CHECK.value: NodeSpec(
         name=ReportNode.COVERAGE_CHECK.value,

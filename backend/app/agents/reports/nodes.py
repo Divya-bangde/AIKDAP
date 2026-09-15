@@ -176,18 +176,75 @@ async def collect_documents_node(state: ReportState, config: RunnableConfig) -> 
     dependencies = _dependencies(config)
     documents = await dependencies.document_lister.list_processed(state["project_id"])
     logger.info("report_documents_collected", report_id=state.get("report_id"), document_count=len(documents))
-    return {"documents": documents}
+    return {
+        "documents": documents,
+        "step": {
+            "summary": f"Collected {len(documents)} processed document(s).",
+            "output": {"document_count": len(documents)},
+        },
+    }
+
+
+async def retrieve_evidence_node(state: ReportState, config: RunnableConfig) -> dict[str, Any]:
+    """Retrieve evidence for every section except References.
+
+    Its own node, so retrieval has its own step in the trace (timing,
+    failure) separate from the LLM writing that follows."""
+    dependencies = _dependencies(config)
+    documents = state.get("documents", [])
+    document_lookup = {document["asset_id"]: document for document in documents}
+    evidence_by_title: dict[str, list[SectionEvidence]] = {}
+
+    for title in SECTION_TITLES[state["kind"]]:
+        if title == "References":
+            continue
+        evidence = await dependencies.section_searcher.search(
+            owner_id=state["owner_id"],
+            project_id=state["project_id"],
+            query=SECTION_QUERIES.get(title, title),
+            limit=SECTION_EVIDENCE_LIMIT,
+        )
+        # Searchers don't have the project's document list, so fill in
+        # the real title/file_name from the collected documents -- the
+        # model then sees `[id] <real title> (<real file name>):`.
+        evidence_by_title[title] = [
+            {**item, "title": document_lookup[item["asset_id"]]["title"], "file_name": document_lookup[item["asset_id"]]["file_name"]}
+            if item["asset_id"] in document_lookup
+            else item
+            for item in evidence
+        ]
+
+    with_evidence = sum(1 for items in evidence_by_title.values() if items)
+    excerpt_count = sum(len(items) for items in evidence_by_title.values())
+    logger.info(
+        "report_evidence_retrieved",
+        report_id=state.get("report_id"),
+        sections_with_evidence=with_evidence,
+        section_count=len(evidence_by_title),
+    )
+    return {
+        "evidence": evidence_by_title,
+        "step": {
+            "summary": f"Found evidence for {with_evidence} of {len(evidence_by_title)} section(s).",
+            "output": {
+                "section_count": len(evidence_by_title),
+                "sections_with_evidence": with_evidence,
+                "excerpt_count": excerpt_count,
+            },
+        },
+    }
 
 
 async def write_sections_node(state: ReportState, config: RunnableConfig) -> dict[str, Any]:
-    """For each section: retrieve evidence, then write it with one LLM
-    call -- or mark it uncovered without ever calling the model, when
-    retrieval found nothing (spec section 7)."""
+    """Write each section with one LLM call, from the evidence
+    `retrieve_evidence_node` found -- or mark it uncovered without ever
+    calling the model when there is none (spec section 7)."""
     dependencies = _dependencies(config)
     kind = state["kind"]
     documents = state.get("documents", [])
-    document_lookup = {document["asset_id"]: document for document in documents}
+    evidence_by_title = state.get("evidence", {})
     results: list[SectionResult] = []
+    llm_calls = 0
 
     for title in SECTION_TITLES[kind]:
         if title == "References":
@@ -197,25 +254,7 @@ async def write_sections_node(state: ReportState, config: RunnableConfig) -> dic
             results.append(SectionResult(title=title, content="", covered=False, citations=[]))
             continue
 
-        query = SECTION_QUERIES.get(title, title)
-        evidence = await dependencies.section_searcher.search(
-            owner_id=state["owner_id"],
-            project_id=state["project_id"],
-            query=query,
-            limit=SECTION_EVIDENCE_LIMIT,
-        )
-        # `SectionSearcher.search` implementations (e.g.
-        # `KnowledgeBaseSectionSearcher`) don't have the project's
-        # document list to draw a real title/file_name from -- fill
-        # them in here from the state's own collected documents so the
-        # model sees `[id] <real title> (<real file name>):` instead of
-        # the search query standing in for both.
-        evidence = [
-            {**item, "title": document_lookup[item["asset_id"]]["title"], "file_name": document_lookup[item["asset_id"]]["file_name"]}
-            if item["asset_id"] in document_lookup
-            else item
-            for item in evidence
-        ]
+        evidence = evidence_by_title.get(title, [])
         if not evidence:
             results.append(
                 SectionResult(title=title, content="Not covered by your documents.", covered=False, citations=[])
@@ -232,6 +271,7 @@ async def write_sections_node(state: ReportState, config: RunnableConfig) -> dic
                 "json_schema": {"name": "SectionDraft", "schema": SectionDraft.model_json_schema()},
             },
         )
+        llm_calls += 1
         draft = _parse_section(response.content, title)
 
         valid_asset_ids = {item["asset_id"] for item in evidence}
@@ -251,13 +291,24 @@ async def write_sections_node(state: ReportState, config: RunnableConfig) -> dic
             )
         )
 
+    written = [section for section in results if section["title"] != "References"]
+    covered_count = sum(1 for section in written if section["covered"])
     logger.info(
         "report_sections_written",
         report_id=state.get("report_id"),
-        covered=sum(1 for section in results if section["covered"]),
-        total=len(results),
+        covered=covered_count,
+        total=len(written),
     )
-    return {"sections": results}
+    return {
+        "sections": results,
+        "step": {
+            "summary": (
+                f"Wrote {covered_count} of {len(written)} section(s); "
+                f"{len(written) - covered_count} not covered by your documents."
+            ),
+            "output": {"covered": covered_count, "total": len(written), "llm_calls": llm_calls},
+        },
+    }
 
 
 async def coverage_check_node(state: ReportState, config: RunnableConfig) -> dict[str, Any]:
@@ -301,13 +352,23 @@ async def coverage_check_node(state: ReportState, config: RunnableConfig) -> dic
             for section in sections
         ]
 
+    covered_count = sum(1 for section in sections if section["covered"])
+    reference_count = len(
+        next((section["citations"] for section in sections if section["title"] == "References"), [])
+    )
     logger.info(
         "report_coverage_checked",
         report_id=state.get("report_id"),
-        covered=sum(1 for section in sections if section["covered"]),
+        covered=covered_count,
         total=len(sections),
     )
-    return {"sections": sections}
+    return {
+        "sections": sections,
+        "step": {
+            "summary": f"{covered_count} of {len(sections)} section(s) covered; {reference_count} document(s) referenced.",
+            "output": {"covered": covered_count, "total": len(sections), "reference_count": reference_count},
+        },
+    }
 
 
 def _parse_section(content: str, title: str) -> SectionDraft:
