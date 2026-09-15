@@ -22,6 +22,13 @@ type ResearchRunDetail = components["schemas"]["ResearchRunDetail"];
 const TERMINAL_RUN_STATUSES = new Set(["completed", "failed", "cancelled"]);
 const IN_PROGRESS_IMPORT_STATUSES = new Set(["queued", "processing"]);
 
+// Residual 4a: if `finalize_paper_import` throws instead of ever writing
+// a terminal `import_status`, `isTerminal` below never returns true and
+// the UI would poll forever with no feedback. This cap ends the wait
+// after ~10 minutes so the user sees an error instead of an infinite
+// spinner. ponytail: fixed 10-minute cap, not configurable per-job.
+const POLL_TIMEOUT_MS = 10 * 60 * 1000;
+
 function isTerminal(run: ResearchRunDetail): boolean {
   if (!TERMINAL_RUN_STATUSES.has(run.status)) return false;
   // Milestone 10 step 3 (Add & re-run): importing a suggested paper
@@ -58,6 +65,7 @@ export function ResearchRunView({ runId }: { runId: string }) {
     queryKey: ["research", "run", runId],
     queryFn: () => researchService.getResearchRun(runId),
     isTerminal,
+    timeoutMs: POLL_TIMEOUT_MS,
   });
 
   if (runQuery.isLoading) {
@@ -71,7 +79,7 @@ export function ResearchRunView({ runId }: { runId: string }) {
   const run = runQuery.data;
   if (!run) return null;
 
-  const isRunning = !isTerminal(run);
+  const isRunning = !isTerminal(run) && !runQuery.timedOut;
   const outcome = runOutcome(run);
   const stepCount = run.steps?.length ?? 0;
 
@@ -167,6 +175,24 @@ export function ResearchRunView({ runId }: { runId: string }) {
           </CardContent>
         </Card>
       </motion.div>
+
+      {runQuery.timedOut && !isTerminal(run) && (
+        <motion.div initial="hidden" animate="visible" variants={fadeUp}>
+          <Card role="alert" className="overflow-hidden">
+            <CardContent className="flex items-start gap-3 p-6">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
+                <AlertTriangle className="h-4.5 w-4.5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-section">Import is taking longer than expected</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Reload the page to check for an updated status.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {run.status === "failed" && (
         <motion.div initial="hidden" animate="visible" variants={fadeUp}>

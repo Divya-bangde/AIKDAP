@@ -260,4 +260,47 @@ describe("ResearchRunView re-run linkage (Milestone 10 step 3)", () => {
 
     vi.useRealTimers();
   });
+
+  it("stops polling and shows a timeout message if the import never reaches a terminal state (residual 4a)", async () => {
+    vi.useFakeTimers();
+    const getRun = vi.mocked(researchService.getResearchRun);
+    getRun.mockResolvedValue(
+      makeRun({
+        status: "completed",
+        grounding_status: "grounded",
+        final_answer: "The answer.",
+        citations: [],
+        rerun_run_id: null,
+        suggested_papers: [
+          {
+            openalex_id: "https://openalex.org/W1",
+            title: "A Suggested Paper",
+            authors: [],
+            year: null,
+            cited_by_count: 0,
+            landing_url: "https://example.org/landing",
+            oa_pdf_url: "https://example.org/a.pdf",
+            relevance_note: "",
+            import_status: "queued",
+          },
+        ] as unknown as ResearchRunDetail["suggested_papers"],
+      }),
+    );
+
+    renderWithProviders(<ResearchRunView runId="run-1" />);
+    await vi.waitFor(() => expect(getRun.mock.calls.length).toBeGreaterThanOrEqual(1));
+    const callsBeforeTimeout = getRun.mock.calls.length;
+
+    await vi.advanceTimersByTimeAsync(10 * 60 * 1000 + 1000);
+    await vi.waitFor(() =>
+      expect(screen.getByText("Import is taking longer than expected")).toBeInTheDocument(),
+    );
+
+    const callsAtTimeout = getRun.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(getRun.mock.calls.length).toBe(callsAtTimeout);
+    expect(callsAtTimeout).toBeGreaterThan(callsBeforeTimeout);
+
+    vi.useRealTimers();
+  }, 20000);
 });

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useQuery, type QueryKey } from "@tanstack/react-query";
 
 const DEFAULT_INTERVAL_MS = Number(
@@ -15,6 +16,12 @@ interface UsePollingOptions<T> {
   isTerminal: (data: T) => boolean;
   intervalMs?: number;
   enabled?: boolean;
+  /** Hard safety cap, independent of `isTerminal`: if the resource
+   * still hasn't reached a terminal state after this many ms (e.g. a
+   * backend job that silently died), polling stops anyway and
+   * `timedOut` becomes true so the caller can show an error instead
+   * of spinning forever. */
+  timeoutMs?: number;
 }
 
 /** A TanStack Query wrapper that polls on a fixed interval until the
@@ -28,15 +35,26 @@ export function usePolling<T>({
   isTerminal,
   intervalMs = DEFAULT_INTERVAL_MS,
   enabled = true,
+  timeoutMs,
 }: UsePollingOptions<T>) {
-  return useQuery({
+  const [timedOut, setTimedOut] = useState(false);
+
+  useEffect(() => {
+    if (!timeoutMs || !enabled) return;
+    const timer = setTimeout(() => setTimedOut(true), timeoutMs);
+    return () => clearTimeout(timer);
+  }, [timeoutMs, enabled]);
+
+  const query = useQuery({
     queryKey,
     queryFn,
-    enabled,
+    enabled: enabled && !timedOut,
     refetchInterval: (query) => {
       const data = query.state.data;
       if (data !== undefined && isTerminal(data)) return false;
       return intervalMs;
     },
   });
+
+  return { ...query, timedOut };
 }
