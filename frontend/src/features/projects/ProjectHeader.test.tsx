@@ -86,3 +86,47 @@ describe("ProjectHeader — persona", () => {
     );
   });
 });
+
+describe("ProjectHeader — Generate synopsis", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("does not show the button for non-student personas", () => {
+    renderWithProviders(
+      <ProjectHeader
+        project={makeProject({ effective_persona: "researcher" })}
+        assets={[]}
+        runs={[]}
+        onRequestUpload={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: /generate synopsis/i })).not.toBeInTheDocument();
+  });
+
+  it("shows the button only for the student persona", () => {
+    renderWithProviders(
+      <ProjectHeader
+        project={makeProject({ effective_persona: "student" })}
+        assets={[]}
+        runs={[]}
+        onRequestUpload={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("button", { name: /generate synopsis/i })).toBeInTheDocument();
+  });
+
+  it("opens the synopsis dialog", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <ProjectHeader
+        project={makeProject({ effective_persona: "student" })}
+        assets={[]}
+        runs={[]}
+        onRequestUpload={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: /generate synopsis/i }));
+
+    expect(screen.getByText("Creates a report from this project's processed documents.")).toBeInTheDocument();
+  });
+});

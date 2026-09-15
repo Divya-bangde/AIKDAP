@@ -1,12 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "motion/react";
-import { AlertTriangle, FolderKanban, Search, Trash2, X } from "lucide-react";
+import { AlertTriangle, FileText, FolderKanban, Search, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { layoutSpring } from "@/lib/motion";
 import { projectLayoutIds } from "@/features/projects/ProjectCard";
 import { ProjectPersonaSelect } from "@/features/projects/ProjectPersonaSelect";
+import { GenerateSynopsisDialog } from "@/features/reports/GenerateSynopsisDialog";
 
 import { ExportMenu } from "@/components/common/ExportMenu";
 import { Badge } from "@/components/ui/badge";
@@ -51,6 +52,7 @@ export function ProjectHeader({
   const queryClient = useQueryClient();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [warning, setWarning] = useState<ResearchWarning | null>(null);
+  const [synopsisOpen, setSynopsisOpen] = useState(false);
 
   useEffect(() => {
     if (!warning) return;
@@ -129,6 +131,12 @@ export function ProjectHeader({
             <Search className="h-4 w-4" />
             Start Research
           </Button>
+          {project.effective_persona === "student" && (
+            <Button variant="outline" onClick={() => setSynopsisOpen(true)}>
+              <FileText className="h-4 w-4" />
+              Generate synopsis
+            </Button>
+          )}
           <ExportMenu
             filename={fileSlug(project.name)}
             toMarkdown={() => projectMarkdown(project, assets, runs)}
@@ -209,6 +217,8 @@ export function ProjectHeader({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <GenerateSynopsisDialog open={synopsisOpen} onOpenChange={setSynopsisOpen} projectId={project.id} />
     </div>
   );
 }
