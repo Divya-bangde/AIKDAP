@@ -186,6 +186,7 @@ async def write_sections_node(state: ReportState, config: RunnableConfig) -> dic
     dependencies = _dependencies(config)
     kind = state["kind"]
     documents = state.get("documents", [])
+    document_lookup = {document["asset_id"]: document for document in documents}
     results: list[SectionResult] = []
 
     for title in SECTION_TITLES[kind]:
@@ -203,6 +204,18 @@ async def write_sections_node(state: ReportState, config: RunnableConfig) -> dic
             query=query,
             limit=SECTION_EVIDENCE_LIMIT,
         )
+        # `SectionSearcher.search` implementations (e.g.
+        # `KnowledgeBaseSectionSearcher`) don't have the project's
+        # document list to draw a real title/file_name from -- fill
+        # them in here from the state's own collected documents so the
+        # model sees `[id] <real title> (<real file name>):` instead of
+        # the search query standing in for both.
+        evidence = [
+            {**item, "title": document_lookup[item["asset_id"]]["title"], "file_name": document_lookup[item["asset_id"]]["file_name"]}
+            if item["asset_id"] in document_lookup
+            else item
+            for item in evidence
+        ]
         if not evidence:
             results.append(
                 SectionResult(title=title, content="Not covered by your documents.", covered=False, citations=[])
@@ -224,12 +237,17 @@ async def write_sections_node(state: ReportState, config: RunnableConfig) -> dic
         valid_asset_ids = {item["asset_id"] for item in evidence}
         citations = [asset_id for asset_id in draft.cited_asset_ids if asset_id in valid_asset_ids]
         content = draft.content.strip() or "Not covered by your documents."
+        covered = content != "Not covered by your documents."
         results.append(
             SectionResult(
                 title=title,
                 content=content,
-                covered=content != "Not covered by your documents.",
-                citations=citations,
+                covered=covered,
+                # A section marked not-covered must never carry
+                # citations forward into References -- an empty draft
+                # earned no evidence credit even if the model happened
+                # to name asset ids before going empty.
+                citations=citations if covered else [],
             )
         )
 
@@ -259,22 +277,24 @@ async def coverage_check_node(state: ReportState, config: RunnableConfig) -> dic
                 cited_asset_ids.append(asset_id)
 
     if any(section["title"] == "References" for section in sections):
-        if cited_asset_ids:
-            lines = [
-                f"{document_lookup[asset_id]['title']} ({document_lookup[asset_id]['file_name']})"
-                for asset_id in cited_asset_ids
-                if asset_id in document_lookup
-            ]
-            references_content = "\n".join(lines) if lines else "Not covered by your documents."
-        else:
-            references_content = "Not covered by your documents."
+        lines = [
+            f"{document_lookup[asset_id]['title']} ({document_lookup[asset_id]['file_name']})"
+            for asset_id in cited_asset_ids
+            if asset_id in document_lookup
+        ]
+        references_content = "\n".join(lines) if lines else "Not covered by your documents."
+        # `covered` (and which ids survive into `citations`) must track
+        # the reference lines actually built, not the raw cited-id list
+        # -- a cited id missing from `document_lookup` produces no line
+        # and must not be reported as covered.
+        resolved_asset_ids = [asset_id for asset_id in cited_asset_ids if asset_id in document_lookup]
 
         sections = [
             SectionResult(
                 title=section["title"],
                 content=references_content,
-                covered=bool(cited_asset_ids),
-                citations=list(cited_asset_ids),
+                covered=bool(lines),
+                citations=resolved_asset_ids,
             )
             if section["title"] == "References"
             else section

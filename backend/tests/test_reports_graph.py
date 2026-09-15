@@ -138,6 +138,34 @@ async def test_references_are_built_only_from_documents_actually_cited():
 
 
 @pytest.mark.asyncio
+async def test_an_empty_model_response_clears_citations_even_if_the_model_named_ids():
+    """Final-review finding M3: when evidence exists but the model
+    returns empty content, the section falls back to "Not covered by
+    your documents." -- its `cited_asset_ids` must be cleared too, or a
+    section reported as uncovered would still leak into References."""
+    from app.agents.reports.state import SECTION_QUERIES
+
+    evidence = {query: [{"asset_id": "a1", "title": "Poultry Disease Paper", "file_name": "poultry.pdf", "snippet": "It found X."}] for query in SECTION_QUERIES.values()}
+    # The model returns blank content but still names a cited asset --
+    # a genuinely malformed but parseable response.
+    gateway = FakeGateway(_section_response("   ", ["a1"]))
+    searcher = FakeSectionSearcher(evidence)
+
+    result = await _run_graph(kind="project_synopsis", gateway=gateway, searcher=searcher)
+
+    for section in result["sections"]:
+        if section["title"] == "References":
+            continue
+        assert section["content"] == "Not covered by your documents."
+        assert section["covered"] is False
+        assert section["citations"] == []
+
+    references = next(section for section in result["sections"] if section["title"] == "References")
+    assert references["content"] == "Not covered by your documents."
+    assert references["covered"] is False
+
+
+@pytest.mark.asyncio
 async def test_an_unparseable_llm_response_raises():
     from app.agents.reports.state import SECTION_QUERIES
 
