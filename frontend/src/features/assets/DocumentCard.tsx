@@ -18,6 +18,7 @@ import { formatBytes, formatRelativeTime } from "@/lib/format";
 import { isSettled } from "@/features/assets/asset-state";
 import { cn } from "@/lib/utils";
 import * as assetsService from "@/services/assets";
+import * as reportsService from "@/services/reports";
 import type { components } from "@/types/api";
 
 type AssetRead = components["schemas"]["AssetRead"];
@@ -44,6 +45,14 @@ export function DocumentCard({ asset, isSelected, onSelect, projectId }: Documen
       setConfirmOpen(false);
       queryClient.invalidateQueries({ queryKey: ["assets", projectId] });
     },
+  });
+
+  // A failed GENERATED report can be re-run; an uploaded document's
+  // failure is not retryable from here (`reprocess` rejects reports).
+  const retryable = asset.source === "generated" && asset.processing_status === "failed";
+  const retryMutation = useMutation({
+    mutationFn: () => reportsService.retryReport(asset.id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["assets", projectId] }),
   });
 
   return (
@@ -100,6 +109,21 @@ export function DocumentCard({ asset, isSelected, onSelect, projectId }: Documen
               <StatusBadge domain="assetProcessing" value={asset.processing_status} />
               <StatusBadge domain="aiProfile" value={asset.ai_profile.status} />
               <StatusBadge domain="embedding" value={asset.ai_profile.embedding_status} />
+              {retryable && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-6 px-2 text-xs"
+                  disabled={retryMutation.isPending}
+                  onClick={(event) => {
+                    // The card itself is `role="button"` for selection.
+                    event.stopPropagation();
+                    retryMutation.mutate();
+                  }}
+                >
+                  {retryMutation.isPending ? "Retrying…" : "Retry"}
+                </Button>
+              )}
             </div>
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span className="tabular">{formatBytes(asset.file_size)}</span>

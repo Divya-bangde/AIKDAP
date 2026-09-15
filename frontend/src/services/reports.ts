@@ -17,6 +17,10 @@ export function getReport(assetId: string) {
   return request<ReportRead>(`/api/v1/reports/${assetId}`);
 }
 
+export function retryReport(assetId: string) {
+  return request<ReportGenerationAccepted>(`/api/v1/reports/${assetId}/retry`, { method: "POST" });
+}
+
 /** Downloads a completed report and saves it through the browser,
  * mirroring `lib/export.downloadFile`'s object-URL pattern for a
  * server-rendered binary instead of client-built text. */

@@ -155,4 +155,20 @@ describe("GenerateSynopsisDialog", () => {
 
     expect(await screen.findByText(/not ready for download/i)).toBeInTheDocument();
   });
+
+  it("retries a failed report and resumes polling", async () => {
+    vi.mocked(reportsService.generateSynopsis).mockResolvedValue({ asset_id: "a1", status: "pending" });
+    vi.mocked(reportsService.getReport)
+      .mockResolvedValueOnce(
+        makeReport({ id: "a1", processing_status: "failed", processing_error: "Report generation failed (RuntimeError)." }),
+      )
+      .mockResolvedValue(makeReport({ id: "a1", processing_status: "running" }));
+    vi.mocked(reportsService.retryReport).mockResolvedValue({ asset_id: "a1", status: "pending" });
+
+    const user = await startGeneration();
+    await user.click(await screen.findByRole("button", { name: /retry/i }));
+
+    expect(reportsService.retryReport).toHaveBeenCalledWith("a1");
+    expect(await screen.findByText(/generating your report/i)).toBeInTheDocument();
+  });
 });

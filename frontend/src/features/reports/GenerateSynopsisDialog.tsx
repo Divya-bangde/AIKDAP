@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -73,6 +73,15 @@ export function GenerateSynopsisDialog({
     onSuccess: (accepted) => setAssetId(accepted.asset_id),
   });
 
+  const queryClient = useQueryClient();
+  // ponytail: the 6-minute poll timeout keeps counting from the first
+  // attempt; a retry after a timeout needs a reopened dialog. Reset
+  // `usePolling`'s timer per attempt if that ever matters.
+  const retryMutation = useMutation({
+    mutationFn: (id: string) => reportsService.retryReport(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["reports", "report", assetId] }),
+  });
+
   const reportQuery = usePolling({
     queryKey: ["reports", "report", assetId],
     queryFn: () => reportsService.getReport(assetId as string),
@@ -86,6 +95,7 @@ export function GenerateSynopsisDialog({
     setAssetId(null);
     setDownloadError(null);
     generateMutation.reset();
+    retryMutation.reset();
   }
 
   function handleOpenChange(next: boolean) {
@@ -166,9 +176,25 @@ export function GenerateSynopsisDialog({
         )}
 
         {failed && (
-          <p role="alert" className="text-sm text-destructive">
-            {report?.processing_error ?? "Report generation failed."}
-          </p>
+          <div className="flex flex-col gap-2">
+            <p role="alert" className="text-sm text-destructive">
+              {report?.processing_error ?? "Report generation failed."}
+            </p>
+            {retryMutation.isError && (
+              <p role="alert" className="text-sm text-destructive">
+                {messageFor(retryMutation.error)}
+              </p>
+            )}
+            <div>
+              <Button
+                variant="outline"
+                disabled={retryMutation.isPending}
+                onClick={() => report && retryMutation.mutate(report.id)}
+              >
+                {retryMutation.isPending ? "Retrying…" : "Retry"}
+              </Button>
+            </div>
+          </div>
         )}
 
         {completed && report && (

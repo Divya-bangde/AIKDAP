@@ -44,4 +44,12 @@ describe("reports service", () => {
 
     expect(client.request).toHaveBeenCalledWith("/api/v1/reports/a1");
   });
+
+  it("retries a failed report", async () => {
+    vi.mocked(client.request).mockResolvedValue({ asset_id: "a1", status: "pending" });
+
+    await reportsService.retryReport("a1");
+
+    expect(client.request).toHaveBeenCalledWith("/api/v1/reports/a1/retry", { method: "POST" });
+  });
 });
