@@ -41,6 +41,11 @@ SECTION_EVIDENCE_LIMIT = 5
 _JSON_FENCE = re.compile(r"^\s*```(?:json)?\s*(.*?)\s*```\s*$", re.DOTALL)
 
 
+def _as_uuid(value: str | uuid.UUID) -> uuid.UUID:
+    """Accept a raw state string or an already-parsed UUID."""
+    return value if isinstance(value, uuid.UUID) else uuid.UUID(value)
+
+
 class SectionDraft(BaseModel):
     """The LLM's structured response for one section."""
 
@@ -56,27 +61,24 @@ class SectionDraft(BaseModel):
 class DocumentLister(ABC):
     """Contract for listing a project's processed documents.
 
-    `project_id` is the raw `ReportState["project_id"]` string -- kept
-    opaque at this boundary (rather than a parsed `uuid.UUID`) so a fake
-    in tests can use any id shape; a database-backed implementation
-    parses it into a `uuid.UUID` itself before querying.
-    """
+    Accepts the raw `ReportState["project_id"]` string or a `uuid.UUID`,
+    so a fake in tests can use any id shape and a database-backed
+    implementation parses it itself."""
 
     @abstractmethod
-    async def list_processed(self, project_id: str) -> list[ProcessedDocument]:
+    async def list_processed(self, project_id: str | uuid.UUID) -> list[ProcessedDocument]:
         """Return every processed document available to draw a report from."""
 
 
 class SectionSearcher(ABC):
     """Contract for retrieving evidence for one report section.
 
-    `owner_id`/`project_id` are the raw state strings, for the same
-    reason as `DocumentLister.list_processed`.
-    """
+    `owner_id`/`project_id` accept a raw state string or a `uuid.UUID`,
+    for the same reason as `DocumentLister.list_processed`."""
 
     @abstractmethod
     async def search(
-        self, *, owner_id: str, project_id: str, query: str, limit: int
+        self, *, owner_id: str | uuid.UUID, project_id: str | uuid.UUID, query: str, limit: int
     ) -> list[SectionEvidence]:
         """Return the best-matching excerpts for `query`, owner-scoped."""
 
@@ -103,8 +105,8 @@ class RepositoryDocumentLister(DocumentLister):
     def __init__(self, session: AsyncSession) -> None:
         self._repository = ReportRepository(session)
 
-    async def list_processed(self, project_id: str) -> list[ProcessedDocument]:
-        assets = await self._repository.list_processed_documents(uuid.UUID(project_id))
+    async def list_processed(self, project_id: str | uuid.UUID) -> list[ProcessedDocument]:
+        assets = await self._repository.list_processed_documents(_as_uuid(project_id))
         return [_document_from_asset(asset) for asset in assets]
 
 
@@ -114,14 +116,18 @@ class KnowledgeBaseSectionSearcher(SectionSearcher):
     delegates to, so report retrieval and research retrieval never
     diverge into two ranking implementations."""
 
-    def __init__(self, session: AsyncSession) -> None:
-        self._service = KnowledgeBaseService(session)
+    def __init__(
+        self, session: AsyncSession, *, knowledge_base: KnowledgeBaseService | None = None
+    ) -> None:
+        # `knowledge_base` is injectable so a database-backed test can
+        # supply a fixed-vector embedding provider -- no model call.
+        self._service = knowledge_base or KnowledgeBaseService(session)
 
     async def search(
-        self, *, owner_id: str, project_id: str, query: str, limit: int
+        self, *, owner_id: str | uuid.UUID, project_id: str | uuid.UUID, query: str, limit: int
     ) -> list[SectionEvidence]:
         outcome = await self._service.two_stage_search(
-            uuid.UUID(owner_id), query=query, project_id=uuid.UUID(project_id), top_k=limit
+            _as_uuid(owner_id), query=query, project_id=_as_uuid(project_id), top_k=limit
         )
         evidence: list[SectionEvidence] = []
         for hit in outcome.hits:
