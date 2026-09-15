@@ -90,4 +90,27 @@ describe("GenerateSynopsisDialog", () => {
     await user.click(screen.getByRole("button", { name: /download pdf/i }));
     expect(reportsService.downloadReport).toHaveBeenCalledWith("a1", "pdf", "Study Summary.pdf");
   });
+
+  it("shows an error when the download itself fails", async () => {
+    const user = userEvent.setup();
+    vi.mocked(reportsService.generateSynopsis).mockResolvedValue({ asset_id: "a1", status: "pending" });
+    vi.mocked(assetsService.getAsset).mockResolvedValue(
+      makeAsset({ id: "a1", title: "Study Summary", processing_status: "completed" }),
+    );
+    vi.mocked(reportsService.downloadReport).mockRejectedValue({
+      status: 409,
+      message: "The report is not ready for download yet.",
+    });
+
+    renderWithProviders(
+      <GenerateSynopsisDialog open onOpenChange={vi.fn()} projectId="p1" />,
+    );
+    await user.click(screen.getByText("Study summary"));
+    await user.click(screen.getByRole("button", { name: /generate/i }));
+
+    const docxButton = await screen.findByRole("button", { name: /download docx/i });
+    await user.click(docxButton);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/not ready for download/i);
+  });
 });

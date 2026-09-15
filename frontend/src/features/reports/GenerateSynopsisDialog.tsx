@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { usePolling } from "@/hooks/usePolling";
+import { messageFor } from "@/lib/api-error";
 import * as assetsService from "@/services/assets";
 import * as reportsService from "@/services/reports";
 import type { components } from "@/types/api";
@@ -53,6 +54,7 @@ export function GenerateSynopsisDialog({
 }) {
   const [kind, setKind] = useState<ReportKind | null>(null);
   const [assetId, setAssetId] = useState<string | null>(null);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   const generateMutation = useMutation({
     mutationFn: (selected: ReportKind) => reportsService.generateSynopsis(projectId, selected),
@@ -70,12 +72,20 @@ export function GenerateSynopsisDialog({
   function reset() {
     setKind(null);
     setAssetId(null);
+    setDownloadError(null);
     generateMutation.reset();
   }
 
   function handleOpenChange(next: boolean) {
     if (!next) reset();
     onOpenChange(next);
+  }
+
+  function handleDownload(id: string, format: "docx" | "pdf", filename: string) {
+    setDownloadError(null);
+    reportsService.downloadReport(id, format, filename).catch((error: unknown) => {
+      setDownloadError(messageFor(error));
+    });
   }
 
   const asset = reportQuery.data;
@@ -135,17 +145,23 @@ export function GenerateSynopsisDialog({
           <div className="flex gap-2" role="status">
             <Button
               variant="outline"
-              onClick={() => reportsService.downloadReport(asset.id, "docx", `${asset.title}.docx`)}
+              onClick={() => handleDownload(asset.id, "docx", `${asset.title}.docx`)}
             >
               Download DOCX
             </Button>
             <Button
               variant="outline"
-              onClick={() => reportsService.downloadReport(asset.id, "pdf", `${asset.title}.pdf`)}
+              onClick={() => handleDownload(asset.id, "pdf", `${asset.title}.pdf`)}
             >
               Download PDF
             </Button>
           </div>
+        )}
+
+        {downloadError && (
+          <p role="alert" className="text-sm text-destructive">
+            {downloadError}
+          </p>
         )}
 
         <DialogFooter>
