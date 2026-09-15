@@ -59,6 +59,8 @@ from app.modules.assets.validators import AssetValidationError
 from app.modules.execution.repository import ExecutionJobRepository
 from app.modules.execution.service import prepare_approved_launch, recover_interrupted_retry_attempt
 from execution_launcher.launcher import execute_approved_launch, reconcile_attempt
+from app.agents.reports.graph import get_report_graph
+from app.agents.reports.nodes import build_report_dependencies
 from app.modules.knowledge_base.embeddings import get_embedding_provider
 from app.modules.knowledge_base.repository import KnowledgeChunkRepository
 from app.modules.research.enums import ResearchRunStatus
@@ -766,3 +768,73 @@ async def _reconcile_attempt(attempt_id: uuid.UUID) -> str:
     async with async_session_factory() as session:
         outcome = await reconcile_attempt(attempt_id, session)
         return outcome.action
+
+
+# ---------------------------------------------------------------------------
+# Milestone 10 step 4: report generation (Synopsis)
+# ---------------------------------------------------------------------------
+
+
+@celery_app.task(name="workers.generate_report", bind=True, max_retries=0)
+@log_task_execution
+def generate_report(self, asset_id: str) -> dict[str, str]:
+    """Run the report-generation LangGraph pipeline for one GENERATED
+    asset and persist its sections + final status.
+
+    `max_retries=0`, matching `import_suggested_paper`: a report failure
+    is a normal, fully-handled outcome recorded on the asset itself
+    (`processing_status=FAILED`, a scrubbed `processing_error`), not an
+    infrastructure fault worth retrying -- retrying a deterministic
+    LLM-parsing or evidence-gap failure would fail identically again.
+    """
+    return _run_task_loop(_generate_report(uuid.UUID(asset_id)))
+
+
+#: Returned instead of the raw exception text -- never persisted
+#: verbatim, matching `paper_suggestion.OpenAlexProvider`'s and
+#: `paper_import.PaperDownloadError`'s existing scrubbing discipline.
+#: The exception type name is the only detail kept, which is never
+#: sensitive and is enough to tell failure modes apart in the UI.
+def _scrub_report_error(exc: Exception) -> str:
+    return f"Report generation failed ({type(exc).__name__})."
+
+
+async def _generate_report(asset_id: uuid.UUID) -> dict[str, str]:
+    async with async_session_factory() as session:
+        assets = AssetRepository(session)
+        asset = await assets.get_by_id(asset_id)
+        if asset is None:
+            logger.error("report_generation_asset_missing", asset_id=str(asset_id))
+            return {"status": "asset_missing", "asset_id": str(asset_id)}
+
+        asset.processing_status = AssetProcessingStatus.RUNNING
+        await session.commit()
+
+        try:
+            dependencies = build_report_dependencies(session)
+            graph = get_report_graph()
+            result = await graph.ainvoke(
+                {
+                    "report_id": str(asset.id),
+                    "project_id": str(asset.project_id),
+                    "owner_id": str(asset.owner_id),
+                    "kind": asset.asset_metadata.get("kind"),
+                },
+                config={"configurable": {"dependencies": dependencies}},
+            )
+            asset.asset_metadata = {**asset.asset_metadata, "sections": result["sections"]}
+            asset.processing_status = AssetProcessingStatus.COMPLETED
+            asset.processing_error = None
+        except Exception as exc:
+            logger.error(
+                "report_generation_failed",
+                asset_id=str(asset_id),
+                error_type=type(exc).__name__,
+                exc_info=True,
+            )
+            asset.processing_status = AssetProcessingStatus.FAILED
+            asset.processing_error = _scrub_report_error(exc)
+
+        await session.commit()
+
+    return {"status": "ok", "asset_id": str(asset_id)}
