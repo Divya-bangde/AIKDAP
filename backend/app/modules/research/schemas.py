@@ -390,7 +390,12 @@ class ResearchStepRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    run_id: uuid.UUID
+    #: Set for a research run's step; null for a report run's step.
+    run_id: uuid.UUID | None
+    #: Set for a report run's step (Milestone 10 step 4); null otherwise.
+    asset_id: uuid.UUID | None = None
+    #: A report's generation attempt (1, then +1 per retry); 1 for research.
+    attempt: int = 1
     step_index: int
     node_name: str
     title: str

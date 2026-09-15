@@ -12,7 +12,7 @@ their project or owner is deleted.
 
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.research.enums import ResearchRunStatus
@@ -112,6 +112,26 @@ class ResearchStepRepository:
         )
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
+
+    async def list_by_asset(self, asset_id: uuid.UUID) -> list[ResearchStep]:
+        """List a report asset's steps across every generation attempt,
+        attempt by attempt, each in execution order (a retry adds a new
+        attempt; it never rewrites an earlier one)."""
+        stmt = (
+            select(ResearchStep)
+            .where(ResearchStep.asset_id == asset_id)
+            .order_by(ResearchStep.attempt, ResearchStep.step_index)
+        )
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def latest_attempt(self, asset_id: uuid.UUID) -> int:
+        """The highest attempt number recorded for a report asset, or 0
+        if it has no steps yet."""
+        stmt = select(func.coalesce(func.max(ResearchStep.attempt), 0)).where(
+            ResearchStep.asset_id == asset_id
+        )
+        return int(await self._session.scalar(stmt))
 
     async def create(self, step: ResearchStep) -> ResearchStep:
         """Insert a new step row and flush to populate generated fields."""

@@ -22,7 +22,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -148,13 +148,30 @@ class ResearchRun(BaseModel):
 
 
 class ResearchStep(BaseModel):
-    """One graph node's execution within a run."""
+    """One graph node's execution, within a research run OR a report run.
+
+    A report run (Milestone 10 step 4) has no `research_runs` row -- its
+    unit of work is the GENERATED report `Asset` -- so a step belongs to
+    exactly one of `run_id` / `asset_id`, never both, never neither.
+    Reusing this table rather than adding a second step table is what
+    lets reports share the research trace's timeline and failure policy
+    (spec section 4).
+    """
 
     __tablename__ = "research_steps"
-
-    run_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("research_runs.id", ondelete="CASCADE"), nullable=False, index=True
+    __table_args__ = (
+        CheckConstraint("num_nonnulls(run_id, asset_id) = 1", name="exactly_one_owner"),
     )
+
+    run_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("research_runs.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    asset_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("assets.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    #: Which generation attempt of a report this step belongs to: 1 for
+    #: the first run, +1 per retry. Always 1 for a research run's step.
+    attempt: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
     step_index: Mapped[int] = mapped_column(Integer, nullable=False)
 
     # Plain string, not an enum: the graph owns its node names

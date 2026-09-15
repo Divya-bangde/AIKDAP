@@ -24,6 +24,9 @@ from app.core.llm.provider_health import get_provider_health_registry
 from app.database.session import async_session_factory
 from app.modules.auth.models import User
 from app.modules.projects.models import Project, ProjectStatus, ProjectType
+from app.modules.assets.ai_profile import AIProfile
+from app.modules.assets.enums import AssetProcessingStatus, AssetSource, AssetStatus, AssetType
+from app.modules.assets.models import Asset
 
 
 @pytest.fixture(autouse=True)
@@ -105,3 +108,46 @@ def research_query() -> str:
         "Analyze the current Indian poultry industry. Identify major market "
         "trends, key challenges, and emerging opportunities."
     )
+
+
+@pytest.fixture
+def make_report_asset(session):
+    """Factory for a committed GENERATED report asset (Milestone 10
+    step 4), in the exact shape `ReportService.generate_synopsis`
+    creates. Removed with its owner by `project`'s user cascade."""
+
+    async def _make(
+        project: Project,
+        *,
+        status: AssetProcessingStatus = AssetProcessingStatus.PENDING,
+        kind: str = "study_summary",
+        processing_error: str | None = None,
+        sections: list[dict] | None = None,
+    ) -> Asset:
+        asset = Asset(
+            project_id=project.id,
+            owner_id=project.owner_id,
+            title="Study Summary" if kind == "study_summary" else "Project Synopsis",
+            description=None,
+            asset_type=AssetType.SUMMARY if kind == "study_summary" else AssetType.REPORT,
+            status=AssetStatus.ACTIVE,
+            mime_type="application/json",
+            file_name="study-summary.json",
+            file_extension="json",
+            file_size=0,
+            storage_path="",
+            checksum="",
+            source=AssetSource.GENERATED,
+            version=1,
+            tags=[],
+            asset_metadata={"kind": kind, "sections": sections or []},
+            ai_profile=AIProfile().model_dump(mode="json"),
+            created_by=project.owner_id,
+            processing_status=status,
+            processing_error=processing_error,
+        )
+        session.add(asset)
+        await session.commit()
+        return asset
+
+    return _make
