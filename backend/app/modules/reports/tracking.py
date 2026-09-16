@@ -18,8 +18,9 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agents.planner.registry import NodeSpec
 from app.agents.planner.tracking import NodeExecutionTracker
-from app.agents.reports.registry import REPORT_AGENT_REGISTRY, get_node_spec
+from app.agents.reports.registry import REPORT_AGENT_REGISTRY
 from app.modules.research.enums import ResearchStepStatus
 from app.modules.research.models import ResearchStep
 from app.modules.research.repository import ResearchStepRepository
@@ -46,10 +47,21 @@ class ReportStepTracker(NodeExecutionTracker):
     Every row carries this run's `attempt` (1, then +1 per retry), so a
     retried report keeps each attempt's trace separately and in order."""
 
-    def __init__(self, session: AsyncSession, asset_id: uuid.UUID, *, attempt: int) -> None:
+    def __init__(
+        self,
+        session: AsyncSession,
+        asset_id: uuid.UUID,
+        *,
+        attempt: int,
+        registry: dict[str, NodeSpec] | None = None,
+    ) -> None:
         self._session = session
         self._asset_id = asset_id
         self._attempt = attempt
+        # Which graph's nodes this run traces. Defaults to the synopsis
+        # registry so every existing caller is unchanged; the build-plan
+        # task passes `BUILD_PLAN_AGENT_REGISTRY` (design ruling R2).
+        self._registry = registry if registry is not None else REPORT_AGENT_REGISTRY
         self._steps = ResearchStepRepository(session)
         self._step_index = 0
         # A plain UUID, not an ORM instance: the failure path's rollback
@@ -58,6 +70,15 @@ class ReportStepTracker(NodeExecutionTracker):
         self._current_step_id: uuid.UUID | None = None
         self.started_nodes: list[str] = []
 
+    def _spec(self, node: str) -> NodeSpec:
+        """This run's registry entry for `node`."""
+        try:
+            return self._registry[node]
+        except KeyError as exc:
+            raise KeyError(
+                f"Unknown report node '{node}'. Registered: {', '.join(sorted(self._registry))}."
+            ) from exc
+
     async def on_node_start(self, node: str) -> None:
         step = await self._steps.create(
             ResearchStep(
@@ -65,7 +86,7 @@ class ReportStepTracker(NodeExecutionTracker):
                 attempt=self._attempt,
                 step_index=self._next_index(),
                 node_name=node,
-                title=get_node_spec(node).title,
+                title=self._spec(node).title,
                 status=ResearchStepStatus.RUNNING,
                 started_at=datetime.now(timezone.utc),
             )
@@ -96,7 +117,7 @@ class ReportStepTracker(NodeExecutionTracker):
         if step is None:
             return
         step.status = ResearchStepStatus.FAILED
-        step.summary = f"Failed: {get_node_spec(node).title}."
+        step.summary = f"Failed: {self._spec(node).title}."
         step.error_message = scrub_report_error(error)
         step.completed_at = datetime.now(timezone.utc)
         step.duration_ms = duration_ms
@@ -104,7 +125,7 @@ class ReportStepTracker(NodeExecutionTracker):
 
     async def record_skipped(self) -> None:
         """Record every registered node that never started as `skipped`."""
-        for name, spec in REPORT_AGENT_REGISTRY.items():
+        for name, spec in self._registry.items():
             if name in self.started_nodes:
                 continue
             await self._steps.create(
