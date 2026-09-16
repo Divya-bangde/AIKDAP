@@ -550,6 +550,53 @@ async def test_claim_pending_succeeds_exactly_once(session, project, make_report
 
 
 @pytest.mark.asyncio
+async def test_generating_a_report_deleted_before_it_could_be_claimed_is_skipped(session, project, make_report_asset):
+    """A deleted report asset's row is gone, so `claim_pending` cannot
+    find it and claims nothing -- the plain redelivered-message path."""
+    from sqlalchemy import delete
+
+    from app.workers.tasks import _generate_report
+
+    report = await make_report_asset(project)
+    report_id = report.id
+    await session.execute(delete(Asset).where(Asset.id == report_id))
+    await session.commit()
+
+    result = await _generate_report(report_id)
+
+    assert result == {"status": "skipped", "asset_id": str(report_id)}
+    assert await _steps_for(report_id) == []
+
+
+@pytest.mark.asyncio
+async def test_asset_deleted_between_claim_and_fetch_is_handled_cleanly(session, project, monkeypatch, make_report_asset):
+    """Final-review finding I1: the asset row can be deleted (project or
+    user cascade) in the gap between a successful `claim_pending` and the
+    following `get_by_id`. `_generate_report` must return cleanly instead
+    of raising `AttributeError` on `asset.id`, and must write no steps for
+    an asset that no longer exists."""
+    from app.modules.assets.repository import AssetRepository
+    from app.workers.tasks import _generate_report
+
+    report = await make_report_asset(project)
+    report_id = report.id
+
+    real_get_by_id = AssetRepository.get_by_id
+
+    async def _missing_after_claim(self, asset_id):
+        if asset_id == report_id:
+            return None
+        return await real_get_by_id(self, asset_id)
+
+    monkeypatch.setattr(AssetRepository, "get_by_id", _missing_after_claim)
+
+    result = await _generate_report(report_id)
+
+    assert result == {"status": "asset_missing", "asset_id": str(report_id)}
+    assert await _steps_for(report_id) == []
+
+
+@pytest.mark.asyncio
 async def test_retry_resets_a_failed_report_and_re_enqueues_it(session, project, monkeypatch, make_report_asset):
     dispatched: list[str] = []
     monkeypatch.setattr(

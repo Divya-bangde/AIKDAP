@@ -806,13 +806,16 @@ async def _generate_report(asset_id: uuid.UUID) -> dict[str, str]:
             return {"status": "skipped", "asset_id": str(asset_id)}
 
         asset = await assets.get_by_id(asset_id)
+        if asset is None:
+            logger.error("report_generation_asset_missing", asset_id=str(asset_id))
+            return {"status": "asset_missing", "asset_id": str(asset_id)}
 
-        # Each run is its own attempt, numbered after any earlier ones,
-        # so a retried report keeps every attempt's trace separately.
-        attempt = await ResearchStepRepository(session).latest_attempt(asset_id) + 1
-        tracker = ReportStepTracker(session, asset_id, attempt=attempt)
-
+        tracker: ReportStepTracker | None = None
         try:
+            # Each run is its own attempt, numbered after any earlier ones,
+            # so a retried report keeps every attempt's trace separately.
+            attempt = await ResearchStepRepository(session).latest_attempt(asset_id) + 1
+            tracker = ReportStepTracker(session, asset_id, attempt=attempt)
             dependencies = build_report_dependencies(session)
             graph = get_report_graph()
             result = await graph.ainvoke(
@@ -827,6 +830,7 @@ async def _generate_report(asset_id: uuid.UUID) -> dict[str, str]:
             asset.asset_metadata = {**asset.asset_metadata, "sections": result["sections"]}
             asset.processing_status = AssetProcessingStatus.COMPLETED
             asset.processing_error = None
+            await session.commit()
         except Exception as exc:
             logger.error(
                 "report_generation_failed",
@@ -839,7 +843,8 @@ async def _generate_report(asset_id: uuid.UUID) -> dict[str, str]:
             # roll back before writing again, or the commit below raises
             # `PendingRollbackError` and the asset stays `running`.
             await session.rollback()
-            await tracker.record_skipped()
+            if tracker is not None:
+                await tracker.record_skipped()
             asset = await assets.get_by_id(asset_id)
             if asset is not None:
                 # Sections are only ever written on success, so a failed
@@ -848,7 +853,5 @@ async def _generate_report(asset_id: uuid.UUID) -> dict[str, str]:
                 asset.processing_error = scrub_report_error(exc)
             await session.commit()
             return {"status": "ok", "asset_id": str(asset_id)}
-
-        await session.commit()
 
     return {"status": "ok", "asset_id": str(asset_id)}

@@ -6,8 +6,8 @@ from datetime import datetime, timezone
 import pytest
 from sqlalchemy.exc import IntegrityError
 
-from app.modules.research.enums import ResearchStepStatus
-from app.modules.research.models import ResearchStep
+from app.modules.research.enums import ResearchRunStatus, ResearchStepStatus
+from app.modules.research.models import ResearchRun, ResearchStep
 from app.modules.research.repository import ResearchStepRepository
 from app.modules.research.schemas import ResearchStepRead
 
@@ -54,6 +54,24 @@ async def test_a_report_asset_owns_its_steps_ordered_by_attempt_then_index(sessi
 @pytest.mark.asyncio
 async def test_a_step_with_no_owner_is_rejected(session, project):
     session.add(_step(None, 0))
+    with pytest.raises(IntegrityError):
+        await session.commit()
+    await session.rollback()
+
+
+@pytest.mark.asyncio
+async def test_a_step_with_both_owners_is_rejected(session, project, make_report_asset):
+    run = ResearchRun(
+        project_id=project.id,
+        owner_id=project.owner_id,
+        query="A research question?",
+        status=ResearchRunStatus.COMPLETED,
+    )
+    session.add(run)
+    await session.flush()
+    report = await make_report_asset(project)
+
+    session.add(_step(report.id, 0, run_id=run.id))
     with pytest.raises(IntegrityError):
         await session.commit()
     await session.rollback()
