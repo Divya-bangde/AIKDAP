@@ -60,3 +60,47 @@ class ReportRepository:
             .execution_options(synchronize_session=False)
         )
         return result.rowcount == 1
+
+    async def list_processed_documents_by_ids(
+        self, project_id: uuid.UUID, asset_ids: list[uuid.UUID]
+    ) -> list[Asset]:
+        """The subset of `list_processed_documents` the caller selected.
+
+        Filtered in SQL rather than in Python so a selection naming a
+        thousand ids does not load the whole project. An empty
+        `asset_ids` returns nothing: "select none" is never "select
+        all" -- the service rejects an empty selection with a 422 before
+        this is reached, and this method must not silently disagree.
+        """
+        if not asset_ids:
+            return []
+        stmt = (
+            select(Asset)
+            .where(
+                Asset.project_id == project_id,
+                Asset.id.in_(asset_ids),
+                Asset.asset_type == AssetType.DOCUMENT,
+                Asset.processing_status == AssetProcessingStatus.COMPLETED,
+            )
+            .order_by(Asset.created_at.asc())
+        )
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def list_project_asset_ids(self, project_id: uuid.UUID) -> set[uuid.UUID]:
+        """Every asset id in this project, whatever its type or status.
+
+        The ownership check for a build-plan selection, and deliberately
+        broader than `list_processed_documents_by_ids`: "this id is not in
+        your project" (a `404`) and "this id is in your project but is not
+        a processed document" (a `422`) are different answers, so the
+        service needs both sets rather than inferring one from the other.
+
+        `AssetRepository` has no project-wide listing method -- its
+        `search` is a paged, filtered query for the assets API -- so this
+        lives here rather than widening that one for a membership test.
+        """
+        result = await self._session.execute(
+            select(Asset.id).where(Asset.project_id == project_id)
+        )
+        return set(result.scalars().all())
