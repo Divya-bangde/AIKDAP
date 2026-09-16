@@ -435,8 +435,8 @@ describe("ResearchResult", () => {
     const synthesisStep = (outputPayload: Record<string, unknown>) => ({
       id: "step-s",
       run_id: "run-1",
-          asset_id: null,
-          attempt: 1,
+      asset_id: null,
+      attempt: 1,
       step_index: 5,
       node_name: "synthesis",
       title: "Synthesize the deliverable",
