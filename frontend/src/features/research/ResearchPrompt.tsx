@@ -89,7 +89,7 @@ export function ResearchPrompt() {
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 onKeyDown={submitOnEnter}
-                placeholder="What are the key risks and opportunities identified in these documents?"
+                placeholder="Enter what to research"
                 className="resize-none text-[15px] leading-relaxed"
               />
             </div>
