@@ -15,8 +15,15 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from app.modules.assets.router import _content_disposition
 from app.modules.auth.models import User
 from app.modules.auth.security import get_current_user
-from app.modules.reports.schemas import ReportGenerateRequest, ReportGenerationAccepted, ReportRead
+from app.modules.reports.schemas import (
+    BuildPlanRequest,
+    ReportGenerateRequest,
+    ReportGenerationAccepted,
+    ReportRead,
+)
 from app.modules.reports.service import (
+    AssetNotInProjectError,
+    AssetSelectionError,
     NoProcessedDocumentsError,
     ProjectAccessDeniedError,
     ReportNotFoundError,
@@ -54,6 +61,40 @@ async def generate_synopsis_route(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="This project has no processed documents to report on yet.",
+        ) from exc
+    return ReportGenerationAccepted(asset_id=asset.id, status=asset.processing_status)
+
+
+@router.post(
+    "/projects/{project_id}/reports/build-plan",
+    response_model=ReportGenerationAccepted,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def generate_build_plan_route(
+    project_id: uuid.UUID,
+    data: BuildPlanRequest,
+    current_user: User = Depends(get_current_user),
+    service: ReportService = Depends(get_report_service),
+) -> ReportGenerationAccepted:
+    """Start generating a build plan from the selected papers. Runs in
+    the Celery worker; poll `GET /reports/{asset_id}` for
+    `processing_status`, then download via
+    `GET /reports/{asset_id}/download`."""
+    try:
+        asset = await service.generate_build_plan(current_user.id, project_id, data.asset_ids)
+    except (ProjectAccessDeniedError, AssetNotInProjectError) as exc:
+        # One 404 for both: a selection naming an asset outside the
+        # project must not reveal whether that asset exists elsewhere.
+        raise _PROJECT_NOT_FOUND from exc
+    except NoProcessedDocumentsError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="This project has no processed documents to build a plan from yet.",
+        ) from exc
+    except AssetSelectionError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="The papers you selected are still processing. Pick one that has finished.",
         ) from exc
     return ReportGenerationAccepted(asset_id=asset.id, status=asset.processing_status)
 

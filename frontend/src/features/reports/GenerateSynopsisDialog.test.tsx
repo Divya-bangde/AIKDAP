@@ -156,6 +156,15 @@ describe("GenerateSynopsisDialog", () => {
     expect(await screen.findByText(/not ready for download/i)).toBeInTheDocument();
   });
 
+  it("keeps the progress badge visible before the first report poll resolves", async () => {
+    vi.mocked(reportsService.generateSynopsis).mockResolvedValue({ asset_id: "a1", status: "pending" });
+    vi.mocked(reportsService.getReport).mockReturnValue(new Promise(() => {}));
+
+    await startGeneration();
+
+    expect(await screen.findByRole("status")).toHaveTextContent(/generating your report/i);
+  });
+
   it("retries a failed report and resumes polling", async () => {
     vi.mocked(reportsService.generateSynopsis).mockResolvedValue({ asset_id: "a1", status: "pending" });
     vi.mocked(reportsService.getReport)

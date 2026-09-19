@@ -19,7 +19,7 @@ from app.modules.assets.repository import AssetRepository
 from app.modules.projects.repository import ProjectRepository
 from app.modules.reports.export import render_docx, render_pdf
 from app.modules.reports.repository import ReportRepository
-from app.modules.reports.schemas import ReportKind
+from app.modules.reports.schemas import BUILD_PLAN_KIND, ReportKind
 from app.modules.research.models import ResearchStep
 from app.modules.research.repository import ResearchStepRepository
 from app.workers.tasks import generate_report
@@ -48,6 +48,25 @@ class ReportNotFoundError(Exception):
 
 class NoProcessedDocumentsError(Exception):
     """Raised when a project has no processed documents to report on."""
+
+
+class AssetSelectionError(Exception):
+    """Raised when a build-plan selection contains no usable document.
+
+    Distinct from `NoProcessedDocumentsError`: the project does have
+    processed documents, but the papers the caller picked are not among
+    them -- a different message, and a different thing for the user to
+    fix.
+    """
+
+
+class AssetNotInProjectError(Exception):
+    """Raised when a selected asset id is not in the given project.
+
+    Surfaces as `404`, not `403`: consistent with the rest of the
+    module, "not yours" and "doesn't exist" are indistinguishable to
+    the caller (spec section 7).
+    """
 
 
 class ReportNotReadyError(Exception):
@@ -126,6 +145,76 @@ class ReportService:
         # Enqueue only after the commit succeeds, matching
         # `AssetService.upload`: a worker picking this up must be able
         # to find the row it's processing.
+        generate_report.delay(str(created.id))
+        return created
+
+    async def generate_build_plan(
+        self, owner_id: uuid.UUID, project_id: uuid.UUID, asset_ids: list[uuid.UUID]
+    ) -> Asset:
+        """Create a `pending` build-plan asset and dispatch its generation.
+
+        Validation order matters and is deliberate:
+
+        1. project ownership -> `404`, so nothing about a project the
+           caller cannot see is ever revealed;
+        2. any selected id not in that project -> `404`, same reason;
+        3. the project having no processed documents at all -> `422`;
+        4. the selection naming no processed document -> `422`.
+
+        Steps 3 and 4 are separate because they are different user
+        problems: "upload something" versus "wait for processing". As
+        with `generate_synopsis`, every check runs before any asset or
+        Celery job exists, so a rejection leaves nothing behind.
+        """
+        await self._ensure_project_owned(owner_id, project_id)
+
+        in_project = await self._reports.list_project_asset_ids(project_id)
+        unknown = [asset_id for asset_id in asset_ids if asset_id not in in_project]
+        if unknown:
+            raise AssetNotInProjectError(unknown)
+
+        processed = await self._reports.list_processed_documents(project_id)
+        if not processed:
+            raise NoProcessedDocumentsError(project_id)
+
+        selected = await self._reports.list_processed_documents_by_ids(project_id, asset_ids)
+        if not selected:
+            raise AssetSelectionError(asset_ids)
+
+        title = "Build Plan"
+        asset = Asset(
+            project_id=project_id,
+            owner_id=owner_id,
+            title=title,
+            description=None,
+            asset_type=AssetType.REPORT,
+            status=AssetStatus.ACTIVE,
+            # As with a synopsis, no file is stored: the document is
+            # rendered on demand from `asset_metadata["sections"]`.
+            mime_type="application/json",
+            file_name=f"{_slug(title)}.json",
+            file_extension="json",
+            file_size=0,
+            storage_path="",
+            checksum="",
+            source=AssetSource.GENERATED,
+            version=1,
+            tags=[],
+            # `asset_ids` is persisted, not just passed to the worker: a
+            # retry re-runs from the asset row alone, and the trace
+            # should record which papers this plan was built from.
+            asset_metadata={
+                "kind": BUILD_PLAN_KIND,
+                "asset_ids": [str(asset_id) for asset_id in asset_ids],
+                "sections": [],
+            },
+            ai_profile=AIProfile().model_dump(mode="json"),
+            created_by=owner_id,
+            processing_status=AssetProcessingStatus.PENDING,
+        )
+        created = await self._assets.create(asset)
+        await self._session.commit()
+
         generate_report.delay(str(created.id))
         return created
 

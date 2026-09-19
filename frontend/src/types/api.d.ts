@@ -842,6 +842,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/reports/build-plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate Build Plan Route
+         * @description Start generating a build plan from the selected papers. Runs in
+         *     the Celery worker; poll `GET /reports/{asset_id}` for
+         *     `processing_status`, then download via
+         *     `GET /reports/{asset_id}/download`.
+         */
+        post: operations["generate_build_plan_route_api_v1_projects__project_id__reports_build_plan_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/reports/{asset_id}": {
         parameters: {
             query?: never;
@@ -1195,6 +1218,18 @@ export interface components {
              * Format: binary
              */
             file: string;
+        };
+        /**
+         * BuildPlanRequest
+         * @description Payload for `POST /projects/{project_id}/reports/build-plan`.
+         *
+         *     `min_length=1` rejects an empty selection with FastAPI's own `422`
+         *     before any handler runs -- the spec requires at least one paper, and
+         *     an empty list must never be read as "all documents".
+         */
+        BuildPlanRequest: {
+            /** Asset Ids */
+            asset_ids: string[];
         };
         /** ComparisonItem */
         ComparisonItem: {
@@ -4646,6 +4681,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ReportGenerateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportGenerationAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_build_plan_route_api_v1_projects__project_id__reports_build_plan_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BuildPlanRequest"];
             };
         };
         responses: {

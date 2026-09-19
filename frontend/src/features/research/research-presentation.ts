@@ -73,6 +73,26 @@ const PRESENTATION: Record<string, StepPresentation> = {
     title: "Checking coverage",
     description: "Building the references from the documents actually cited.",
   },
+
+  // Build-plan runs (Milestone 10 step 5) share this pipeline view too;
+  // these are the four real `node_name`s from
+  // `backend/app/agents/reports/build_plan_state.py`'s `BuildPlanNode`.
+  extract: {
+    title: "Extract what the paper builds",
+    description: "Reading the selected papers for what they actually build.",
+  },
+  research_further: {
+    title: "Researching further",
+    description: "Looking for implementations and resources beyond the papers themselves.",
+  },
+  recommend_tools: {
+    title: "Recommending tools",
+    description: "Matching what has to be built to concrete tools and libraries.",
+  },
+  recommend_process: {
+    title: "Recommending a process",
+    description: "Laying out the step-by-step process to build it.",
+  },
 };
 
 /** Falls back to the raw `node_name` rather than a blank or invented

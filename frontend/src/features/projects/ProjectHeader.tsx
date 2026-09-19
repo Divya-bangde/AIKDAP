@@ -1,12 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "motion/react";
-import { AlertTriangle, FileText, FolderKanban, Search, Trash2, X } from "lucide-react";
+import { AlertTriangle, FileText, FolderKanban, Hammer, Search, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { layoutSpring } from "@/lib/motion";
 import { projectLayoutIds } from "@/features/projects/ProjectCard";
 import { ProjectPersonaSelect } from "@/features/projects/ProjectPersonaSelect";
+import { BuildPlanDialog } from "@/features/reports/BuildPlanDialog";
 import { GenerateSynopsisDialog } from "@/features/reports/GenerateSynopsisDialog";
 
 import { ExportMenu } from "@/components/common/ExportMenu";
@@ -53,6 +54,7 @@ export function ProjectHeader({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [warning, setWarning] = useState<ResearchWarning | null>(null);
   const [synopsisOpen, setSynopsisOpen] = useState(false);
+  const [buildPlanOpen, setBuildPlanOpen] = useState(false);
 
   useEffect(() => {
     if (!warning) return;
@@ -137,6 +139,12 @@ export function ProjectHeader({
               Generate synopsis
             </Button>
           )}
+          {project.effective_persona === "builder" && (
+            <Button variant="outline" onClick={() => setBuildPlanOpen(true)}>
+              <Hammer className="h-4 w-4" />
+              Get build plan
+            </Button>
+          )}
           <ExportMenu
             filename={fileSlug(project.name)}
             toMarkdown={() => projectMarkdown(project, assets, runs)}
@@ -219,6 +227,12 @@ export function ProjectHeader({
       </Dialog>
 
       <GenerateSynopsisDialog open={synopsisOpen} onOpenChange={setSynopsisOpen} projectId={project.id} />
+      <BuildPlanDialog
+        open={buildPlanOpen}
+        onOpenChange={setBuildPlanOpen}
+        projectId={project.id}
+        assets={assets}
+      />
     </div>
   );
 }

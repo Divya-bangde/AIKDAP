@@ -36,6 +36,24 @@ class ReportGenerationAccepted(BaseModel):
     status: AssetProcessingStatus
 
 
+#: The `asset_metadata["kind"]` marker for a build plan. Deliberately a
+#: plain string rather than a `ReportKind` member (design ruling R1): a
+#: build plan is its own endpoint with its own graph, and widening
+#: `ReportKind` would make it a valid body for the synopsis endpoint.
+BUILD_PLAN_KIND = "build_plan"
+
+
+class BuildPlanRequest(BaseModel):
+    """Payload for `POST /projects/{project_id}/reports/build-plan`.
+
+    `min_length=1` rejects an empty selection with FastAPI's own `422`
+    before any handler runs -- the spec requires at least one paper, and
+    an empty list must never be read as "all documents".
+    """
+
+    asset_ids: list[uuid.UUID] = Field(min_length=1)
+
+
 class ReportRead(AssetRead):
     """`GET /reports/{asset_id}`: the report asset plus its persisted
     step trace (hardening item 1), so the frontend renders a report run

@@ -60,11 +60,15 @@ from app.modules.execution.repository import ExecutionJobRepository
 from app.modules.execution.service import prepare_approved_launch, recover_interrupted_retry_attempt
 from execution_launcher.launcher import execute_approved_launch, reconcile_attempt
 from app.agents.planner.tracking import TRACKER_CONFIG_KEY
+from app.agents.reports.build_plan_graph import get_build_plan_graph
+from app.agents.reports.build_plan_nodes import build_build_plan_dependencies
+from app.agents.reports.build_plan_registry import BUILD_PLAN_AGENT_REGISTRY
 from app.agents.reports.graph import get_report_graph
 from app.agents.reports.nodes import build_report_dependencies
 from app.modules.knowledge_base.embeddings import get_embedding_provider
 from app.modules.knowledge_base.repository import KnowledgeChunkRepository
 from app.modules.reports.repository import ReportRepository
+from app.modules.reports.schemas import BUILD_PLAN_KIND
 from app.modules.reports.tracking import ReportStepTracker, scrub_report_error
 from app.modules.research.enums import ResearchRunStatus
 from app.modules.research.models import ResearchRun
@@ -815,16 +819,37 @@ async def _generate_report(asset_id: uuid.UUID) -> dict[str, str]:
             # Each run is its own attempt, numbered after any earlier ones,
             # so a retried report keeps every attempt's trace separately.
             attempt = await ResearchStepRepository(session).latest_attempt(asset_id) + 1
-            tracker = ReportStepTracker(session, asset_id, attempt=attempt)
-            dependencies = build_report_dependencies(session)
-            graph = get_report_graph()
-            result = await graph.ainvoke(
-                {
+            kind = asset.asset_metadata.get("kind")
+
+            if kind == BUILD_PLAN_KIND:
+                # One task drives both report graphs (design ruling R1):
+                # the claim, the attempt numbering, the failure path and
+                # the terminal statuses are identical, so only the graph,
+                # its dependencies, its registry and its inputs differ.
+                tracker = ReportStepTracker(
+                    session, asset_id, attempt=attempt, registry=BUILD_PLAN_AGENT_REGISTRY
+                )
+                graph = get_build_plan_graph()
+                dependencies = build_build_plan_dependencies(session)
+                inputs = {
                     "report_id": str(asset.id),
                     "project_id": str(asset.project_id),
                     "owner_id": str(asset.owner_id),
-                    "kind": asset.asset_metadata.get("kind"),
-                },
+                    "asset_ids": list(asset.asset_metadata.get("asset_ids") or []),
+                }
+            else:
+                tracker = ReportStepTracker(session, asset_id, attempt=attempt)
+                graph = get_report_graph()
+                dependencies = build_report_dependencies(session)
+                inputs = {
+                    "report_id": str(asset.id),
+                    "project_id": str(asset.project_id),
+                    "owner_id": str(asset.owner_id),
+                    "kind": kind,
+                }
+
+            result = await graph.ainvoke(
+                inputs,
                 config={"configurable": {"dependencies": dependencies, TRACKER_CONFIG_KEY: tracker}},
             )
             asset.asset_metadata = {**asset.asset_metadata, "sections": result["sections"]}

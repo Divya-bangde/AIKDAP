@@ -130,3 +130,50 @@ describe("ProjectHeader — Generate synopsis", () => {
     expect(screen.getByText("Creates a report from this project's processed documents.")).toBeInTheDocument();
   });
 });
+
+describe("ProjectHeader — Get build plan", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it.each(["researcher", "student"] as const)(
+    "does not show the button for the %s persona",
+    (persona) => {
+      renderWithProviders(
+        <ProjectHeader
+          project={makeProject({ effective_persona: persona })}
+          assets={[]}
+          runs={[]}
+          onRequestUpload={vi.fn()}
+        />,
+      );
+      expect(screen.queryByRole("button", { name: /get build plan/i })).not.toBeInTheDocument();
+    },
+  );
+
+  it("shows the button for the builder persona", () => {
+    renderWithProviders(
+      <ProjectHeader
+        project={makeProject({ effective_persona: "builder" })}
+        assets={[]}
+        runs={[]}
+        onRequestUpload={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("button", { name: /get build plan/i })).toBeInTheDocument();
+  });
+
+  it("opens the build-plan dialog with the project's papers", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <ProjectHeader
+        project={makeProject({ effective_persona: "builder" })}
+        assets={[makeAsset({ id: "a1", title: "First paper.pdf" })]}
+        runs={[]}
+        onRequestUpload={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: /get build plan/i }));
+
+    expect(screen.getByRole("checkbox", { name: /first paper\.pdf/i })).toBeChecked();
+  });
+});

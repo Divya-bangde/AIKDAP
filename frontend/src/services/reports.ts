@@ -5,11 +5,19 @@ type ReportKind = components["schemas"]["ReportKind"];
 type ReportGenerateRequest = components["schemas"]["ReportGenerateRequest"];
 type ReportGenerationAccepted = components["schemas"]["ReportGenerationAccepted"];
 type ReportRead = components["schemas"]["ReportRead"];
+type BuildPlanRequest = components["schemas"]["BuildPlanRequest"];
 
 export function generateSynopsis(projectId: string, kind: ReportKind) {
   return request<ReportGenerationAccepted>(`/api/v1/projects/${projectId}/reports/synopsis`, {
     method: "POST",
     body: { kind } satisfies ReportGenerateRequest,
+  });
+}
+
+export function generateBuildPlan(projectId: string, assetIds: string[]) {
+  return request<ReportGenerationAccepted>(`/api/v1/projects/${projectId}/reports/build-plan`, {
+    method: "POST",
+    body: { asset_ids: assetIds } satisfies BuildPlanRequest,
   });
 }
 

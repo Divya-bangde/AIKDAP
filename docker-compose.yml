@@ -85,7 +85,7 @@ services:
     environment:
       OLLAMA_BASE_URL: http://host.docker.internal:11434
       RERANKER_BASE_URL: http://host.docker.internal:8090
-      BACKEND_CORS_ORIGINS: "http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174,https://aikdap-divya.vercel.app,https://tourist-egg-passive-extending.trycloudflare.com"
+      BACKEND_CORS_ORIGINS: "http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174,https://aikdap-frontend.vercel.app,https://tourist-egg-passive-extending.trycloudflare.com"
       DEFAULT_LLM: ollama/qwen3.5:4b
       SYNTHESIS_MODEL: ollama/qwen3.5:4b
 
@@ -124,7 +124,7 @@ services:
     environment:
       OLLAMA_BASE_URL: http://host.docker.internal:11434
       RERANKER_BASE_URL: http://host.docker.internal:8090
-      BACKEND_CORS_ORIGINS: "http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174,https://aikdap-divya.vercel.app,https://tourist-egg-passive-extending.trycloudflare.com"
+      BACKEND_CORS_ORIGINS: "http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174,https://aikdap-frontend.vercel.app,https://tourist-egg-passive-extending.trycloudflare.com"
       DEFAULT_LLM: ollama/qwen3.5:4b
       SYNTHESIS_MODEL: ollama/qwen3.5:4b
 
