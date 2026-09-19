@@ -89,7 +89,7 @@ export function ResearchPrompt() {
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 onKeyDown={submitOnEnter}
-                placeholder="What challenges does ABC Poultry face?"
+                placeholder="What are the key risks and opportunities identified in these documents?"
                 className="resize-none text-[15px] leading-relaxed"
               />
             </div>

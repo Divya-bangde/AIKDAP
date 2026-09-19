@@ -73,7 +73,7 @@ export function CreateProjectDialog() {
               required
               value={name}
               onChange={(event) => setName(event.target.value)}
-              placeholder="Poultry Market Intelligence"
+              placeholder="Q3 Competitive Landscape Analysis"
             />
           </div>
           <div className="flex flex-col gap-2">
@@ -82,7 +82,7 @@ export function CreateProjectDialog() {
               id="project-description"
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              placeholder="What is this project researching?"
+              placeholder="Briefly describe the objective and scope of this project"
             />
           </div>
           <div className="flex flex-col gap-2">
