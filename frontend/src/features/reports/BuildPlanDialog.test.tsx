@@ -15,7 +15,7 @@ const unprocessed = makeAsset({
   id: "a3",
   title: "Still processing.pdf",
   processing_status: "running",
-  ai_profile: aiProfile({ status: "processing", embedding_status: "pending" }),
+  ai_profile: aiProfile({ status: "pending", embedding_status: "pending" }),
 });
 
 function render(assets = [processedOne, processedTwo, unprocessed]) {
