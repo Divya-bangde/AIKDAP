@@ -45,7 +45,7 @@ export function Login() {
      * redirects itself mid-exit. A transition that fights the router
      * over the address bar is worse than no transition. */
     <main className="relative flex min-h-screen overflow-hidden">
-      <EntryBackdrop vignette={false} />
+      <EntryBackdrop vignette={false} animated />
 
       {/* Brand panel. Hidden below `lg` so the form is never pushed
        * below the fold on a laptop or phone — the entry experience must

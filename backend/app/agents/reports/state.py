@@ -9,7 +9,7 @@ unlike the research graph's web-fallback loop).
 """
 
 import enum
-from typing import Any, TypedDict
+from typing import Any, NotRequired, TypedDict
 
 
 class ReportNode(str, enum.Enum):
@@ -37,7 +37,7 @@ SECTION_TITLES: dict[str, list[str]] = {
         "Objectives",
         "Literature Review",
         "Methodology",
-        "Expected Outcomes",
+        "Experimental Outcomes & Results",
         "References",
     ],
 }
@@ -54,7 +54,7 @@ SECTION_QUERIES: dict[str, str] = {
     "Objectives": "the research objectives and goals",
     "Literature Review": "related work and prior research",
     "Methodology": "the methodology and methods used",
-    "Expected Outcomes": "the expected outcomes and results",
+    "Experimental Outcomes & Results": "the experimental results, benchmarks and evaluation metrics",
     "Key Themes": "the key themes and topics across these documents",
     "Main Findings": "the main findings and results of each document",
     "How the Documents Relate": "how these documents relate to or build on each other",
@@ -69,6 +69,13 @@ class ProcessedDocument(TypedDict):
     file_name: str
     summary: str
     topics: list[str]
+    #: The document's own opening text (title page / first chunk),
+    #: read straight from the extracted text rather than through
+    #: semantic search -- the front matter that carries the real
+    #: title, authors and year never scores highly enough to survive
+    #: the knowledge base's relevance gate. `NotRequired` so an
+    #: in-memory document (tests, fakes) may omit it.
+    front_matter: NotRequired[str]
 
 
 class SectionEvidence(TypedDict):

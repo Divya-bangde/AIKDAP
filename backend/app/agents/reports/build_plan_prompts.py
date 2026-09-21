@@ -1,6 +1,13 @@
 """Prompt templates for the build-plan graph's four LLM calls
 (Milestone 10 step 5 -- spec section 6).
 
+The voice is a principal AI/ML systems architect turning a paper into a
+production build, not a reviewer summarising one: every call is steered
+towards engineering viability, operational cost and deployment shape.
+The JSON contract each call returns is unchanged -- `BuildPlanState`'s
+`PaperFindings`, `ToolRecommendation` and `BuildPhase` keys are frozen,
+so the architect framing has to fit inside them rather than add fields.
+
 Every prompt carries the same two hard rules the spec sets: ground
 everything in the provided material, and never write a URL. Links are
 appended deterministically from provider results by the nodes
@@ -18,36 +25,50 @@ from app.agents.reports.build_plan_state import (
 from app.agents.reports.state import ProcessedDocument, SectionEvidence
 
 #: Repeated in every system prompt below. Stated once so the four
-#: prompts cannot drift on the rule that matters most.
+#: prompts cannot drift on the rule that matters most. Checkpoint and
+#: package names are called out because the architect framing asks for
+#: them by name, and "huggingface.co/org/model" would be stripped to
+#: nothing while "org/model" survives.
 _NO_LINKS_RULE = (
     "Never write a URL, link, DOI, or web address of any kind -- not in "
-    "prose, not in parentheses, not as a citation. Links are added "
-    "separately from verified search results. Any URL you write will be "
-    "deleted before the reader sees it."
+    "prose, not in parentheses, not as a citation. Name checkpoints and "
+    "packages by their bare identifier, such as 'org/model-name', never "
+    "as a web address. Links are added separately from verified search "
+    "results. Any URL you write will be deleted before the reader sees it."
 )
 
 EXTRACT_SYSTEM_PROMPT = (
-    "You read a research paper the user wants to turn into a real "
-    "project, and you report only what the paper itself says. Base every "
-    "field strictly on the provided excerpts. If the excerpts do not "
-    "state something, return an empty list for that field rather than "
-    "guessing a plausible value. " + _NO_LINKS_RULE
+    "You are a principal AI/ML systems architect reading a paper the "
+    "user wants to ship as a production system. You report only what the "
+    "paper itself states, but you read it for engineering viability: "
+    "which mechanism actually has to run in production, which weights "
+    "can be loaded instead of trained, what the compute bill looks like. "
+    "Base every field strictly on the provided excerpts. If the excerpts "
+    "do not state something, return an empty list for that field rather "
+    "than guessing a plausible value. " + _NO_LINKS_RULE
 )
 
 TOOLS_SYSTEM_PROMPT = (
-    "You recommend concrete, well-known tools and libraries for building "
-    "the described system. Every recommendation must name a real tool and "
-    "give a reason that refers to something specific in the paper's "
-    "findings -- a named model, dataset, metric, or compute need. Offer "
-    "alternatives so the builder is not locked in. " + _NO_LINKS_RULE
+    "You are a principal AI/ML systems architect choosing the production "
+    "stack. For each stage you prescribe exactly one primary tool and "
+    "justify it on performance and maintainability, referring to "
+    "something specific in the paper's findings -- a named model, "
+    "dataset, metric, index size, or compute need. Name real, "
+    "currently-maintained tools only. List the credible alternatives so "
+    "the builder is not locked in, but commit to one. " + _NO_LINKS_RULE
 )
 
 PROCESS_SYSTEM_PROMPT = (
-    "You lay out the phases of building a working product from a research "
-    "paper, starting from reproducing the paper's own baseline. Each phase "
-    "gets concrete steps, one checkable definition of done, and the risks "
-    "that phase actually carries -- for example a dataset that needs "
-    "licence approval before it can be used. " + _NO_LINKS_RULE
+    "You are a principal AI/ML systems architect writing a phased "
+    "engineering roadmap: environment and ingestion, then the indexing "
+    "and inference core, then the production API, then benchmarking and "
+    "containerisation. Each phase gets concrete deliverables (named "
+    "scripts, services, configs), the command an engineer runs to verify "
+    "them locally, one quantitative definition of done, and the "
+    "real-world failure modes that phase carries -- each paired with its "
+    "engineering mitigation. Prefer numbers over adjectives: latency "
+    "percentiles, memory ceilings, throughput, licence gates. "
+    + _NO_LINKS_RULE
 )
 
 
@@ -76,13 +97,27 @@ def render_extract_prompt(
     return (
         f"Selected papers:\n{document_lines}\n\n"
         f"{evidence_block}\n\n"
-        "From these papers only, report what would have to be built. "
-        "Return JSON with these keys, each a list of short statements: "
-        "'method' (the method or algorithm proposed), 'models' (the models "
-        "or architectures used), 'datasets' (the datasets used), 'metrics' "
-        "(the evaluation metrics), 'compute' (hardware, GPU, or training-time "
-        "needs), and 'limitations' (the limitations the authors themselves "
-        "state). Use an empty list for anything the excerpts do not state."
+        "From these papers only, distil what would actually have to be "
+        "built and run in production. Separate the production-critical "
+        "core from the academic apparatus around it. Return JSON with "
+        "these keys, each a list of short statements:\n"
+        "- 'method': the mechanisms, algorithms, or data structures that "
+        "must exist at serving time -- the parts a production system "
+        "cannot omit.\n"
+        "- 'models': the models or architectures used, giving the exact "
+        "pretrained checkpoint identifier wherever the paper names one, "
+        "so weights can be loaded rather than trained.\n"
+        "- 'datasets': the datasets used, noting any licence or access "
+        "restriction the paper mentions.\n"
+        "- 'metrics': the evaluation metrics, with the paper's own "
+        "reported numbers where stated, so a reimplementation has a "
+        "target to hit.\n"
+        "- 'compute': hardware, GPU, VRAM, index size, or training-time "
+        "needs exactly as stated.\n"
+        "- 'limitations': the limitations the authors themselves state, "
+        "plus any part of the work that exists only to satisfy the "
+        "paper's evaluation and can be left out of a production build.\n"
+        "Use an empty list for anything the excerpts do not state."
     )
 
 
@@ -92,6 +127,11 @@ def render_tools_prompt(*, findings: PaperFindings, links: list[ResearchLink]) -
     `links` are passed as titles and notes only -- never URLs -- so the
     model can take a real implementation or library into account without
     ever being handed a URL it might echo back.
+
+    The stage list is spelled out with the production tier each one
+    stands for, because `TOOL_STAGES` values are single words and a
+    model asked for "backend" tools will otherwise skip the serving
+    runtime and the index engine.
     """
     findings_block = _findings_block(findings)
     resources = (
@@ -102,17 +142,37 @@ def render_tools_prompt(*, findings: PaperFindings, links: list[ResearchLink]) -
     return (
         f"Findings from the paper:\n{findings_block}\n\n"
         f"Resources found by search (titles only):\n{resources}\n\n"
-        f"Recommend tools for building this system, grouped by stage. "
-        f"Use exactly these stage values: {stages}. Return JSON with a "
-        "'tools' list; each item has 'stage' (one of the stage values), "
-        "'name' (the tool), 'reason' (why, referring to a specific "
-        "finding above), and 'alternatives' (a list of other tools that "
-        "would also work). Cover every stage that the findings support."
+        "Prescribe the production stack for building this system, one "
+        f"primary tool per tier. Use exactly these stage values: {stages}. "
+        "The tiers mean:\n"
+        "- 'data': ingestion, preprocessing, and orchestration of the "
+        "corpus, including serialisation format and job queue.\n"
+        "- 'modelling': the core ML framework and anything that loads or "
+        "quantises the pretrained weights.\n"
+        "- 'backend': the serving and inference runtime, the vector or "
+        "inverted index engine, and the caching layer behind the API.\n"
+        "- 'evaluation': benchmarking, load testing, and the "
+        "observability stack that proves the metrics in production.\n"
+        "- 'deployment': containerisation, hosting target, and the "
+        "hardware class it runs on.\n\n"
+        "Return JSON with a 'tools' list; each item has 'stage' (one of "
+        "the stage values), 'name' (the one tool you prescribe), 'reason' "
+        "(why, on performance and maintainability grounds, referring to a "
+        "specific finding above), and 'alternatives' (a list of other "
+        "tools that would also work). Cover every stage that the findings "
+        "support, and give exactly one primary tool per stage."
     )
 
 
 def render_process_prompt(*, findings: PaperFindings, tools: list[ToolRecommendation]) -> str:
-    """Prompt for the phased build process."""
+    """Prompt for the phased build process.
+
+    The four phase names are fixed here rather than left to the model so
+    every build plan reads the same way, and the two things the frozen
+    five-section document has no home for -- the component flow and the
+    hardware and cost sizing -- are pinned to the phases where an
+    engineer would actually need them.
+    """
     findings_block = _findings_block(findings)
     tool_lines = (
         "\n".join(f"- {tool['stage']}: {tool['name']} ({tool['reason']})" for tool in tools)
@@ -121,13 +181,31 @@ def render_process_prompt(*, findings: PaperFindings, tools: list[ToolRecommenda
     return (
         f"Findings from the paper:\n{findings_block}\n\n"
         f"Recommended tools:\n{tool_lines}\n\n"
-        "Lay out the phases for going from this paper to a working "
-        "product. The first phase must be reproducing the paper's own "
-        "baseline result; the last must be a deployed, usable product. "
+        "Lay out the engineering roadmap from this paper to a deployed "
+        "product, as exactly four phases in this order:\n"
+        "1. Environment, pretrained weights, and offline ingestion "
+        "pipeline. Its steps must open with the end-to-end component "
+        "flow -- ingestion, processing and indexing, storage, query "
+        "serving API, client -- naming the serialisation format moving "
+        "between each pair.\n"
+        "2. Core indexing engine and hardware acceleration: quantisation, "
+        "inference runtime, and the index build itself.\n"
+        "3. Production API and asynchronous service layer.\n"
+        "4. Benchmarking, containerisation, and stress testing. Its steps "
+        "must include the target production sizing -- CPU cores, RAM, "
+        "VRAM, and disk per 100k data units -- and an estimated monthly "
+        "cloud hosting cost for that hardware class.\n\n"
         "Return JSON with a 'phases' list; each item has 'name', 'steps' "
-        "(a list of concrete actions), 'definition_of_done' (one "
-        "checkable sentence), and 'risks' (a list of what could block "
-        "this phase, such as a dataset needing licence approval)."
+        "(concrete deliverables -- named scripts, services, and configs -- "
+        "with the exact command an engineer runs to verify the phase "
+        "locally), 'definition_of_done' (one checkable sentence with a "
+        "number in it, such as a P95 latency ceiling under a stated "
+        "concurrency, an index build time, or a metric the paper "
+        "reported), and 'risks' (the real-world failure modes this phase "
+        "carries -- out-of-memory spikes during index building, cold "
+        "start latency, query token explosion, cache invalidation, a "
+        "dataset needing licence approval -- each stated as the failure "
+        "followed by its engineering mitigation)."
     )
 
 

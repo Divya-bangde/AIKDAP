@@ -112,8 +112,11 @@ async def test_project_synopsis_produces_its_nine_sections():
 async def test_a_section_with_no_evidence_is_marked_not_covered_verbatim():
     gateway = FakeGateway(_section_response("Should never be used.", ["a1"]))
     searcher = FakeSectionSearcher({})  # every query returns []
+    # No summary either, so the summary fallback has nothing to offer
+    # and the section is genuinely unwritable.
+    documents = [{**_DOCS[0], "summary": ""}]
 
-    result = await _run_graph(kind="study_summary", gateway=gateway, searcher=searcher)
+    result = await _run_graph(kind="study_summary", gateway=gateway, searcher=searcher, documents=documents)
 
     for section in result["sections"]:
         if section["title"] == "References":
@@ -122,6 +125,24 @@ async def test_a_section_with_no_evidence_is_marked_not_covered_verbatim():
         assert section["covered"] is False
     # No evidence anywhere -- the LLM must never have been called.
     assert gateway.calls == []
+
+
+@pytest.mark.asyncio
+async def test_a_section_retrieval_missed_falls_back_to_the_document_summary():
+    """Retrieval returning nothing must not silently drop a section --
+    the document's own AI-profile summary is still its content."""
+    gateway = FakeGateway(_section_response("Written from the summary.", ["a1"]))
+    searcher = FakeSectionSearcher({})  # every query returns []
+
+    result = await _run_graph(kind="study_summary", gateway=gateway, searcher=searcher)
+
+    for section in result["sections"]:
+        if section["title"] == "References":
+            continue
+        assert section["content"] == "Written from the summary."
+        assert section["covered"] is True
+    # The summary, not an invented excerpt, is what the model was shown.
+    assert all("Studies poultry disease." in call["prompt"] for call in gateway.calls)
 
 
 @pytest.mark.asyncio
@@ -241,3 +262,90 @@ async def test_a_retrieval_failure_is_recorded_against_retrieve_evidence_and_sto
     assert tracker.started == ["collect_documents", "retrieve_evidence"]
     assert tracker.failed == ["retrieve_evidence"]
     assert gateway.calls == []
+
+
+class FakeCitationGateway:
+    """Answers the section call and the citation call differently, the
+    way a real model does -- routed on the system prompt each node sends."""
+
+    def __init__(self, citation_payload: str) -> None:
+        self._citation_payload = citation_payload
+
+    async def generate(self, **kwargs):
+        from app.agents.reports.prompts import CITATION_SYSTEM_PROMPT
+        from app.core.llm.gateway import LLMResponse
+
+        content = (
+            self._citation_payload
+            if kwargs.get("system_prompt") == CITATION_SYSTEM_PROMPT
+            else _section_response("Section text.", ["a1"])
+        )
+        return LLMResponse(content=content, model="fake-model", provider="fake", latency_ms=5)
+
+
+def _evidence_for_every_section() -> dict[str, list[dict]]:
+    from app.agents.reports.state import SECTION_QUERIES
+
+    return {
+        query: [{"asset_id": "a1", "title": "Poultry Disease Paper", "file_name": "poultry.pdf", "snippet": "It found X."}]
+        for query in SECTION_QUERIES.values()
+    }
+
+
+_DOCS_WITH_FRONT_MATTER = [{**_DOCS[0], "front_matter": "Poultry Disease In Layers\nA. Mehta, R. Iyer\n2021"}]
+
+
+@pytest.mark.asyncio
+async def test_references_are_rendered_in_apa_form_from_the_front_matter():
+    gateway = FakeCitationGateway(
+        json.dumps({"authors": "Mehta, A., & Iyer, R.", "year": "2021", "title": "Poultry Disease In Layers", "venue": "arXiv"})
+    )
+
+    result = await _run_graph(
+        kind="project_synopsis",
+        gateway=gateway,
+        searcher=FakeSectionSearcher(_evidence_for_every_section()),
+        documents=_DOCS_WITH_FRONT_MATTER,
+    )
+
+    references = next(section for section in result["sections"] if section["title"] == "References")
+    assert references["content"] == "Mehta, A., & Iyer, R. (2021). Poultry Disease In Layers. arXiv."
+
+
+@pytest.mark.asyncio
+async def test_a_reference_missing_a_bibliographic_field_falls_back_to_the_file_name():
+    """Half-known citation data must degrade to the filename line, never
+    to a plausible-looking invention."""
+    gateway = FakeCitationGateway(
+        json.dumps({"authors": "", "year": "2021", "title": "Poultry Disease In Layers", "venue": "arXiv"})
+    )
+
+    result = await _run_graph(
+        kind="project_synopsis",
+        gateway=gateway,
+        searcher=FakeSectionSearcher(_evidence_for_every_section()),
+        documents=_DOCS_WITH_FRONT_MATTER,
+    )
+
+    references = next(section for section in result["sections"] if section["title"] == "References")
+    assert references["content"] == "Poultry Disease Paper (poultry.pdf)"
+
+
+@pytest.mark.asyncio
+async def test_an_undated_source_is_cited_as_n_d_rather_than_dropped():
+    """A preprint title page routinely prints no year, and "n.d." is
+    APA's own notation for exactly that -- unlike a missing author, it
+    has a faithful rendering, so it must not trigger the fallback."""
+    gateway = FakeCitationGateway(
+        json.dumps({"authors": "Mehta, A., & Iyer, R.", "year": "", "title": "Poultry Disease In Layers", "venue": ""})
+    )
+
+    result = await _run_graph(
+        kind="project_synopsis",
+        gateway=gateway,
+        searcher=FakeSectionSearcher(_evidence_for_every_section()),
+        documents=_DOCS_WITH_FRONT_MATTER,
+    )
+
+    references = next(section for section in result["sections"] if section["title"] == "References")
+    assert references["content"] == "Mehta, A., & Iyer, R. (n.d.). Poultry Disease In Layers."

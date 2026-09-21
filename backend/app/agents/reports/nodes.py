@@ -14,7 +14,12 @@ from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.agents.reports.prompts import SECTION_SYSTEM_PROMPT, render_section_prompt
+from app.agents.reports.prompts import (
+    CITATION_SYSTEM_PROMPT,
+    SECTION_SYSTEM_PROMPT,
+    render_citation_prompt,
+    render_section_prompt,
+)
 from app.agents.reports.state import (
     ProcessedDocument,
     ReportState,
@@ -24,6 +29,7 @@ from app.agents.reports.state import (
     SectionResult,
 )
 from app.core.config.settings import settings
+from app.core.llm.errors import LLMError
 from app.core.llm.gateway import LLMGateway, get_llm_gateway
 from app.core.logging.logger import get_logger
 from app.modules.assets.ai_profile import AIProfile
@@ -44,6 +50,21 @@ _JSON_FENCE = re.compile(r"^\s*```(?:json)?\s*(.*?)\s*```\s*$", re.DOTALL)
 def _as_uuid(value: str | uuid.UUID) -> uuid.UUID:
     """Accept a raw state string or an already-parsed UUID."""
     return value if isinstance(value, uuid.UUID) else uuid.UUID(value)
+
+
+class CitationDraft(BaseModel):
+    """The bibliographic fields read off one document's front matter.
+
+    Every field defaults to empty and stays empty when the front matter
+    does not state it -- a reference is only rendered in APA form once
+    authors, year and title are all genuinely present, so a missing
+    field degrades to the plain filename line instead of a guess.
+    """
+
+    authors: str = ""
+    year: str = ""
+    title: str = ""
+    venue: str = ""
 
 
 class SectionDraft(BaseModel):
@@ -107,7 +128,11 @@ class RepositoryDocumentLister(DocumentLister):
 
     async def list_processed(self, project_id: str | uuid.UUID) -> list[ProcessedDocument]:
         assets = await self._repository.list_processed_documents(_as_uuid(project_id))
-        return [_document_from_asset(asset) for asset in assets]
+        front_matter = await self._repository.get_front_matter([asset.id for asset in assets])
+        return [
+            {**_document_from_asset(asset), "front_matter": front_matter.get(asset.id, "")}
+            for asset in assets
+        ]
 
 
 class KnowledgeBaseSectionSearcher(SectionSearcher):
@@ -220,6 +245,29 @@ async def retrieve_evidence_node(state: ReportState, config: RunnableConfig) -> 
             for item in evidence
         ]
 
+        if not evidence_by_title[title]:
+            # Semantic search can return nothing for a section whose
+            # query falls below the knowledge base's relevance gate --
+            # "Methodology" on a paper that words it as "approach" is
+            # the common case, and dropping the section entirely was
+            # losing the paper's central contribution.
+            #
+            # Each document's AI-profile summary is still derived from
+            # the user's own document, so falling back to it keeps the
+            # grounding guarantee (spec section 7) intact: coarser
+            # evidence, never invented evidence. A document with no
+            # summary contributes nothing rather than an empty snippet.
+            evidence_by_title[title] = [
+                SectionEvidence(
+                    asset_id=document["asset_id"],
+                    title=document["title"],
+                    file_name=document["file_name"],
+                    snippet=document["summary"],
+                )
+                for document in documents
+                if document["summary"]
+            ]
+
     with_evidence = sum(1 for items in evidence_by_title.values() if items)
     excerpt_count = sum(len(items) for items in evidence_by_title.values())
     logger.info(
@@ -321,6 +369,7 @@ async def coverage_check_node(state: ReportState, config: RunnableConfig) -> dic
     """Build the deterministic References section (if this kind has one)
     from every asset id any other section actually cited, and log the
     final coverage."""
+    dependencies = _dependencies(config)
     sections = state.get("sections", [])
     documents = state.get("documents", [])
     document_lookup = {document["asset_id"]: document for document in documents}
@@ -335,7 +384,7 @@ async def coverage_check_node(state: ReportState, config: RunnableConfig) -> dic
 
     if any(section["title"] == "References" for section in sections):
         lines = [
-            f"{document_lookup[asset_id]['title']} ({document_lookup[asset_id]['file_name']})"
+            await _reference_line(document_lookup[asset_id], dependencies.llm_gateway)
             for asset_id in cited_asset_ids
             if asset_id in document_lookup
         ]
@@ -375,6 +424,57 @@ async def coverage_check_node(state: ReportState, config: RunnableConfig) -> dic
             "output": {"covered": covered_count, "total": len(sections), "reference_count": reference_count},
         },
     }
+
+
+async def _reference_line(document: ProcessedDocument, gateway: LLMGateway) -> str:
+    """One References entry for `document`, in APA form when possible.
+
+    Falls back to `<title> (<file name>)` -- the only form this section
+    had before -- whenever the front matter is missing, the model call
+    fails, or any of authors/year/title comes back empty. A reference is
+    a citation: half-known bibliographic data must degrade to the
+    filename, never to a plausible-looking invention (spec section 7).
+    """
+    fallback = f"{document['title']} ({document['file_name']})"
+    front_matter = document.get("front_matter", "")
+    if not front_matter.strip():
+        return fallback
+
+    try:
+        response = await gateway.generate(
+            prompt=render_citation_prompt(
+                file_name=document["file_name"], front_matter=front_matter
+            ),
+            system_prompt=CITATION_SYSTEM_PROMPT,
+            model=settings.synthesis_model,
+            response_format={
+                "type": "json_schema",
+                "json_schema": {"name": "CitationDraft", "schema": CitationDraft.model_json_schema()},
+            },
+        )
+        text = (response.content or "").strip()
+        fenced = _JSON_FENCE.match(text)
+        draft = CitationDraft.model_validate_json(fenced.group(1) if fenced else text)
+    except (ValidationError, ValueError, LLMError) as exc:
+        # Never fatal: a report whose body is written must not be lost
+        # to a failed bibliographic lookup.
+        logger.warning(
+            "report_citation_extraction_failed",
+            asset_id=document["asset_id"],
+            error_type=type(exc).__name__,
+        )
+        return fallback
+
+    authors, title = draft.authors.strip(), draft.title.strip()
+    if not (authors and title):
+        return fallback
+    # APA's own notation for an undated source. Preprints routinely
+    # print no year on the title page, and "n.d." is the correct way to
+    # say so -- unlike authors or title, a missing year has a faithful
+    # rendering rather than only a fallback.
+    year = draft.year.strip() or "n.d."
+    venue = draft.venue.strip()
+    return f"{authors} ({year}). {title}." + (f" {venue}." if venue else "")
 
 
 def _parse_section(content: str, title: str) -> SectionDraft:

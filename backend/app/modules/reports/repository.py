@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.assets.enums import AssetProcessingStatus, AssetType
 from app.modules.assets.models import Asset
+from app.modules.knowledge_base.models import KnowledgeChunk
 
 
 class ReportRepository:
@@ -60,6 +61,33 @@ class ReportRepository:
             .execution_options(synchronize_session=False)
         )
         return result.rowcount == 1
+
+    async def get_front_matter(
+        self, asset_ids: list[uuid.UUID], *, max_characters: int = 2000
+    ) -> dict[uuid.UUID, str]:
+        """The opening extracted text of each asset, by asset id.
+
+        Read deterministically as the lowest-indexed chunk rather than
+        through semantic search: a paper's title page is exactly the
+        passage a relevance gate discards (it matches no topical query),
+        yet it is the only place the real title, authors and year
+        appear. Truncated so a chunk-size change cannot quietly grow
+        every report prompt.
+        """
+        if not asset_ids:
+            return {}
+        stmt = (
+            select(KnowledgeChunk.asset_id, KnowledgeChunk.content)
+            .where(KnowledgeChunk.asset_id.in_(asset_ids))
+            .order_by(KnowledgeChunk.asset_id, KnowledgeChunk.chunk_index.asc())
+        )
+        result = await self._session.execute(stmt)
+        front_matter: dict[uuid.UUID, str] = {}
+        for asset_id, content in result:
+            # Ordered by chunk_index, so the first row per asset wins.
+            if asset_id not in front_matter:
+                front_matter[asset_id] = (content or "")[:max_characters]
+        return front_matter
 
     async def list_processed_documents_by_ids(
         self, project_id: uuid.UUID, asset_ids: list[uuid.UUID]

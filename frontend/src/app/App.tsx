@@ -1,8 +1,9 @@
 import { MotionConfig } from "motion/react";
 import { lazy } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 
 import { ProtectedRoute } from "@/components/common/ProtectedRoute";
+import { NotFound } from "@/components/ui/not-found-2";
 import { useApplyTheme } from "@/hooks/useTheme";
 import { AppShell } from "@/layouts/AppShell";
 import { Landing } from "@/pages/Landing";
@@ -71,7 +72,7 @@ export function App() {
           </Route>
         </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </MotionConfig>
   );

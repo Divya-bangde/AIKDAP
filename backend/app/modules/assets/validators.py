@@ -54,6 +54,13 @@ ALLOWED_EXTENSIONS: frozenset[str] = frozenset(
 )
 
 
+#: Text-bearing formats a report or build plan can draw on; an upload of one
+#: with no explicit type is a DOCUMENT rather than OTHER.
+DOCUMENT_EXTENSIONS: frozenset[str] = frozenset(
+    {".pdf", ".txt", ".md", ".html", ".htm", ".docx", ".doc"}
+)
+
+
 class AssetValidationError(Exception):
     """Raised when an uploaded file fails MIME type, extension, or size checks."""
 

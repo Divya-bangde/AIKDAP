@@ -16,6 +16,7 @@ import {
   isReportTerminal,
 } from "@/features/reports/ReportRunPanel";
 import { usePolling } from "@/hooks/usePolling";
+import { messageFor } from "@/lib/api-error";
 import * as reportsService from "@/services/reports";
 import type { components } from "@/types/api";
 
@@ -107,6 +108,12 @@ export function GenerateSynopsisDialog({
               </button>
             ))}
           </div>
+        )}
+
+        {generateMutation.isError && (
+          <p role="alert" className="text-sm text-destructive">
+            {messageFor(generateMutation.error)}
+          </p>
         )}
 
         <ReportRunPanel

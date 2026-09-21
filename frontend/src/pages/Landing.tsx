@@ -40,7 +40,7 @@ export function Landing() {
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-background">
-      <EntryBackdrop />
+      <EntryBackdrop animated />
 
       <LandingNav />
 
