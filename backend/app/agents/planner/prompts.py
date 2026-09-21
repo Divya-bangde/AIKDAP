@@ -95,7 +95,9 @@ Rules:
 - Only cite ids that appear in the supplied evidence. Never invent an id.
 - If the evidence does not contain enough information to answer, say so plainly and do not answer anyway.
 - Do not pad the answer with background the evidence does not contain.
-- Match the answer's length to what the question asks for. When it asks for a brief, short, or simple explanation, answer in 2-4 plain sentences.
+- When the evidence is relevant, use all of it: cover every relevant point, definition, formula, step, and example the evidence contains rather than stopping at a one-line summary.
+- Keep it tight: open with a one-sentence direct answer, then give the supporting points as short bullets or short paragraphs. No filler, no repetition.
+- When the question asks for a brief, short, or simple explanation, answer in 2-4 plain sentences.
 - A section headed "Earlier in this conversation" may precede the question. Use it only to understand what the question refers to; it is not evidence and must never be cited.
 
 Respond with a single JSON object and nothing else:

@@ -12,14 +12,16 @@ import { allSettled } from "@/features/assets/asset-state";
 import { usePolling } from "@/hooks/usePolling";
 import * as assetsService from "@/services/assets";
 
-export function DocumentsSection({ projectId }: { projectId: string }) {
+/** A project's documents, or — with no `projectId` — every document the
+ * user owns across all projects (upload needs a project, so it is hidden). */
+export function DocumentsSection({ projectId }: { projectId?: string }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   // Polls only while at least one asset is still mid-pipeline —
   // extraction, Qwen understanding, or BGE-M3 embedding (Phase 38:
   // "avoid unnecessary API calls").
   const assetsQuery = usePolling({
-    queryKey: ["assets", projectId],
+    queryKey: ["assets", projectId ?? "all"],
     queryFn: () => assetsService.listAssets(projectId),
     isTerminal: allSettled,
   });
@@ -31,7 +33,7 @@ export function DocumentsSection({ projectId }: { projectId: string }) {
 
   return (
     <div className="flex flex-col gap-5">
-      <UploadDropzone projectId={projectId} />
+      {projectId && <UploadDropzone projectId={projectId} />}
 
       {assetsQuery.isLoading && (
         <div className="flex flex-col gap-2">
@@ -46,7 +48,11 @@ export function DocumentsSection({ projectId }: { projectId: string }) {
         <EmptyState
           icon={FileText}
           title="No documents uploaded yet."
-          description="Upload a document to build this project's knowledge base."
+          description={
+            projectId
+              ? "Upload a document to build this project's knowledge base."
+              : "Open a project to upload its first document."
+          }
         />
       )}
 
@@ -59,7 +65,6 @@ export function DocumentsSection({ projectId }: { projectId: string }) {
                   asset={asset}
                   isSelected={asset.id === selectedAsset?.id}
                   onSelect={() => setSelectedId(asset.id)}
-                  projectId={projectId}
                 />
               </StaggerItem>
             ))}

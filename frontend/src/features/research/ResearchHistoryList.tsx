@@ -43,8 +43,14 @@ export function researchLayoutId(runId: string): string {
  * cosmetic backend change this sprint rules out, and a project's
  * research history is small enough that filtering in the browser costs
  * nothing a real user would notice. */
-export function ResearchHistoryList({ runs }: { runs: ResearchRunRead[] }) {
-  const [status, setStatus] = useState<string | null>(null);
+export function ResearchHistoryList({
+  runs,
+  initialStatus = null,
+}: {
+  runs: ResearchRunRead[];
+  initialStatus?: string | null;
+}) {
+  const [status, setStatus] = useState<string | null>(initialStatus);
   const [search, setSearch] = useState("");
 
   const statuses = availableStatuses(runs);
@@ -64,7 +70,7 @@ export function ResearchHistoryList({ runs }: { runs: ResearchRunRead[] }) {
               type="search"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search this project's questions"
+              placeholder="Search questions"
               aria-label="Search research history"
               className="h-8 w-full rounded-md border border-input bg-background pl-8 pr-3 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             />

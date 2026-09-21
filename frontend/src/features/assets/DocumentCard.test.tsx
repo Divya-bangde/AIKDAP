@@ -55,7 +55,7 @@ describe("DocumentCard", () => {
     const deleteAsset = vi.mocked(assetsService.deleteAsset);
     const onSelect = vi.fn();
     renderWithProviders(
-      <DocumentCard asset={makeAsset()} isSelected={false} onSelect={onSelect} projectId="project-1" />,
+      <DocumentCard asset={makeAsset()} isSelected={false} onSelect={onSelect} />,
     );
 
     await user.click(screen.getByRole("button", { name: "Delete abc_poultry.txt" }));
@@ -71,7 +71,7 @@ describe("DocumentCard", () => {
     const user = userEvent.setup();
     const deleteAsset = vi.mocked(assetsService.deleteAsset).mockResolvedValue(undefined);
     renderWithProviders(
-      <DocumentCard asset={makeAsset()} isSelected={false} onSelect={vi.fn()} projectId="project-1" />,
+      <DocumentCard asset={makeAsset()} isSelected={false} onSelect={vi.fn()} />,
     );
 
     await user.click(screen.getByRole("button", { name: "Delete abc_poultry.txt" }));
@@ -87,7 +87,7 @@ describe("DocumentCard", () => {
     const user = userEvent.setup();
     const deleteAsset = vi.mocked(assetsService.deleteAsset);
     renderWithProviders(
-      <DocumentCard asset={makeAsset()} isSelected={false} onSelect={vi.fn()} projectId="project-1" />,
+      <DocumentCard asset={makeAsset()} isSelected={false} onSelect={vi.fn()} />,
     );
 
     await user.click(screen.getByRole("button", { name: "Delete abc_poultry.txt" }));
@@ -106,7 +106,7 @@ describe("DocumentCard", () => {
     const user = userEvent.setup();
     const onSelect = vi.fn();
     renderWithProviders(
-      <DocumentCard asset={makeAsset()} isSelected={false} onSelect={onSelect} projectId="project-1" />,
+      <DocumentCard asset={makeAsset()} isSelected={false} onSelect={onSelect} />,
     );
 
     await user.click(screen.getByText("abc_poultry.txt"));
@@ -125,7 +125,6 @@ describe("DocumentCard retry", () => {
         asset={makeAsset({ source: "generated", processing_status: "failed" })}
         isSelected={false}
         onSelect={vi.fn()}
-        projectId="project-1"
       />,
     );
     await user.click(screen.getByRole("button", { name: /^retry$/i }));
@@ -139,7 +138,6 @@ describe("DocumentCard retry", () => {
         asset={makeAsset({ source: "upload", processing_status: "failed" })}
         isSelected={false}
         onSelect={vi.fn()}
-        projectId="project-1"
       />,
     );
 
@@ -158,7 +156,6 @@ describe("DocumentCard retry", () => {
         asset={makeAsset({ source: "generated", processing_status: "failed" })}
         isSelected={false}
         onSelect={vi.fn()}
-        projectId="project-1"
       />,
     );
     await user.click(screen.getByRole("button", { name: /^retry$/i }));

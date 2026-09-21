@@ -14,7 +14,7 @@ import {
 
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { cardTintFor, EvidenceChip } from "@/features/research/ClaimEvidencePanel";
 import { fadeUp } from "@/lib/motion";
 import { cn } from "@/lib/utils";
@@ -216,13 +216,18 @@ export function EvidenceWorkspace({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Evidence Workspace</CardTitle>
-        <p className="text-xs text-muted-foreground">
-          Every claim the model made, checked against the evidence it actually cited.
-        </p>
-      </CardHeader>
-      <CardContent>
+      {/* Collapsed by default: supporting detail, not the answer. */}
+      <details className="group">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 hover:bg-sunken/50 [&::-webkit-details-marker]:hidden">
+          <span>
+            <CardTitle className="text-sm">Evidence Workspace</CardTitle>
+            <span className="text-xs text-muted-foreground">
+              {claims.length} claim{claims.length === 1 ? "" : "s"} checked against cited evidence
+            </span>
+          </span>
+          <ChevronDown aria-hidden="true" className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
+        </summary>
+      <CardContent className="pt-0">
         <motion.div
           initial="hidden"
           animate="visible"
@@ -232,7 +237,7 @@ export function EvidenceWorkspace({
           {/* LEFT: the tree. */}
           <nav
             aria-label="Claim and evidence tree"
-            className="flex flex-col gap-0.5 overflow-y-auto rounded-lg bg-sunken p-1.5 lg:max-h-[32rem]"
+            className="flex flex-col gap-0.5 overflow-y-auto rounded-lg bg-sunken p-1.5 lg:max-h-[20rem]"
           >
             <TreeRow depth={0} icon={<MessageSquareQuote className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}>
               <span className="truncate text-xs font-medium uppercase tracking-wide text-muted-foreground" title={query}>
@@ -412,6 +417,7 @@ export function EvidenceWorkspace({
           </div>
         </motion.div>
       </CardContent>
+      </details>
     </Card>
   );
 }

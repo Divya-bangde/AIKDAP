@@ -359,63 +359,6 @@ describe("ResearchResult", () => {
     expect(screen.getByText(/\[c9\]/)).toBeInTheDocument();
   });
 
-  it("builds the evidence funnel only from fields the backend actually returned", () => {
-    const run = makeRun({
-      grounding_status: "grounded",
-      final_answer: "Answer.",
-      citations: [{ id: "c1", title: "Doc", relevance_threshold: -2 }],
-      steps: [
-        {
-          id: "s1",
-          run_id: "run-1",
-          asset_id: null,
-          attempt: 1,
-          step_index: 2,
-          node_name: "asset_retrieval",
-          title: "Search the project knowledge base",
-          status: "completed",
-          summary: null,
-          output_payload: { document_count: 1, reranking_status: "completed" },
-          error_message: null,
-          started_at: null,
-          completed_at: null,
-          duration_ms: null,
-          created_at: new Date().toISOString(),
-        },
-        {
-          id: "s2",
-          run_id: "run-1",
-          asset_id: null,
-          attempt: 1,
-          step_index: 4,
-          node_name: "context_builder",
-          title: "Build the working context",
-          status: "completed",
-          summary: null,
-          output_payload: { received: 6, included: 6 },
-          error_message: null,
-          started_at: null,
-          completed_at: null,
-          duration_ms: null,
-          created_at: new Date().toISOString(),
-        },
-      ],
-    });
-
-    render(<ResearchResult run={run} />);
-
-    expect(screen.getByText("Evidence funnel")).toBeInTheDocument();
-    expect(screen.getByText("Retrieved")).toBeInTheDocument();
-    expect(screen.getByText("In context")).toBeInTheDocument();
-    expect(screen.getByText("of 6 received")).toBeInTheDocument();
-    // No synthesis step was supplied, so those stages must be absent
-    // rather than rendered as zero.
-    expect(screen.queryByText("Evidence supplied")).not.toBeInTheDocument();
-    expect(screen.queryByText("Cited")).not.toBeInTheDocument();
-    // The threshold is shown because a citation actually carried one.
-    expect(screen.getByText("Relevance threshold")).toBeInTheDocument();
-  });
-
   it("shows the Experiment Playground only when the run carries equations", () => {
     const base = { grounding_status: "grounded" as const, final_answer: "Answer.", citations: [] };
     const { unmount } = render(<ResearchResult run={makeRun(base)} />);
@@ -472,7 +415,6 @@ describe("ResearchResult", () => {
       expect(screen.getByText("Unsourced")).toBeInTheDocument();
       expect(screen.queryByText("Grounded Intelligence")).not.toBeInTheDocument();
       expect(screen.queryByText(/Supported by/)).not.toBeInTheDocument();
-      expect(screen.queryByText("Evidence funnel")).not.toBeInTheDocument();
       expect(screen.queryByText("No relevant evidence was found.")).not.toBeInTheDocument();
       expect(screen.queryByText("Off topic")).not.toBeInTheDocument();
     });

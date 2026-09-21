@@ -1,6 +1,6 @@
 import { motion } from "motion/react";
 import { Lightbulb, SearchX, ShieldAlert, ShieldCheck, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { TechnicalDetails } from "@/components/common/TechnicalDetails";
@@ -14,7 +14,6 @@ import {
 } from "@/features/research/AnswerVisualization";
 import { CitationList } from "@/features/research/CitationList";
 import { EvidenceDrawer } from "@/features/research/EvidenceDrawer";
-import { EvidenceFunnel } from "@/features/research/EvidenceFunnel";
 import { EvidenceGapPanel, GeneralKnowledgeAnswer } from "@/features/research/EvidenceGapPanel";
 import { PaperSuggestionsPanel, type SuggestedPaper } from "@/features/research/PaperSuggestionsPanel";
 import { EvidenceWorkspace } from "@/features/research/EvidenceWorkspace";
@@ -29,8 +28,11 @@ type ResearchRunDetail = components["schemas"]["ResearchRunDetail"];
  * never recomputed or reinterpreted here, and an
  * `insufficient_evidence` result is presented as a deliberate safety
  * outcome, not an error. No fallback answer is ever generated
- * client-side. */
-export function ResearchResult({ run }: { run: ResearchRunDetail }) {
+ * client-side.
+ *
+ * `followUp` renders directly under the answer, before the supporting
+ * evidence, so the next question is one step from the answer. */
+export function ResearchResult({ run, followUp }: { run: ResearchRunDetail; followUp?: ReactNode }) {
   const [selected, setSelected] = useState<{ citation: Citation; index: number } | null>(null);
 
   const citations = (run.citations ?? []).map(asCitation);
@@ -84,7 +86,7 @@ export function ResearchResult({ run }: { run: ResearchRunDetail }) {
             </CardContent>
           </Card>
 
-          <EvidenceFunnel steps={steps} citations={citations} />
+          {followUp}
 
           {/* Sprint 16 Phase 8.11 Part C: the exact wall the reader
            * just hit -- what's missing, and an upload action right
@@ -143,6 +145,7 @@ export function ResearchResult({ run }: { run: ResearchRunDetail }) {
             <GeneralKnowledgeAnswer answer={run.final_answer ?? ""} />
           </CardContent>
         </Card>
+        {followUp}
       </motion.div>
     );
   }
@@ -255,9 +258,7 @@ export function ResearchResult({ run }: { run: ResearchRunDetail }) {
           </CardContent>
         </Card>
 
-        <EvidenceFunnel steps={steps} citations={citations} />
-
-        <EvidenceWorkspace query={run.query} claims={claims} citations={citations} onSelectCitation={openEvidence} />
+        {followUp}
 
         {suggestedPapers.length > 0 && (
           <PaperSuggestionsPanel papers={suggestedPapers} runId={run.id} rerunRunId={run.rerun_run_id} />
@@ -273,6 +274,8 @@ export function ResearchResult({ run }: { run: ResearchRunDetail }) {
             </CardContent>
           </Card>
         )}
+
+        <EvidenceWorkspace query={run.query} claims={claims} citations={citations} onSelectCitation={openEvidence} />
       </motion.div>
 
       <EvidenceDrawer

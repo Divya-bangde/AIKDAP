@@ -224,10 +224,7 @@ export function ResearchRunView({ runId }: { runId: string }) {
       )}
 
       {run.status === "completed" && (
-        <>
-          <ResearchResult run={run} />
-          <FollowUpPrompt runId={run.id} projectId={run.project_id} />
-        </>
+        <ResearchResult run={run} followUp={<FollowUpPrompt runId={run.id} projectId={run.project_id} />} />
       )}
     </div>
   );

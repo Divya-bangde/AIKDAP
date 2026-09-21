@@ -28,10 +28,9 @@ interface DocumentCardProps {
   asset: AssetRead;
   isSelected: boolean;
   onSelect: () => void;
-  projectId: string;
 }
 
-export function DocumentCard({ asset, isSelected, onSelect, projectId }: DocumentCardProps) {
+export function DocumentCard({ asset, isSelected, onSelect }: DocumentCardProps) {
   // "Still working" is the exact inverse of the settle check the
   // polling loop uses, so the indicator and the polling can never
   // disagree about whether this document is finished.
@@ -44,7 +43,7 @@ export function DocumentCard({ asset, isSelected, onSelect, projectId }: Documen
     mutationFn: () => assetsService.deleteAsset(asset.id),
     onSuccess: () => {
       setConfirmOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["assets", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
     },
   });
 
@@ -53,7 +52,7 @@ export function DocumentCard({ asset, isSelected, onSelect, projectId }: Documen
   const retryable = asset.source === "generated" && asset.processing_status === "failed";
   const retryMutation = useMutation({
     mutationFn: () => reportsService.retryReport(asset.id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["assets", projectId] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["assets"] }),
   });
 
   return (

@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import { motion } from "motion/react";
+import { Link } from "react-router-dom";
 
 import { AnimatedNumber } from "@/components/motion/AnimatedNumber";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,6 +18,8 @@ interface SummaryCardProps {
    * Never a trend, forecast, or invented comparison. */
   detail?: string;
   tone?: "default" | "ai" | "success";
+  /** Route the whole tile links to. */
+  to?: string;
 }
 
 /** Icons stay monochrome unless the colour means something: only
@@ -39,8 +42,9 @@ export function SummaryCard({
   isError,
   detail,
   tone = "default",
+  to,
 }: SummaryCardProps) {
-  return (
+  const card = (
     /* `h-full` on the motion wrapper too, not just the Card: without it
      * the wrapper collapses to its content and a tile carrying a
      * `detail` line renders taller than its neighbours, which reads as
@@ -75,5 +79,15 @@ export function SummaryCard({
         </CardContent>
       </Card>
     </motion.div>
+  );
+  if (!to) return card;
+  return (
+    <Link
+      to={to}
+      aria-label={`${label}: view all`}
+      className="block h-full rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+    >
+      {card}
+    </Link>
   );
 }

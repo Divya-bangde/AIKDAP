@@ -87,6 +87,7 @@ export function Dashboard() {
           <SummaryCard
             icon={FolderKanban}
             label="Projects"
+            to="/projects"
             value={projectsQuery.data?.length}
             isLoading={projectsQuery.isLoading}
             isError={projectsQuery.isError}
@@ -96,6 +97,7 @@ export function Dashboard() {
           <SummaryCard
             icon={FileText}
             label="Documents"
+            to="/documents"
             value={assetsQuery.data?.length}
             isLoading={assetsQuery.isLoading}
             isError={assetsQuery.isError}
@@ -106,6 +108,7 @@ export function Dashboard() {
           <SummaryCard
             icon={Search}
             label="Research Runs"
+            to="/research?history=all"
             value={runsQuery.data?.length}
             isLoading={runsQuery.isLoading}
             isError={runsQuery.isError}
@@ -115,6 +118,7 @@ export function Dashboard() {
           <SummaryCard
             icon={Quote}
             label="Grounded Answers"
+            to="/research?history=grounded"
             value={groundedRuns}
             isLoading={runsQuery.isLoading}
             isError={runsQuery.isError}

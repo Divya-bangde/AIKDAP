@@ -25,6 +25,9 @@ const Projects = lazy(() =>
 const ProjectDetail = lazy(() =>
   import("@/pages/ProjectDetail").then((m) => ({ default: m.ProjectDetail })),
 );
+const Documents = lazy(() =>
+  import("@/pages/Documents").then((m) => ({ default: m.Documents })),
+);
 const Research = lazy(() =>
   import("@/pages/Research").then((m) => ({ default: m.Research })),
 );
@@ -67,6 +70,7 @@ export function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/projects" element={<Projects />} />
             <Route path="/projects/:id" element={<ProjectDetail />} />
+            <Route path="/documents" element={<Documents />} />
             <Route path="/research" element={<Research />} />
             <Route path="/research/:runId" element={<Research />} />
           </Route>
