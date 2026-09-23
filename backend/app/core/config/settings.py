@@ -259,6 +259,12 @@ class Settings(BaseSettings):
     llm_health_redis_timeout: float = Field(default=0.2, gt=0)
     llm_health_state_ttl_seconds: float = Field(default=86_400.0, gt=0)
 
+    # Live workflow-timeline events (`research.step_events`). Longer than
+    # the health breaker's timeout because a managed Redis over TLS needs
+    # more than 200ms to connect; still bounded, since publishing is
+    # best-effort and must never stall a step.
+    step_events_redis_timeout: float = Field(default=1.0, gt=0)
+
     # ------------------------------------------------------------------
     # Stale research-run reconciliation (Sprint 9J)
     #

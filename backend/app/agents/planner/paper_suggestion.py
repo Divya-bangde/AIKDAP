@@ -23,6 +23,7 @@ from app.agents.planner.prompts import GAP_DETECTION_SYSTEM_PROMPT, render_gap_d
 from app.core.config.settings import settings
 from app.core.llm import LLMGateway, get_llm_gateway
 from app.core.logging.logger import get_logger
+from app.modules.papers.openalex import parse_work
 from app.modules.research.enums import ResearchGroundingStatus
 from app.modules.research.schemas import GapClassification, GapDetectionResponse, ResearchGap
 
@@ -56,6 +57,10 @@ class SuggestedPaper(TypedDict):
     landing_url: str
     oa_pdf_url: str | None
     relevance_note: str
+    #: Bare DOI and the short ids of the works this paper cites -- kept
+    #: from the response already fetched, for the project paper map.
+    doi: str | None
+    referenced_works: list[str]
 
 
 def _reconstruct_abstract(inverted_index: dict[str, list[int]] | None) -> str:
@@ -238,6 +243,7 @@ class OpenAlexProvider:
                 for authorship in item.get("authorships") or []
                 if (authorship.get("author") or {}).get("display_name")
             ]
+            work_fields = parse_work(item)
             location = item.get("primary_location") or {}
             best_oa = item.get("best_oa_location") or {}
             abstract = _reconstruct_abstract(item.get("abstract_inverted_index"))
@@ -258,6 +264,8 @@ class OpenAlexProvider:
                     landing_url=location.get("landing_page_url") or openalex_id,
                     oa_pdf_url=best_oa.get("pdf_url"),
                     relevance_note=note,
+                    doi=work_fields["doi"],
+                    referenced_works=work_fields["referenced_works"],
                 )
             )
         return papers[:limit]

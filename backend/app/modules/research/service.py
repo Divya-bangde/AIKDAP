@@ -35,6 +35,17 @@ from app.modules.research.enums import (
     ResearchStepStatus,
 )
 from app.modules.research.models import AgentMessage, ResearchRun, ResearchStep
+from app.modules.research.source_mix import compute_run_source_mix
+from app.modules.research.step_events import (
+    SessionFactory,
+    StepEventPublisher,
+    apply_step_usage,
+    own_session_factory,
+    run_steps_channel,
+    step_metadata,
+    step_write_scope,
+    truncate_error,
+)
 from app.modules.research.repository import (
     AgentMessageRepository,
     ResearchRunRepository,
@@ -282,6 +293,9 @@ class ResearchService:
         # Never filtered or validated here; there is nothing to filter.
         created.citations = result.citations
         created.grounding_status = ResearchGroundingStatus.UNSOURCED
+        created.source_mix = compute_run_source_mix(
+            created.final_answer, created.citations, ResearchGroundingStatus.UNSOURCED.value
+        )
         created.completed_at = datetime.now(timezone.utc)
         created.duration_ms = _elapsed_ms(monotonic_start)
         await self._session.commit()
@@ -454,7 +468,7 @@ class ResearchExecutionService:
         )
 
         monotonic_start = time.monotonic()
-        tracker = ResearchStepTracker(self._session, run.id)
+        tracker = ResearchStepTracker(self._session, run.id, session_factory=own_session_factory())
 
         try:
             final_state = await self._invoke_graph(run, tracker, workspace_context)
@@ -587,6 +601,7 @@ class ResearchExecutionService:
         run.grounding_status = (
             ResearchGroundingStatus(grounding) if grounding else None
         )
+        run.source_mix = compute_run_source_mix(run.final_answer, run.citations, grounding)
         run.completed_at = datetime.now(timezone.utc)
         run.duration_ms = _elapsed_ms(monotonic_start)
         await self._session.commit()
@@ -653,11 +668,21 @@ class ResearchStepTracker(NodeExecutionTracker):
     existing `ResearchStepStatus` enum values.
     """
 
-    def __init__(self, session: AsyncSession, run_id: uuid.UUID) -> None:
+    def __init__(
+        self,
+        session: AsyncSession,
+        run_id: uuid.UUID,
+        *,
+        session_factory: SessionFactory | None = None,
+        publisher: StepEventPublisher | None = None,
+    ) -> None:
         self._session = session
         self._run_id = run_id
-        self._steps = ResearchStepRepository(session)
-        self._messages = AgentMessageRepository(session)
+        # With a factory, every step write gets its own short-lived
+        # session (see `step_events.step_write_scope`); without one it
+        # writes on `session`, which unit tests rely on.
+        self._session_factory = session_factory
+        self._publisher = publisher or StepEventPublisher(run_steps_channel(run_id))
         self._step_index = 0
         self._message_sequence = 0
         # Stored as a plain UUID, not an ORM instance: a rollback in
@@ -674,100 +699,109 @@ class ResearchStepTracker(NodeExecutionTracker):
         return index
 
     async def on_node_start(self, node: str) -> None:
-        """Open a `running` step row before the agent executes."""
+        """Open a `running` step row before the agent executes.
+
+        Every execution opens a new row with the next index, so a
+        retried or looped node never overwrites an earlier row.
+        """
         spec = get_node_spec(node)
-        step = await self._steps.create(
-            ResearchStep(
-                run_id=self._run_id,
-                step_index=self.next_step_index(),
-                node_name=node,
-                title=spec.title,
-                status=ResearchStepStatus.RUNNING,
-                started_at=datetime.now(timezone.utc),
+        async with step_write_scope(self._session, self._session_factory) as session:
+            step = await ResearchStepRepository(session).create(
+                ResearchStep(
+                    run_id=self._run_id,
+                    step_index=self.next_step_index(),
+                    node_name=node,
+                    title=spec.title,
+                    status=ResearchStepStatus.RUNNING,
+                    started_at=datetime.now(timezone.utc),
+                    step_metadata={},
+                )
             )
-        )
-        self._current_step_id = step.id
+            self._current_step_id = step.id
         self.executed_nodes.append(node)
-        await self._session.commit()
+        await self._publisher.publish(step)
 
     async def on_node_success(
         self, node: str, update: dict[str, Any], duration_ms: int
     ) -> None:
         """Close the step as completed and persist the agent transcript."""
-        step = await self._current_step()
-        if step is None:
+        if self._current_step_id is None:
             return
+        async with step_write_scope(self._session, self._session_factory) as session:
+            step = await session.get(ResearchStep, self._current_step_id)
+            if step is None:
+                return
+            report = update.get("step") or {}
+            step.status = ResearchStepStatus.COMPLETED
+            step.summary = report.get("summary")
+            step.output_payload = report.get("output")
+            step.completed_at = datetime.now(timezone.utc)
+            step.duration_ms = duration_ms
+            step.step_metadata = step_metadata(node, update)
+            apply_step_usage(step)
 
-        report = update.get("step") or {}
-        step.status = ResearchStepStatus.COMPLETED
-        step.summary = report.get("summary")
-        step.output_payload = report.get("output")
-        step.completed_at = datetime.now(timezone.utc)
-        step.duration_ms = duration_ms
-
-        await self._messages.bulk_create(
-            [
-                AgentMessage(
-                    run_id=self._run_id,
-                    step_id=step.id,
-                    sequence=self._next_message_sequence(),
-                    role=AgentMessageRole(payload["role"]),
-                    agent_name=payload["agent_name"],
-                    content=payload["content"],
-                    message_metadata=payload.get("metadata") or {},
-                )
-                for payload in update.get("messages", [])
-            ]
-        )
-        # Commit per node: a later failure cannot erase completed steps.
-        await self._session.commit()
+            await AgentMessageRepository(session).bulk_create(
+                [
+                    AgentMessage(
+                        run_id=self._run_id,
+                        step_id=step.id,
+                        sequence=self._next_message_sequence(),
+                        role=AgentMessageRole(payload["role"]),
+                        agent_name=payload["agent_name"],
+                        content=payload["content"],
+                        message_metadata=payload.get("metadata") or {},
+                    )
+                    for payload in update.get("messages", [])
+                ]
+            )
+        # Committed per node: a later failure cannot erase completed steps.
+        await self._publisher.publish(step)
 
     async def on_node_failure(
         self, node: str, error: BaseException, duration_ms: int, critical: bool
     ) -> None:
-        """Close the step as failed, recording the error verbatim.
+        """Close the step as failed, recording the (truncated) error.
 
-        Rolls back first: the exception may have come from a failed
-        statement, leaving the session unusable for the write below.
-        The `running` row was already committed by `on_node_start`, so
-        the rollback discards nothing that matters.
+        Rolls the workflow session back first: the exception may have
+        come from a failed statement, and a non-critical failure lets
+        the graph keep using that session. The `running` row was already
+        committed by `on_node_start`, so the rollback discards nothing
+        that matters.
         """
         await self._session.rollback()
-        step = await self._current_step()
-        if step is None:
+        if self._current_step_id is None:
             return
 
-        message = f"{type(error).__name__}: {error}"
-        step.status = ResearchStepStatus.FAILED
-        step.summary = (
-            f"{'Critical' if critical else 'Non-critical'} failure in '{node}'."
-        )
-        step.error_message = message
-        step.completed_at = datetime.now(timezone.utc)
-        step.duration_ms = duration_ms
+        message = truncate_error(f"{type(error).__name__}: {error}")
+        async with step_write_scope(self._session, self._session_factory) as session:
+            step = await session.get(ResearchStep, self._current_step_id)
+            if step is None:
+                return
+            step.status = ResearchStepStatus.FAILED
+            step.summary = (
+                f"{'Critical' if critical else 'Non-critical'} failure in '{node}'."
+            )
+            step.error_message = message
+            step.completed_at = datetime.now(timezone.utc)
+            step.duration_ms = duration_ms
+            apply_step_usage(step)
 
-        # The failure is part of the explainable trace, not only a log
-        # line, so it is recorded in the transcript too.
-        await self._messages.bulk_create(
-            [
-                AgentMessage(
-                    run_id=self._run_id,
-                    step_id=step.id,
-                    sequence=self._next_message_sequence(),
-                    role=AgentMessageRole.SYSTEM,
-                    agent_name=node,
-                    content=message,
-                    message_metadata={"critical": critical, "node": node},
-                )
-            ]
-        )
-        await self._session.commit()
-
-    async def _current_step(self) -> ResearchStep | None:
-        """Re-fetch the step opened by `on_node_start`."""
-        if self._current_step_id is None:
-            return None
-        return await self._session.get(ResearchStep, self._current_step_id)
+            # The failure is part of the explainable trace, not only a
+            # log line, so it is recorded in the transcript too.
+            await AgentMessageRepository(session).bulk_create(
+                [
+                    AgentMessage(
+                        run_id=self._run_id,
+                        step_id=step.id,
+                        sequence=self._next_message_sequence(),
+                        role=AgentMessageRole.SYSTEM,
+                        agent_name=node,
+                        content=message,
+                        message_metadata={"critical": critical, "node": node},
+                    )
+                ]
+            )
+        await self._publisher.publish(step)
 
     def _next_message_sequence(self) -> int:
         """Return the next transcript position and advance the counter."""

@@ -136,6 +136,9 @@ class EvidenceProvenance(TypedDict, total=False):
     page_number: int
     sheet_name: str
     section: str
+    #: The page a web result came from. Web citations also keep it in
+    #: `reference`; this key names it explicitly for clients.
+    url: str
 
 
 #: The optional identity keys, derived from the TypedDict rather than

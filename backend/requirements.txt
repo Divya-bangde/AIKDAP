@@ -90,6 +90,10 @@ sympy==1.13.3
 # ===========================
 # PDF text extraction. Pure Python, no system dependency (poppler/etc).
 pypdf==6.16.2
+# Word bounding boxes for click-to-source highlighting (chunk_positions).
+# Used only to locate already-chunked text on the page -- pypdf stays
+# the extractor. MIT (pdfminer.six), chosen over PyMuPDF's AGPL.
+pdfplumber==0.11.7
 # DOCX/PPTX structure-aware extraction (paragraphs+headings, slides).
 python-docx==1.2.0
 python-pptx==1.0.2

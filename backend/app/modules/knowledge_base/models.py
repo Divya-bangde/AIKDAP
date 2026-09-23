@@ -12,9 +12,11 @@ living alongside the first.
 """
 
 import uuid
+from typing import Any
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import ForeignKey, Integer, String, Text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -78,3 +80,32 @@ class KnowledgeChunk(BaseModel):
     embedding: Mapped[list[float] | None] = mapped_column(
         Vector(settings.embedding_dimension), nullable=True
     )
+
+
+class ChunkPosition(BaseModel):
+    """Where one PDF chunk's text sits on its page (click-to-source).
+
+    Kept in its own table rather than on `knowledge_chunks`: it is
+    nested, display-only data written after chunking, and a chunk from
+    any non-PDF format simply has no row. Cascades with its chunk, so
+    reprocessing an asset (which replaces its chunks) replaces these
+    too. See `assets.processing.positions` for how `spans` is built.
+    """
+
+    __tablename__ = "chunk_positions"
+
+    chunk_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("knowledge_chunks.id", ondelete="CASCADE"), nullable=False, unique=True
+    )
+    document_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("assets.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    page_start: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    page_end: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    #: `[{page, page_width, page_height, rects: [[x0, y0, x1, y1], ...]}]`
+    #: in PDF points, top-left origin.
+    spans: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB, nullable=False, default=list, server_default="[]"
+    )
+    #: "exact" | "fuzzy" | "none".
+    match_quality: Mapped[str] = mapped_column(String(10), nullable=False)

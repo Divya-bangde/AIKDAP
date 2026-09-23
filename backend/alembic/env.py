@@ -23,7 +23,8 @@ from app.database.base import Base
 from app.modules.assets.models import Asset  # noqa: F401
 from app.modules.auth.models import User  # noqa: F401
 from app.modules.execution.models import ExecutionAttempt, ExecutionJob  # noqa: F401
-from app.modules.knowledge_base.models import KnowledgeChunk  # noqa: F401
+from app.modules.knowledge_base.models import ChunkPosition, KnowledgeChunk  # noqa: F401
+from app.modules.papers.models import PaperReference  # noqa: F401
 from app.modules.projects.models import Project  # noqa: F401
 from app.modules.research.models import (  # noqa: F401
     AgentMessage,

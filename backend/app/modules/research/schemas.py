@@ -12,7 +12,7 @@ from typing import Any, Literal, Self
 
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
 
 from app.modules.research.enums import (
     AgentMessageRole,
@@ -385,9 +385,14 @@ class ResearchRunRead(BaseModel):
 
 
 class ResearchStepRead(BaseModel):
-    """One node's execution record within a run."""
+    """One node's execution record within a run.
 
-    model_config = ConfigDict(from_attributes=True)
+    Also the payload of every live step event (`step_events`), so the
+    timeline merges one shape from both the list API and the stream.
+    """
+
+    # `model_provider`/`model_name` are domain names, not pydantic's.
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
 
     id: uuid.UUID
     #: Set for a research run's step; null for a report run's step.
@@ -407,6 +412,16 @@ class ResearchStepRead(BaseModel):
     completed_at: datetime | None
     duration_ms: int | None
     created_at: datetime
+    #: Workflow timeline: the model the step used and what it spent.
+    #: Null when it made no LLM call or the provider reported no usage.
+    model_provider: str | None = None
+    model_name: str | None = None
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    #: Display facts (`chunks_found`, `used_web`, `reason`, `models`, ...).
+    metadata: dict[str, Any] = Field(
+        default_factory=dict, validation_alias=AliasChoices("step_metadata", "metadata")
+    )
 
 
 class AgentMessageRead(BaseModel):

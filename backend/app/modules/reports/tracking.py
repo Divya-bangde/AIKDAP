@@ -24,6 +24,14 @@ from app.agents.reports.registry import REPORT_AGENT_REGISTRY
 from app.modules.research.enums import ResearchStepStatus
 from app.modules.research.models import ResearchStep
 from app.modules.research.repository import ResearchStepRepository
+from app.modules.research.step_events import (
+    SessionFactory,
+    StepEventPublisher,
+    apply_step_usage,
+    report_steps_channel,
+    step_metadata,
+    step_write_scope,
+)
 
 #: Summary recorded on every node that never ran because an earlier,
 #: critical node failed -- the trace shows the whole pipeline, not only
@@ -54,8 +62,14 @@ class ReportStepTracker(NodeExecutionTracker):
         *,
         attempt: int,
         registry: dict[str, NodeSpec] | None = None,
+        session_factory: SessionFactory | None = None,
+        publisher: StepEventPublisher | None = None,
     ) -> None:
         self._session = session
+        # Same contract as `research.service.ResearchStepTracker`: with
+        # a factory, each step write uses its own short-lived session.
+        self._session_factory = session_factory
+        self._publisher = publisher or StepEventPublisher(report_steps_channel(asset_id))
         self._asset_id = asset_id
         self._attempt = attempt
         # Which graph's nodes this run traces. Defaults to the synopsis
@@ -80,48 +94,60 @@ class ReportStepTracker(NodeExecutionTracker):
             ) from exc
 
     async def on_node_start(self, node: str) -> None:
-        step = await self._steps.create(
-            ResearchStep(
-                asset_id=self._asset_id,
-                attempt=self._attempt,
-                step_index=self._next_index(),
-                node_name=node,
-                title=self._spec(node).title,
-                status=ResearchStepStatus.RUNNING,
-                started_at=datetime.now(timezone.utc),
+        async with step_write_scope(self._session, self._session_factory) as session:
+            step = await ResearchStepRepository(session).create(
+                ResearchStep(
+                    asset_id=self._asset_id,
+                    attempt=self._attempt,
+                    step_index=self._next_index(),
+                    node_name=node,
+                    title=self._spec(node).title,
+                    status=ResearchStepStatus.RUNNING,
+                    started_at=datetime.now(timezone.utc),
+                    step_metadata={},
+                )
             )
-        )
-        self._current_step_id = step.id
+            self._current_step_id = step.id
         self.started_nodes.append(node)
-        await self._session.commit()
+        await self._publisher.publish(step)
 
     async def on_node_success(self, node: str, update: dict[str, Any], duration_ms: int) -> None:
-        step = await self._current_step()
-        if step is None:
+        if self._current_step_id is None:
             return
-        report = update.get("step") or {}
-        step.status = ResearchStepStatus.COMPLETED
-        step.summary = report.get("summary")
-        step.output_payload = report.get("output")
-        step.completed_at = datetime.now(timezone.utc)
-        step.duration_ms = duration_ms
-        await self._session.commit()
+        async with step_write_scope(self._session, self._session_factory) as session:
+            step = await session.get(ResearchStep, self._current_step_id)
+            if step is None:
+                return
+            report = update.get("step") or {}
+            step.status = ResearchStepStatus.COMPLETED
+            step.summary = report.get("summary")
+            step.output_payload = report.get("output")
+            step.completed_at = datetime.now(timezone.utc)
+            step.duration_ms = duration_ms
+            step.step_metadata = step_metadata(node, update)
+            apply_step_usage(step)
+        await self._publisher.publish(step)
 
     async def on_node_failure(
         self, node: str, error: BaseException, duration_ms: int, critical: bool
     ) -> None:
-        # The error may have poisoned the transaction; the `running` row
-        # was already committed, so rolling back loses nothing.
+        # The error may have poisoned the workflow transaction; the
+        # `running` row was already committed, so rolling back loses
+        # nothing.
         await self._session.rollback()
-        step = await self._current_step()
-        if step is None:
+        if self._current_step_id is None:
             return
-        step.status = ResearchStepStatus.FAILED
-        step.summary = f"Failed: {self._spec(node).title}."
-        step.error_message = scrub_report_error(error)
-        step.completed_at = datetime.now(timezone.utc)
-        step.duration_ms = duration_ms
-        await self._session.commit()
+        async with step_write_scope(self._session, self._session_factory) as session:
+            step = await session.get(ResearchStep, self._current_step_id)
+            if step is None:
+                return
+            step.status = ResearchStepStatus.FAILED
+            step.summary = f"Failed: {self._spec(node).title}."
+            step.error_message = scrub_report_error(error)
+            step.completed_at = datetime.now(timezone.utc)
+            step.duration_ms = duration_ms
+            apply_step_usage(step)
+        await self._publisher.publish(step)
 
     async def record_skipped(self) -> None:
         """Record every registered node that never started as `skipped`."""
@@ -140,11 +166,6 @@ class ReportStepTracker(NodeExecutionTracker):
                 )
             )
         await self._session.commit()
-
-    async def _current_step(self) -> ResearchStep | None:
-        if self._current_step_id is None:
-            return None
-        return await self._session.get(ResearchStep, self._current_step_id)
 
     def _next_index(self) -> int:
         index = self._step_index

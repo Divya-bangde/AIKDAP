@@ -25,7 +25,8 @@ from app.core.config import settings
 # the first time a task actually touches the database.
 from app.modules.assets.models import Asset  # noqa: F401
 from app.modules.auth.models import User  # noqa: F401
-from app.modules.knowledge_base.models import KnowledgeChunk  # noqa: F401
+from app.modules.knowledge_base.models import ChunkPosition, KnowledgeChunk  # noqa: F401
+from app.modules.papers.models import PaperReference  # noqa: F401
 from app.modules.projects.models import Project  # noqa: F401
 from app.modules.tasks.models import Task  # noqa: F401
 

@@ -56,6 +56,16 @@ engine: AsyncEngine = _build_engine()
 async_session_factory: async_sessionmaker[AsyncSession] = _build_session_factory(engine)
 
 
+def open_session() -> AsyncSession:
+    """A new session from the *current* factory.
+
+    For writes that must not share the caller's transaction (workflow
+    step events, chunk positions). Reads the module global at call time,
+    so it follows `configure_for_worker_process` inside Celery workers.
+    """
+    return async_session_factory()
+
+
 def configure_for_worker_process() -> None:
     """Rebuilds the module-level `engine`/`async_session_factory` with
     `NullPool` (Sprint 16 Phase 8.0) -- MUST be called from `app.workers.

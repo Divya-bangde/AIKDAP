@@ -18,6 +18,7 @@ implementation that writes `research_steps` and `agent_messages`, and
 """
 
 import functools
+import inspect
 import time
 from abc import ABC, abstractmethod
 from typing import Any
@@ -26,6 +27,7 @@ from langchain_core.runnables import RunnableConfig
 
 from app.agents.planner.registry import NodeSpec
 from app.agents.planner.state import ResearchState
+from app.core.llm.usage import step_usage_scope
 from app.core.logging.logger import get_logger
 
 logger = get_logger(__name__)
@@ -111,53 +113,71 @@ def instrument(spec: NodeSpec):
 
     @functools.wraps(spec.handler)
     async def instrumented(state: ResearchState, config: RunnableConfig) -> dict[str, Any]:
-        tracker = get_tracker(config)
-        run_id = state.get("run_id")
-        start = time.monotonic()
-
-        await tracker.on_node_start(spec.name)
-        logger.info("research_node_started", run_id=run_id, node=spec.name)
-
-        try:
-            update = await spec.handler(state, config)
-        except Exception as exc:
-            duration_ms = _elapsed_ms(start)
-            await tracker.on_node_failure(spec.name, exc, duration_ms, spec.critical)
-            logger.error(
-                "research_node_failed",
-                run_id=run_id,
-                node=spec.name,
-                status="failed",
-                critical=spec.critical,
-                duration_ms=duration_ms,
-                error_type=type(exc).__name__,
-                error_message=str(exc),
-            )
-            if spec.critical:
-                raise
-            return {
-                "intermediate_results": {
-                    f"{spec.name}_failure": {
-                        "node": spec.name,
-                        "error_type": type(exc).__name__,
-                        "error_message": str(exc),
-                        "critical": False,
-                    }
-                }
-            }
-
-        duration_ms = _elapsed_ms(start)
-        await tracker.on_node_success(spec.name, update, duration_ms)
-        logger.info(
-            "research_node_completed",
-            run_id=run_id,
-            node=spec.name,
-            status="completed",
-            duration_ms=duration_ms,
-        )
-        return update
+        # One usage accumulator per execution (a retry or loop gets a
+        # fresh one). The tracker callbacks run inside the scope so they
+        # can read what the gateway recorded for this step.
+        with step_usage_scope():
+            return await _run_instrumented(spec, state, config)
 
     return instrumented
+
+
+async def _call_handler(spec: NodeSpec, state: ResearchState, config: RunnableConfig) -> dict[str, Any]:
+    """Call a node handler that may be sync or async."""
+    result = spec.handler(state, config)
+    if inspect.isawaitable(result):
+        result = await result
+    return result
+
+
+async def _run_instrumented(
+    spec: NodeSpec, state: ResearchState, config: RunnableConfig
+) -> dict[str, Any]:
+    tracker = get_tracker(config)
+    run_id = state.get("run_id")
+    start = time.monotonic()
+
+    await tracker.on_node_start(spec.name)
+    logger.info("research_node_started", run_id=run_id, node=spec.name)
+
+    try:
+        update = await _call_handler(spec, state, config)
+    except Exception as exc:
+        duration_ms = _elapsed_ms(start)
+        await tracker.on_node_failure(spec.name, exc, duration_ms, spec.critical)
+        logger.error(
+            "research_node_failed",
+            run_id=run_id,
+            node=spec.name,
+            status="failed",
+            critical=spec.critical,
+            duration_ms=duration_ms,
+            error_type=type(exc).__name__,
+            error_message=str(exc),
+        )
+        if spec.critical:
+            raise
+        return {
+            "intermediate_results": {
+                f"{spec.name}_failure": {
+                    "node": spec.name,
+                    "error_type": type(exc).__name__,
+                    "error_message": str(exc),
+                    "critical": False,
+                }
+            }
+        }
+
+    duration_ms = _elapsed_ms(start)
+    await tracker.on_node_success(spec.name, update, duration_ms)
+    logger.info(
+        "research_node_completed",
+        run_id=run_id,
+        node=spec.name,
+        status="completed",
+        duration_ms=duration_ms,
+    )
+    return update
 
 
 def _elapsed_ms(start: float) -> int:

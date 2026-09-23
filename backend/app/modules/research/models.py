@@ -22,7 +22,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -138,6 +138,11 @@ class ResearchRun(BaseModel):
     # fed into synthesis -- see `agents.planner.paper_suggestion`.
     suggested_papers: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB, nullable=True)
 
+    # How much of the answer came from project documents, the web, and
+    # general knowledge (`research.source_mix.compute_source_mix`). Null
+    # for runs saved before it existed and not yet backfilled.
+    source_mix: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+
     # The Celery task actually carrying out this run, so a run can be
     # correlated with the worker logs that executed it.
     celery_task_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -161,6 +166,8 @@ class ResearchStep(BaseModel):
     __tablename__ = "research_steps"
     __table_args__ = (
         CheckConstraint("num_nonnulls(run_id, asset_id) = 1", name="exactly_one_owner"),
+        # A run's timeline, read in order (workflow timeline).
+        Index("ix_research_steps_run_id_step_index", "run_id", "step_index"),
     )
 
     run_id: Mapped[uuid.UUID | None] = mapped_column(
@@ -197,6 +204,20 @@ class ResearchStep(BaseModel):
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    # Workflow timeline (visualization Phase 1a): which model the step
+    # used and what it spent, recorded from `core.llm.usage`. Null when
+    # the step made no LLM call or the provider reported no usage.
+    model_provider: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    model_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    input_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    output_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Small, display-oriented facts per step (`chunks_found`, `used_web`,
+    # `models`, ...) -- see `research.step_events.step_metadata`. The
+    # attribute is not `metadata`, which DeclarativeBase reserves.
+    step_metadata: Mapped[dict[str, Any]] = mapped_column(
+        "metadata", JSONB, nullable=False, default=dict, server_default="{}"
+    )
 
 
 class AgentMessage(BaseModel):

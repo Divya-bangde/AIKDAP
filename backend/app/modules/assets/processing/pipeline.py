@@ -38,6 +38,7 @@ from app.modules.assets.ai_profile import AIProfile, AIProfileStatus
 from app.modules.assets.enums import AssetProcessingStatus, EmbeddingStatus
 from app.modules.assets.models import Asset
 from app.modules.assets.processing.chunker import chunk_document
+from app.modules.assets.processing.positions import store_chunk_positions
 from app.modules.assets.processing.document_understanding import (
     DocumentUnderstandingError,
     QwenDocumentUnderstandingService,
@@ -133,6 +134,8 @@ class AssetProcessingService:
                 project_id=asset.project_id, asset_id=asset.id, chunks=provenanced_chunks
             )
 
+            await self._store_chunk_positions(asset, content, chunks)
+
             asset.processing_status = AssetProcessingStatus.COMPLETED
             asset.processing_completed_at = datetime.now(timezone.utc)
             await self._session.commit()
@@ -165,6 +168,8 @@ class AssetProcessingService:
             # a caller can observe once it completes -- only when.
             await self._run_embedding(asset, chunks)
             self._enqueue_ai_understanding(asset.id)
+            if asset.mime_type == "application/pdf":
+                self._enqueue_paper_lookup(asset.id)
 
         except ExtractionNotSupportedError as exc:
             asset.processing_status = AssetProcessingStatus.UNSUPPORTED
@@ -260,6 +265,25 @@ class AssetProcessingService:
         asset.ai_profile = profile.model_dump(mode="json")
         await self._session.commit()
 
+    async def _store_chunk_positions(
+        self, asset: Asset, content: bytes, chunks: list[KnowledgeChunk]
+    ) -> None:
+        """Record where each PDF chunk sits on its page. Never fatal:
+        a locating failure is stored as `match_quality="none"` inside
+        `store_chunk_positions`, and anything else is only logged, so
+        ingestion never fails because of highlighting."""
+        if asset.mime_type != "application/pdf" or not chunks:
+            return
+        try:
+            await store_chunk_positions(asset.id, content, chunks)
+        except Exception as exc:  # noqa: BLE001 - highlighting is best-effort
+            logger.warning(
+                "chunk_positions_failed",
+                asset_id=str(asset.id),
+                error_type=type(exc).__name__,
+                error_message=str(exc),
+            )
+
     def _enqueue_ai_understanding(self, asset_id: uuid.UUID) -> None:
         """Fire-and-forget the existing standalone `generate_ai_metadata`
         Celery task (Sprint 16 Phase 8.11 Part D).
@@ -283,6 +307,23 @@ class AssetProcessingService:
         from app.workers.tasks import generate_ai_metadata
 
         generate_ai_metadata.delay(str(asset_id))
+
+    def _enqueue_paper_lookup(self, asset_id: uuid.UUID) -> None:
+        """Fire-and-forget the OpenAlex match for a PDF (paper map).
+
+        Best-effort like highlighting: a broker hiccup here is logged,
+        never turned into a processing failure -- the backfill finds any
+        PDF without a match later. Imported locally for the same
+        circular-import reason as `_enqueue_ai_understanding`.
+        """
+        from app.workers.tasks import lookup_paper_reference
+
+        try:
+            lookup_paper_reference.delay(str(asset_id))
+        except Exception as exc:  # noqa: BLE001 - see docstring
+            logger.warning(
+                "paper_lookup_enqueue_failed", asset_id=str(asset_id), error_type=type(exc).__name__
+            )
 
     async def _run_embedding(self, asset: Asset, chunks: list[KnowledgeChunk]) -> None:
         """Best-effort embedding generation for one asset's chunks.

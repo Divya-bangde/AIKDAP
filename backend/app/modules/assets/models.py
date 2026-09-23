@@ -83,6 +83,11 @@ class Asset(BaseModel):
         "metadata", JSONB, nullable=False, default=dict
     )
     ai_profile: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    # Generated assets only: how much of the content came from project
+    # documents, the web and general knowledge
+    # (`research.source_mix.compute_report_source_mix`). Null for
+    # uploads and for assets saved before it existed.
+    source_mix: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     created_by: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True

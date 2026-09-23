@@ -75,6 +75,7 @@ from app.core.llm.provider_health import (
     get_provider_health_registry,
     is_provider_configured,
 )
+from app.core.llm.usage import record_llm_usage
 from app.core.logging.logger import get_logger
 
 logger = get_logger(__name__)
@@ -553,6 +554,12 @@ class LLMGateway:
                     raise
                 continue
 
+            record_llm_usage(
+                provider=response.provider,
+                model=response.model,
+                input_tokens=response.prompt_tokens,
+                output_tokens=response.completion_tokens,
+            )
             return replace(
                 response,
                 attempts=sum(1 for item in trace if item.status != "skipped"),

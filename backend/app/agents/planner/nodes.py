@@ -429,6 +429,7 @@ class TavilyWebResearchProvider(WebResearchProvider):
                     source=WEB_SOURCE,
                     provider=self.name,
                     reference=url,
+                    url=url,
                     title=item.get("title") or url,
                     snippet=content,
                     score=float(item.get("score") or 0.0),

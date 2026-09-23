@@ -67,14 +67,19 @@ from app.agents.reports.graph import get_report_graph
 from app.agents.reports.nodes import build_report_dependencies
 from app.modules.knowledge_base.embeddings import get_embedding_provider
 from app.modules.knowledge_base.repository import KnowledgeChunkRepository
+from app.modules.papers.openalex import OpenAlexLookupError
+from app.modules.papers.service import PaperReferenceService
 from app.modules.reports.repository import ReportRepository
 from app.modules.reports.schemas import BUILD_PLAN_KIND
 from app.modules.reports.tracking import ReportStepTracker, scrub_report_error
+from app.modules.research.source_mix import compute_report_source_mix
+from app.modules.research.step_events import own_session_factory
 from app.modules.research.enums import ResearchRunStatus
 from app.modules.research.models import ResearchRun
 from app.modules.research.paper_import import PaperDownloadError, download_oa_pdf
 from app.modules.research.repository import ResearchRunRepository, ResearchStepRepository
 from app.modules.research.service import ResearchExecutionService
+from app.workers.backfill import run_backfill
 from app.workers.celery_app import celery_app
 from execution_launcher.models import InputResolutionError, SecurityBlocked
 
@@ -288,6 +293,44 @@ async def _generate_ai_metadata(asset_id: uuid.UUID) -> dict[str, str]:
         asset.ai_profile = profile.model_dump(mode="json")
         await session.commit()
         return {"status": status}
+
+
+@celery_app.task(
+    name="workers.lookup_paper_reference", bind=True, max_retries=3, default_retry_delay=120
+)
+@log_task_execution
+def lookup_paper_reference(self, asset_id: str) -> dict[str, str | None]:
+    """Match one PDF asset to its OpenAlex work (`papers.service`).
+
+    Retried with a long delay when OpenAlex is unreachable or rate
+    limiting; the row stays `pending` meanwhile and the backfill picks
+    up anything that exhausts its retries.
+    """
+    try:
+        status = _run_task_loop(_lookup_paper_reference(uuid.UUID(asset_id)))
+    except OpenAlexLookupError as exc:
+        raise self.retry(exc=exc) from exc
+    return {"asset_id": asset_id, "status": status}
+
+
+async def _lookup_paper_reference(asset_id: uuid.UUID) -> str | None:
+    async with async_session_factory() as session:
+        reference = await PaperReferenceService(session, get_storage_provider()).lookup(asset_id)
+        return reference.openalex_status if reference else None
+
+
+@celery_app.task(name="workers.backfill_visualization_data", bind=True, max_retries=0)
+@log_task_execution
+def backfill_visualization_data(
+    self, batch_size: int = 50, positions: bool = True, papers: bool = True, source_mix: bool = True
+) -> dict[str, int]:
+    """Idempotent, resumable backfill -- see `app.workers.backfill`."""
+    report = _run_task_loop(
+        run_backfill(
+            batch_size=batch_size, positions=positions, papers=papers, source_mix=source_mix
+        )
+    )
+    return report.as_dict()
 
 
 @celery_app.task(name="workers.generate_embeddings", bind=True, max_retries=3, default_retry_delay=30)
@@ -827,7 +870,11 @@ async def _generate_report(asset_id: uuid.UUID) -> dict[str, str]:
                 # the terminal statuses are identical, so only the graph,
                 # its dependencies, its registry and its inputs differ.
                 tracker = ReportStepTracker(
-                    session, asset_id, attempt=attempt, registry=BUILD_PLAN_AGENT_REGISTRY
+                    session,
+                    asset_id,
+                    attempt=attempt,
+                    registry=BUILD_PLAN_AGENT_REGISTRY,
+                    session_factory=own_session_factory(),
                 )
                 graph = get_build_plan_graph()
                 dependencies = build_build_plan_dependencies(session)
@@ -838,7 +885,9 @@ async def _generate_report(asset_id: uuid.UUID) -> dict[str, str]:
                     "asset_ids": list(asset.asset_metadata.get("asset_ids") or []),
                 }
             else:
-                tracker = ReportStepTracker(session, asset_id, attempt=attempt)
+                tracker = ReportStepTracker(
+                    session, asset_id, attempt=attempt, session_factory=own_session_factory()
+                )
                 graph = get_report_graph()
                 dependencies = build_report_dependencies(session)
                 inputs = {
@@ -853,6 +902,7 @@ async def _generate_report(asset_id: uuid.UUID) -> dict[str, str]:
                 config={"configurable": {"dependencies": dependencies, TRACKER_CONFIG_KEY: tracker}},
             )
             asset.asset_metadata = {**asset.asset_metadata, "sections": result["sections"]}
+            asset.source_mix = compute_report_source_mix(result["sections"])
             asset.processing_status = AssetProcessingStatus.COMPLETED
             asset.processing_error = None
             await session.commit()

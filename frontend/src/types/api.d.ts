@@ -2661,6 +2661,9 @@ export interface components {
         /**
          * ResearchStepRead
          * @description One node's execution record within a run.
+         *
+         *     Also the payload of every live step event (`step_events`), so the
+         *     timeline merges one shape from both the list API and the stream.
          */
         ResearchStepRead: {
             /**
@@ -2703,6 +2706,18 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** Model Provider */
+            model_provider?: string | null;
+            /** Model Name */
+            model_name?: string | null;
+            /** Input Tokens */
+            input_tokens?: number | null;
+            /** Output Tokens */
+            output_tokens?: number | null;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
         };
         /**
          * ResearchStepStatus
