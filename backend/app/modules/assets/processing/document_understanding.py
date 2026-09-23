@@ -34,15 +34,18 @@ _SYSTEM_PROMPT = (
     "shape — no markdown code fences, no commentary before or after it."
 )
 
+# List caps keep the response well under `qwen_max_tokens`: uncapped, a
+# benchmark-heavy paper (LLaMA, arXiv 2302.13971) made Qwen enumerate
+# entities until the output was cut off mid-JSON on every attempt.
 _USER_PROMPT_TEMPLATE = """Return a JSON object with exactly these fields:
 {{
   "summary": string (2-4 sentences, grounded only in the text below),
-  "keywords": array of short strings,
-  "entities": array of plain strings naming entities (people, \
-organizations, places, figures) mentioned in the text -- each entity \
-is a bare string like "ABC Poultry", never an object with "name"/"type" \
-sub-fields,
-  "topics": array of short topic label strings,
+  "keywords": array of at most 10 short strings,
+  "entities": array of at most 15 plain strings naming the most \
+important entities (people, organizations, places, figures) mentioned \
+in the text -- each entity is a bare string like "ABC Poultry", never \
+an object with "name"/"type" sub-fields,
+  "topics": array of at most 5 short topic label strings,
   "language": ISO 639-1 language code of the text (e.g. "en")
 }}
 
