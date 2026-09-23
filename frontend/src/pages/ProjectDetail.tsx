@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 
 import { ErrorState } from "@/components/common/ErrorState";
@@ -22,7 +22,11 @@ const TABS = [
   { value: "overview", label: "Overview" },
   { value: "documents", label: "Documents" },
   { value: "research", label: "Research" },
+  { value: "papers", label: "Paper map" },
 ];
+
+// The force-graph canvas library loads only when this tab is opened.
+const PaperMap = lazy(() => import("@/features/paper-map/PaperMap"));
 
 /** One real, backend-counted figure about this project's knowledge base. */
 function KnowledgeStat({ label, value, detail }: { label: string; value: number; detail: string }) {
@@ -128,6 +132,14 @@ export function ProjectDetail() {
               <ResearchHistoryList runs={runs} />
             )}
           </motion.div>
+        </TabsContent>
+
+        <TabsContent value="papers">
+          {tab === "papers" && (
+            <Suspense fallback={<RowListSkeleton label="Loading paper map" />}>
+              <PaperMap projectId={project.id} />
+            </Suspense>
+          )}
         </TabsContent>
       </Tabs>
     </PageTransition>

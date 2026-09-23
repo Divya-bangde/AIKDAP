@@ -462,6 +462,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/paper-graph": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Paper Graph
+         * @description The citation graph of the project's papers.
+         *
+         *     A link means project paper A references project paper B, both
+         *     matched in OpenAlex. With `include_external`, up to 15 outside works
+         *     cited by at least 2 project papers are added as `external` nodes.
+         */
+        get: operations["get_paper_graph_api_v1_projects__project_id__paper_graph_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/papers/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Outside Paper
+         * @description Queue an outside work's open-access PDF for import into the project.
+         */
+        post: operations["import_outside_paper_api_v1_projects__project_id__papers_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/research/run": {
         parameters: {
             query?: never;
@@ -2227,6 +2271,20 @@ export interface components {
          * @enum {string}
          */
         OverallStatus: "healthy" | "degraded" | "unhealthy";
+        /** PaperGraph */
+        PaperGraph: {
+            /** Nodes */
+            nodes: components["schemas"]["PaperNode"][];
+            /** Links */
+            links: components["schemas"]["PaperLink"][];
+            /** Unmatched */
+            unmatched: components["schemas"]["UnmatchedPaper"][];
+            /**
+             * External Unavailable
+             * @default false
+             */
+            external_unavailable: boolean;
+        };
         /**
          * PaperImportAccepted
          * @description Immediate `202` response: every requested paper has been validated
@@ -2266,6 +2324,41 @@ export interface components {
             status: "queued";
         };
         /**
+         * PaperLink
+         * @description `source` cites `target` (both short OpenAlex ids).
+         */
+        PaperLink: {
+            /** Source */
+            source: string;
+            /** Target */
+            target: string;
+        };
+        /**
+         * PaperNode
+         * @description One paper in the graph, keyed by its short OpenAlex id.
+         */
+        PaperNode: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Year */
+            year: number | null;
+            /** Cited By Count */
+            cited_by_count: number | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "uploaded" | "suggested" | "external";
+            /** In Project */
+            in_project: boolean;
+            /** Doi */
+            doi?: string | null;
+            /** Asset Id */
+            asset_id?: string | null;
+        };
+        /**
          * Persona
          * @description Who the user is, which decides the add-ons shown by default.
          *
@@ -2288,6 +2381,24 @@ export interface components {
             color?: string | null;
             /** Icon */
             icon?: string | null;
+        };
+        /** ProjectPaperImportAccepted */
+        ProjectPaperImportAccepted: {
+            /** Openalex Id */
+            openalex_id: string;
+            /**
+             * Status
+             * @constant
+             */
+            status: "queued";
+        };
+        /**
+         * ProjectPaperImportRequest
+         * @description Add one OpenAlex work (an `external` graph node) to the project.
+         */
+        ProjectPaperImportRequest: {
+            /** Openalex Id */
+            openalex_id: string;
         };
         /**
          * ProjectRead
@@ -3235,6 +3346,21 @@ export interface components {
              * @default bearer
              */
             token_type: string;
+        };
+        /**
+         * UnmatchedPaper
+         * @description A project PDF with no OpenAlex match (yet), so it has no edges.
+         */
+        UnmatchedPaper: {
+            /**
+             * Paper Id
+             * Format: uuid
+             */
+            paper_id: string;
+            /** Title */
+            title: string;
+            /** Status */
+            status: string;
         };
         /**
          * UserCreate
@@ -4270,6 +4396,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChunkLocationRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_paper_graph_api_v1_projects__project_id__paper_graph_get: {
+        parameters: {
+            query?: {
+                include_external?: boolean;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaperGraph"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_outside_paper_api_v1_projects__project_id__papers_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectPaperImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectPaperImportAccepted"];
                 };
             };
             /** @description Validation Error */

@@ -19,6 +19,7 @@ from app.modules.auth.router import router as auth_router
 from app.modules.execution.router import router as execution_router
 from app.modules.health.router import router as health_router
 from app.modules.knowledge_base.router import router as knowledge_base_router
+from app.modules.papers.router import router as papers_router
 from app.modules.projects.router import router as projects_router
 from app.modules.reports.router import router as reports_router
 from app.modules.research.router import router as research_router
@@ -121,6 +122,7 @@ app.include_router(projects_router, prefix=settings.api_v1_prefix)
 app.include_router(assets_router, prefix=settings.api_v1_prefix)
 app.include_router(tasks_router, prefix=settings.api_v1_prefix)
 app.include_router(knowledge_base_router, prefix=settings.api_v1_prefix)
+app.include_router(papers_router, prefix=settings.api_v1_prefix)
 app.include_router(research_router, prefix=settings.api_v1_prefix)
 app.include_router(execution_router, prefix=settings.api_v1_prefix)
 app.include_router(reports_router, prefix=settings.api_v1_prefix)
