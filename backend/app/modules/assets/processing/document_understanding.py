@@ -227,12 +227,27 @@ class QwenDocumentUnderstandingService:
                 budget=settings.qwen_max_input_characters,
                 section_count=len(sections),
             )
-        analyzed = [await self._analyze_section(section) for section in sections]
+        # A section whose response is unusable is skipped, not fatal: a
+        # paper's bibliography section can make Qwen list every cited
+        # author until the output is cut off mid-JSON, and that one
+        # section must not discard the rest of the document's metadata.
+        analyzed: list[QwenDocumentMetadata] = []
+        last_error: DocumentUnderstandingError | None = None
+        for index, section in enumerate(sections):
+            try:
+                analyzed.append(await self._analyze_section(section))
+            except DocumentUnderstandingError as exc:
+                last_error = exc
+                logger.warning(
+                    "document_understanding_section_skipped", section_index=index, error=str(exc)
+                )
+        if not analyzed:
+            raise last_error or DocumentUnderstandingError("No section could be analyzed.")
         merged = _merge_sections(analyzed)
         return DocumentUnderstandingResult(
             **merged.model_dump(),
-            truncated=len(sections) < total_sections,
-            processed_sections=len(sections),
+            truncated=len(analyzed) < total_sections,
+            processed_sections=len(analyzed),
             total_sections=total_sections,
         )
 

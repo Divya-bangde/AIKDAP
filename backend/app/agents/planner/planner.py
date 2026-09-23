@@ -46,7 +46,8 @@ _TOKEN_PATTERN = re.compile(r"[a-z0-9][a-z0-9\-]*")
 _INTENT_SIGNALS: tuple[tuple[str, tuple[str, ...], str], ...] = (
     (
         "comparison",
-        ("compare", "versus", "vs", "difference", "differences", "better", "against"),
+        # "differ" also matches "different"/"difference(s)" by substring.
+        ("compare", "versus", "vs", "differ", "better", "against"),
         "a side-by-side comparison with the criteria made explicit",
     ),
     (

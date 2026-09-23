@@ -292,6 +292,14 @@ async def test_num_ctx_is_forwarded_only_to_ollama(gemini_key, mock_completion):
 
 
 @pytest.mark.asyncio
+async def test_ollama_never_runs_on_its_default_context_window(gemini_key, mock_completion):
+    """Unset, Ollama's 2048-token default silently truncates long prompts."""
+    client = LLMGateway(default_model="ollama_chat/qwen3.5:4b")
+    await client.generate(prompt="hello")
+    assert mock_completion.await_args.kwargs["num_ctx"] == settings.qwen_num_ctx
+
+
+@pytest.mark.asyncio
 async def test_think_is_not_forwarded_to_a_non_ollama_model(gemini_key, mock_completion):
     """`think` is Ollama-specific and must not reach an unrelated provider.
 

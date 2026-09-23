@@ -929,10 +929,14 @@ class LLMGateway:
             # only Ollama to skip its reasoning pass must not also ask
             # every fallback provider to do the same.
             request["think"] = think
-        if num_ctx is not None and provider in _OLLAMA_PROVIDERS:
+        if provider in _OLLAMA_PROVIDERS:
             # Ollama's context window is request-specific. Like `think`,
-            # it must stay off cloud-provider fallback requests.
-            request["num_ctx"] = num_ctx
+            # it must stay off cloud-provider fallback requests. Never
+            # left unset: Ollama's own default (2048 tokens) silently
+            # drops the start of a longer prompt -- research synthesis
+            # given ~2,500 tokens of evidence saw almost none of it and
+            # answered "insufficient evidence".
+            request["num_ctx"] = num_ctx or settings.qwen_num_ctx
 
         # Logged without the request payload or the key: prompts can
         # carry user data and `request` carries the credential.

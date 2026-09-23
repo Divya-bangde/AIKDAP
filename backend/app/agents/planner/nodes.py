@@ -24,6 +24,7 @@ here, and never opens a session or commits itself; the caller injects
 the session-bound instance.
 """
 
+import asyncio
 import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -81,7 +82,9 @@ from app.agents.planner.paper_suggestion import (
 from app.core.logging.logger import get_logger
 from app.core.config.settings import settings
 from app.core.llm.gateway import LLMGateway, get_llm_gateway
+from app.agents.planner.decomposition import decompose_query
 from app.agents.planner.reformulation import reformulate_query
+from app.database.session import open_session
 from app.modules.assets.repository import AssetRepository
 from app.modules.knowledge_base.repository import KnowledgeChunkRepository
 from app.modules.knowledge_base.service import KnowledgeBaseService
@@ -152,6 +155,20 @@ class AssetRetriever(ABC):
         follow-up whose parent answer rests on a single paper.
         """
 
+    async def retrieve_many(
+        self,
+        *,
+        owner_id: uuid.UUID,
+        project_id: uuid.UUID,
+        queries: list[str],
+        limit: int,
+    ) -> list[list[RetrievedDocument]]:
+        """Run one search per query; results in query order."""
+        return [
+            await self.retrieve(owner_id=owner_id, project_id=project_id, query=query, limit=limit)
+            for query in queries
+        ]
+
 
 class WebResearchProvider(ABC):
     """Contract for retrieving evidence from external sources.
@@ -210,6 +227,34 @@ def build_citation(document: RetrievedDocument, position: int) -> Citation:
     return citation
 
 
+#: Results kept per sub-query of a decomposed question: enough for one
+#: subject's key passages while 4 sub-queries stay near 12 chunks.
+SUB_QUERY_RESULTS = 3
+
+
+def _merge_sub_query_results(
+    per_query: list[list[RetrievedDocument]],
+) -> list[RetrievedDocument]:
+    """Interleave sub-query results (best of each first), dropping repeats.
+
+    A chunk two sub-queries both found is kept once. The interleaved
+    order is what the step records; the context builder re-ranks it.
+    """
+    merged: list[RetrievedDocument] = []
+    seen: set[str] = set()
+    for position in range(max((len(docs) for docs in per_query), default=0)):
+        for docs in per_query:
+            if position < len(docs):
+                document = docs[position]
+                key = document.get("chunk_id") or document.get("reference", "")
+                if key not in seen:
+                    seen.add(key)
+                    merged.append(document)
+    for rank, document in enumerate(merged, start=1):
+        document["rank"] = rank
+    return merged
+
+
 class SemanticAssetRetriever(AssetRetriever):
     """Retrieves evidence through the knowledge base's two-stage search.
 
@@ -237,6 +282,28 @@ class SemanticAssetRetriever(AssetRetriever):
     def __init__(self, session: AsyncSession) -> None:
         self._service = KnowledgeBaseService(session)
         self._assets = AssetRepository(session)
+
+    async def retrieve_many(
+        self,
+        *,
+        owner_id: uuid.UUID,
+        project_id: uuid.UUID,
+        queries: list[str],
+        limit: int,
+    ) -> list[list[RetrievedDocument]]:
+        """Run the searches concurrently, each on its own session.
+
+        An `AsyncSession` cannot run two queries at once, so each search
+        opens a short-lived read session rather than sharing this one.
+        """
+
+        async def search(query: str) -> list[RetrievedDocument]:
+            async with open_session() as session:
+                return await SemanticAssetRetriever(session).retrieve(
+                    owner_id=owner_id, project_id=project_id, query=query, limit=limit
+                )
+
+        return list(await asyncio.gather(*(search(query) for query in queries)))
 
     async def retrieve(
         self,
@@ -662,13 +729,33 @@ async def asset_retrieval_node(
             "rejection_reason": "query_reformulation_enabled=False"
         }
     
-    documents = await dependencies.asset_retriever.retrieve(
-        owner_id=uuid.UUID(state["owner_id"]),
-        project_id=uuid.UUID(state["project_id"]),
-        query=retrieval_query,
-        limit=state.get("max_results", 5),
-        asset_id=uuid.UUID(parent["asset_id"]) if parent.get("asset_id") else None,
-    )
+    limit = state.get("max_results", 5)
+    sub_queries = [retrieval_query]
+    decomposition_meta: dict[str, object] = {"decomposition_attempted": False}
+    # A comparison spans several subjects; one search lets the subject
+    # matching the wording best take every slot. A follow-up pinned to
+    # one paper (`asset_id`) has only one subject, so it is not split.
+    if state.get("plan", {}).get("intent") == "comparison" and not parent.get("asset_id"):
+        sub_queries, decomposition_meta = await decompose_query(
+            original_query, dependencies.llm_gateway
+        )
+
+    if len(sub_queries) > 1:
+        per_query = await dependencies.asset_retriever.retrieve_many(
+            owner_id=uuid.UUID(state["owner_id"]),
+            project_id=uuid.UUID(state["project_id"]),
+            queries=sub_queries,
+            limit=SUB_QUERY_RESULTS,
+        )
+        documents = _merge_sub_query_results(per_query)
+    else:
+        documents = await dependencies.asset_retriever.retrieve(
+            owner_id=uuid.UUID(state["owner_id"]),
+            project_id=uuid.UUID(state["project_id"]),
+            query=retrieval_query,
+            limit=limit,
+            asset_id=uuid.UUID(parent["asset_id"]) if parent.get("asset_id") else None,
+        )
     # Every document from one search shares the same status, so the
     # first one is representative; absent when nothing was retrieved.
     reranking_status = documents[0].get("reranking_status") if documents else None
@@ -712,6 +799,7 @@ async def asset_retrieval_node(
                 "reranking_status": reranking_status,
                 "chunk_ids": [doc.get("chunk_id") for doc in documents],
                 "reformulation": reformulation_meta,
+                "decomposition": decomposition_meta,
             },
         },
     }
