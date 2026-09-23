@@ -1,13 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/common/StatusBadge";
-import { ResearchPipeline } from "@/features/research/ResearchPipeline";
+import { WorkflowTimeline } from "@/features/workflow-timeline/WorkflowTimeline";
 import { messageFor } from "@/lib/api-error";
 import * as reportsService from "@/services/reports";
 import { useState } from "react";
 import type { components } from "@/types/api";
 
 type ReportRead = components["schemas"]["ReportRead"];
-type ReportStep = NonNullable<ReportRead["steps"]>[number];
 
 // ponytail: fixed 6-minute cap, not configurable per-report -- mirrors
 // `ResearchRunView.POLL_TIMEOUT_MS`'s reasoning for a hard safety net,
@@ -19,15 +18,8 @@ export function isReportTerminal(report: ReportRead): boolean {
   return report.processing_status === "completed" || report.processing_status === "failed";
 }
 
-/** The report's steps grouped by generation attempt, oldest first --
- * each attempt is its own pipeline run (1, then +1 per retry). */
-export function stepsByAttempt(steps: ReportStep[]): [number, ReportStep[]][] {
-  const groups = new Map<number, ReportStep[]>();
-  for (const step of steps) {
-    groups.set(step.attempt, [...(groups.get(step.attempt) ?? []), step]);
-  }
-  return [...groups.entries()].sort(([a], [b]) => a - b);
-}
+/** Moved to the workflow timeline; re-exported for existing callers. */
+export { stepsByAttempt } from "@/features/workflow-timeline/WorkflowTimeline";
 
 /** Everything a report run looks like once it has started: progress,
  * the attempt-grouped pipeline, the timeout notice, failure + retry,
@@ -80,19 +72,12 @@ export function ReportRunPanel({
 
       {report && report.steps && report.steps.length > 0 && (
         <div className="flex max-h-72 flex-col gap-4 overflow-y-auto rounded-lg bg-sunken p-4">
-          {stepsByAttempt(report.steps).map(([attempt, steps], index, groups) => (
-            <section key={attempt} aria-label={`Attempt ${attempt}`}>
-              {/* Headings only once a report has been retried: a
-               * single run needs no "Attempt 1" label. */}
-              {groups.length > 1 && (
-                <p className="mb-2 text-label uppercase text-muted-foreground">
-                  Attempt {attempt}
-                  {index === groups.length - 1 ? " (latest)" : ""}
-                </p>
-              )}
-              <ResearchPipeline steps={steps} />
-            </section>
-          ))}
+          {/* Headings appear only once a report has been retried. */}
+          <WorkflowTimeline
+            owner={{ kind: "report", id: report.id }}
+            active={!isReportTerminal(report)}
+            seed={report.steps}
+          />
         </div>
       )}
 

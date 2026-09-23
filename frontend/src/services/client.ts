@@ -176,3 +176,14 @@ export async function requestBlob(path: string): Promise<Blob> {
 
   return response.blob();
 }
+
+/** Opens a Server-Sent Events stream. `EventSource` cannot send an
+ * Authorization header, so the caller passes a short-lived, single-
+ * stream token (issued by a normal authenticated `request()`) in the
+ * path's query string — never the access token itself. Returns `null`
+ * where `EventSource` does not exist (tests, very old browsers), and
+ * callers fall back to polling. */
+export function openEventStream(path: string): EventSource | null {
+  if (typeof EventSource === "undefined") return null;
+  return new EventSource(`${BASE_URL}${path}`);
+}

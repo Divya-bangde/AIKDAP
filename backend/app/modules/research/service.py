@@ -92,6 +92,12 @@ class PaperNotOpenAccessError(Exception):
     """Raised when a requested paper has no open-access PDF to import."""
 
 
+#: Run statuses after which no further step can appear.
+TERMINAL_RUN_STATUSES = frozenset(
+    {ResearchRunStatus.COMPLETED, ResearchRunStatus.FAILED, ResearchRunStatus.CANCELLED}
+)
+
+
 class ResearchService:
     """Request-scoped coordination of research run creation and retrieval."""
 
@@ -373,6 +379,16 @@ class ResearchService:
         if run is None or run.owner_id != owner_id:
             raise ResearchRunNotFoundError(run_id)
         return run
+
+    async def list_steps(self, run: ResearchRun) -> list[ResearchStep]:
+        """A run's steps in execution order (the workflow timeline)."""
+        return await self._steps.list_by_run(run.id)
+
+    async def step_snapshot(self, run_id: uuid.UUID) -> tuple[list[ResearchStep], bool]:
+        """A run's steps plus whether it is finished, for the step stream."""
+        run = await self._runs.get_by_id(run_id)
+        steps = await self._steps.list_by_run(run_id)
+        return steps, run is None or run.status in TERMINAL_RUN_STATUSES
 
     async def list_runs(
         self,

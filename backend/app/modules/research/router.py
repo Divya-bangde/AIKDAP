@@ -16,9 +16,16 @@ transcript.
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, status
+from fastapi.responses import StreamingResponse
 
 from app.modules.auth.models import User
-from app.modules.auth.security import get_current_user
+from app.database.session import open_session
+from app.modules.auth.security import (
+    STREAM_TOKEN_TTL_SECONDS,
+    create_stream_token,
+    decode_stream_token,
+    get_current_user,
+)
 from app.modules.execution.models import ExecutionJob
 from app.modules.execution.schemas import ExecutionJobRead
 from app.modules.research.dependencies import (
@@ -54,11 +61,14 @@ from app.modules.research.schemas import (
     ResearchRunDetail,
     ResearchRunRead,
     ResearchStepRead,
+    StepStreamToken,
     CrossPaperComparison,
     CrossPaperAnalysisRequest,
     PaperImportAccepted,
     PaperImportRequest,
 )
+from app.modules.research.step_events import run_steps_channel
+from app.modules.research.step_stream import SSE_HEADERS, step_event_stream
 from app.modules.research.service import (
     ProjectAccessDeniedError,
     ResearchRunNotFoundError,
@@ -147,6 +157,53 @@ async def get_research_run(
         messages=[AgentMessageRead.from_model(message) for message in messages],
         rerun_run_id=rerun_run_id,
         added_paper_count=added_paper_count,
+    )
+
+
+@router.get("/runs/{run_id}/steps", response_model=list[ResearchStepRead])
+async def list_run_steps(
+    run: ResearchRun = Depends(get_owned_run),
+    service: ResearchService = Depends(get_research_service),
+) -> list[ResearchStepRead]:
+    """The run's workflow steps in execution order."""
+    return [ResearchStepRead.model_validate(step) for step in await service.list_steps(run)]
+
+
+@router.post("/runs/{run_id}/steps/stream-token", response_model=StepStreamToken)
+async def create_run_steps_stream_token(
+    run: ResearchRun = Depends(get_owned_run),
+) -> StepStreamToken:
+    """Issue a ~60s token that opens this run's step stream, and only it."""
+    return StepStreamToken(
+        token=create_stream_token(run.owner_id, f"run:{run.id}"),
+        expires_in=STREAM_TOKEN_TTL_SECONDS,
+    )
+
+
+@router.get("/runs/{run_id}/steps/stream")
+async def stream_run_steps(
+    run_id: uuid.UUID, token: str = Query(..., min_length=1)
+) -> StreamingResponse:
+    """Server-Sent Events: existing steps, then live ones, until the run
+    ends (see `research.step_stream`). Authenticated by a stream token
+    from `POST .../steps/stream-token`, with the same ownership check as
+    every other run route."""
+    user_id = decode_stream_token(token, resource=f"run:{run_id}")
+    async with open_session() as session:
+        try:
+            await ResearchService(session).get_owned_run(user_id, run_id)
+        except ResearchRunNotFoundError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Research run not found."
+            ) from exc
+
+    return StreamingResponse(
+        step_event_stream(
+            channel=run_steps_channel(run_id),
+            load=lambda session: ResearchService(session).step_snapshot(run_id),
+        ),
+        media_type="text/event-stream",
+        headers=SSE_HEADERS,
     )
 
 

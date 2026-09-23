@@ -7,10 +7,10 @@ import { ResearchRunSkeleton } from "@/components/common/Skeletons";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { FollowUpPrompt } from "@/features/research/FollowUpPrompt";
-import { ResearchPipeline } from "@/features/research/ResearchPipeline";
 import { researchLayoutId } from "@/features/research/ResearchHistoryList";
 import { ResearchResult } from "@/features/research/ResearchResult";
 import { runOutcome } from "@/features/research/research-presentation";
+import { WorkflowTimeline } from "@/features/workflow-timeline/WorkflowTimeline";
 import { usePolling } from "@/hooks/usePolling";
 import { fileSlug, researchRunMarkdown } from "@/lib/export";
 import { fadeUp, layoutSpring } from "@/lib/motion";
@@ -161,7 +161,11 @@ export function ResearchRunView({ runId }: { runId: string }) {
                   AI research pipeline · {stepCount} {stepCount === 1 ? "step" : "steps"}
                 </summary>
                 <div className="mt-4">
-                  <ResearchPipeline steps={run.steps ?? []} />
+                  <WorkflowTimeline
+                    owner={{ kind: "run", id: run.id }}
+                    active={!TERMINAL_RUN_STATUSES.has(run.status)}
+                    seed={run.steps ?? []}
+                  />
                 </div>
               </details>
             ) : (
@@ -169,7 +173,11 @@ export function ResearchRunView({ runId }: { runId: string }) {
                 <p className="mb-4 text-label uppercase text-muted-foreground">
                   AI research pipeline
                 </p>
-                <ResearchPipeline steps={run.steps ?? []} />
+                <WorkflowTimeline
+                    owner={{ kind: "run", id: run.id }}
+                    active={!TERMINAL_RUN_STATUSES.has(run.status)}
+                    seed={run.steps ?? []}
+                  />
               </>
             )}
           </CardContent>

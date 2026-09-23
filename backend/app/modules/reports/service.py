@@ -233,6 +233,18 @@ class ReportService:
         steps = await self._steps.list_by_asset(asset.id)
         return asset, steps
 
+    async def step_snapshot(self, asset_id: uuid.UUID) -> tuple[list[ResearchStep], bool]:
+        """A report's steps plus whether generation has finished, for
+        the step stream. Ownership is checked by the caller when the
+        stream opens."""
+        asset = await self._session.get(Asset, asset_id)
+        steps = await self._steps.list_by_asset(asset_id)
+        finished = asset is None or asset.processing_status in (
+            AssetProcessingStatus.COMPLETED,
+            AssetProcessingStatus.FAILED,
+        )
+        return steps, finished
+
     async def retry_report(self, owner_id: uuid.UUID, asset_id: uuid.UUID) -> Asset:
         """Reset a failed report to `pending` and re-enqueue it.
 

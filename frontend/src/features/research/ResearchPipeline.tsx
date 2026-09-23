@@ -5,7 +5,8 @@ import { TechnicalDetails } from "@/components/common/TechnicalDetails";
 import { statusChange } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { presentationFor } from "@/features/research/research-presentation";
-import { stepMetrics } from "@/features/research/step-metrics";
+import { decisionLine, modelLabel, stepMetrics } from "@/features/research/step-metrics";
+import { Badge } from "@/components/ui/badge";
 import type { components } from "@/types/api";
 
 type ResearchStepRead = components["schemas"]["ResearchStepRead"];
@@ -77,6 +78,8 @@ export function ResearchPipeline({ steps }: { steps: ResearchStepRead[] }) {
           const Icon = STEP_ICON[step.status] ?? CircleDashed;
           const metrics = stepMetrics(step);
           const presentation = presentationFor(step.node_name);
+          const model = modelLabel(step);
+          const decision = decisionLine(step);
           const nextIsRunning = ordered[index + 1]?.status === "running";
           const isLast = index === ordered.length - 1;
 
@@ -114,7 +117,12 @@ export function ResearchPipeline({ steps }: { steps: ResearchStepRead[] }) {
                    * own step title moves into the technical disclosure
                    * below rather than disappearing. */}
                   <p className="text-sm font-medium leading-tight">{presentation.title}</p>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
+                    {model && (
+                      <Badge variant="muted" className="max-w-[12rem] truncate font-mono" title={step.model_name ?? undefined}>
+                        {model}
+                      </Badge>
+                    )}
                     {step.duration_ms !== null && step.duration_ms !== undefined && (
                       <span className="tabular font-mono text-xs text-muted-foreground">
                         {step.duration_ms} ms
@@ -143,6 +151,8 @@ export function ResearchPipeline({ steps }: { steps: ResearchStepRead[] }) {
                     {presentation.description}
                   </p>
                 )}
+
+                {decision && <p className="mt-1 text-xs text-foreground">{decision}</p>}
 
                 {step.status === "failed" && step.error_message && (
                   <p role="alert" className="mt-2 text-xs text-destructive">

@@ -424,6 +424,15 @@ class ResearchStepRead(BaseModel):
     )
 
 
+class StepStreamToken(BaseModel):
+    """A short-lived, single-stream credential for the SSE step stream.
+
+    Passed as `?token=` because `EventSource` cannot send headers."""
+
+    token: str
+    expires_in: int
+
+
 class AgentMessageRead(BaseModel):
     """One agent transcript entry within a run."""
 

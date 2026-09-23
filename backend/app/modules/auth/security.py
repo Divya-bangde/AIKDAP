@@ -21,6 +21,11 @@ from app.modules.auth.repository import UserRepository
 
 ACCESS_TOKEN_TYPE = "access"
 REFRESH_TOKEN_TYPE = "refresh"
+#: A short-lived token that authorizes reading ONE step stream. Exists
+#: because the browser's `EventSource` cannot send an Authorization
+#: header, and a normal access token must never appear in a URL.
+STREAM_TOKEN_TYPE = "stream"
+STREAM_TOKEN_TTL_SECONDS = 60
 
 _pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 _bearer_scheme = HTTPBearer(auto_error=True)
@@ -65,6 +70,30 @@ def create_refresh_token(subject: uuid.UUID) -> str:
     return _create_token(
         subject, REFRESH_TOKEN_TYPE, timedelta(days=settings.refresh_token_expire_days)
     )
+
+
+def create_stream_token(subject: uuid.UUID, resource: str) -> str:
+    """A ~60s token scoped to one stream `resource` (e.g. "run:<id>")."""
+    now = datetime.now(timezone.utc)
+    payload = {
+        "sub": str(subject),
+        "type": STREAM_TOKEN_TYPE,
+        "res": resource,
+        "iat": int(now.timestamp()),
+        "exp": int((now + timedelta(seconds=STREAM_TOKEN_TTL_SECONDS)).timestamp()),
+    }
+    return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
+
+
+def decode_stream_token(token: str, *, resource: str) -> uuid.UUID:
+    """The user a stream token was issued to; 401 unless it is a valid,
+    unexpired stream token for exactly `resource`."""
+    user_id = decode_token(token, expected_type=STREAM_TOKEN_TYPE)
+    # Re-decoding is cheap and keeps `decode_token`'s contract unchanged.
+    payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+    if payload.get("res") != resource:
+        raise _CREDENTIALS_ERROR
+    return user_id
 
 
 def decode_token(token: str, *, expected_type: str) -> uuid.UUID:

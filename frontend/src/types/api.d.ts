@@ -501,6 +501,69 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/research/runs/{run_id}/steps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Run Steps
+         * @description The run's workflow steps in execution order.
+         */
+        get: operations["list_run_steps_api_v1_research_runs__run_id__steps_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/research/runs/{run_id}/steps/stream-token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Run Steps Stream Token
+         * @description Issue a ~60s token that opens this run's step stream, and only it.
+         */
+        post: operations["create_run_steps_stream_token_api_v1_research_runs__run_id__steps_stream_token_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/research/runs/{run_id}/steps/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stream Run Steps
+         * @description Server-Sent Events: existing steps, then live ones, until the run
+         *     ends (see `research.step_stream`). Authenticated by a stream token
+         *     from `POST .../steps/stream-token`, with the same ownership check as
+         *     every other run route.
+         */
+        get: operations["stream_run_steps_api_v1_research_runs__run_id__steps_stream_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/research/runs/{run_id}/unsourced": {
         parameters: {
             query?: never;
@@ -877,6 +940,67 @@ export interface paths {
          * @description A report's status, error, sections, and full step trace.
          */
         get: operations["get_report_route_api_v1_reports__asset_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/{asset_id}/steps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Report Steps
+         * @description The report's workflow steps, every attempt, in order.
+         */
+        get: operations["list_report_steps_api_v1_reports__asset_id__steps_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/{asset_id}/steps/stream-token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Report Steps Stream Token
+         * @description Issue a ~60s token that opens this report's step stream, and only it.
+         */
+        post: operations["create_report_steps_stream_token_api_v1_reports__asset_id__steps_stream_token_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/{asset_id}/steps/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stream Report Steps
+         * @description Server-Sent Events for a report run; same protocol as a research
+         *     run's stream (`research.step_stream`).
+         */
+        get: operations["stream_report_steps_api_v1_reports__asset_id__steps_stream_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2893,6 +3017,18 @@ export interface components {
             evidence_scope: string;
         };
         /**
+         * StepStreamToken
+         * @description A short-lived, single-stream credential for the SSE step stream.
+         *
+         *     Passed as `?token=` because `EventSource` cannot send headers.
+         */
+        StepStreamToken: {
+            /** Token */
+            token: string;
+            /** Expires In */
+            expires_in: number;
+        };
+        /**
          * SufficiencyStatus
          * @enum {string}
          */
@@ -4156,6 +4292,101 @@ export interface operations {
             };
         };
     };
+    list_run_steps_api_v1_research_runs__run_id__steps_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResearchStepRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_run_steps_stream_token_api_v1_research_runs__run_id__steps_stream_token_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StepStreamToken"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stream_run_steps_api_v1_research_runs__run_id__steps_stream_get: {
+        parameters: {
+            query: {
+                token: string;
+            };
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_unsourced_run_route_api_v1_research_runs__run_id__unsourced_post: {
         parameters: {
             query?: never;
@@ -4772,6 +5003,101 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReportRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_report_steps_api_v1_reports__asset_id__steps_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResearchStepRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_report_steps_stream_token_api_v1_reports__asset_id__steps_stream_token_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StepStreamToken"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stream_report_steps_api_v1_reports__asset_id__steps_stream_get: {
+        parameters: {
+            query: {
+                token: string;
+            };
+            header?: never;
+            path: {
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

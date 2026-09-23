@@ -11,10 +11,17 @@ import uuid
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi.responses import StreamingResponse
 
 from app.modules.assets.router import _content_disposition
 from app.modules.auth.models import User
-from app.modules.auth.security import get_current_user
+from app.database.session import open_session
+from app.modules.auth.security import (
+    STREAM_TOKEN_TTL_SECONDS,
+    create_stream_token,
+    decode_stream_token,
+    get_current_user,
+)
 from app.modules.reports.schemas import (
     BuildPlanRequest,
     ReportGenerateRequest,
@@ -32,6 +39,10 @@ from app.modules.reports.service import (
     ReportService,
     get_report_service,
 )
+
+from app.modules.research.schemas import ResearchStepRead, StepStreamToken
+from app.modules.research.step_events import report_steps_channel
+from app.modules.research.step_stream import SSE_HEADERS, step_event_stream
 
 router = APIRouter(tags=["Reports"])
 
@@ -111,6 +122,60 @@ async def get_report_route(
     except ReportNotFoundError as exc:
         raise _REPORT_NOT_FOUND from exc
     return ReportRead.from_report(asset, steps)
+
+
+@router.get("/reports/{asset_id}/steps", response_model=list[ResearchStepRead])
+async def list_report_steps(
+    asset_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    service: ReportService = Depends(get_report_service),
+) -> list[ResearchStepRead]:
+    """The report's workflow steps, every attempt, in order."""
+    try:
+        _, steps = await service.get_report(current_user.id, asset_id)
+    except ReportNotFoundError as exc:
+        raise _REPORT_NOT_FOUND from exc
+    return [ResearchStepRead.model_validate(step) for step in steps]
+
+
+@router.post("/reports/{asset_id}/steps/stream-token", response_model=StepStreamToken)
+async def create_report_steps_stream_token(
+    asset_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    service: ReportService = Depends(get_report_service),
+) -> StepStreamToken:
+    """Issue a ~60s token that opens this report's step stream, and only it."""
+    try:
+        await service.get_owned_report(current_user.id, asset_id)
+    except ReportNotFoundError as exc:
+        raise _REPORT_NOT_FOUND from exc
+    return StepStreamToken(
+        token=create_stream_token(current_user.id, f"report:{asset_id}"),
+        expires_in=STREAM_TOKEN_TTL_SECONDS,
+    )
+
+
+@router.get("/reports/{asset_id}/steps/stream")
+async def stream_report_steps(
+    asset_id: uuid.UUID, token: str = Query(..., min_length=1)
+) -> StreamingResponse:
+    """Server-Sent Events for a report run; same protocol as a research
+    run's stream (`research.step_stream`)."""
+    user_id = decode_stream_token(token, resource=f"report:{asset_id}")
+    async with open_session() as session:
+        try:
+            await ReportService(session).get_owned_report(user_id, asset_id)
+        except ReportNotFoundError as exc:
+            raise _REPORT_NOT_FOUND from exc
+
+    return StreamingResponse(
+        step_event_stream(
+            channel=report_steps_channel(asset_id),
+            load=lambda session: ReportService(session).step_snapshot(asset_id),
+        ),
+        media_type="text/event-stream",
+        headers=SSE_HEADERS,
+    )
 
 
 @router.get("/reports/{asset_id}/download")

@@ -36,6 +36,20 @@ function list(payload: Record<string, unknown>, key: string): unknown[] | undefi
  * Pydantic schema), which is why every read is type-guarded rather
  * than cast. */
 export function stepMetrics(step: ResearchStepRead): StepMetric[] {
+  const metrics = payloadMetrics(step);
+  // Workflow timeline: what the step's LLM calls spent, from the
+  // step's own columns. Absent (not zero) when nothing was reported.
+  const tokens = [
+    step.input_tokens != null ? `${step.input_tokens} in` : null,
+    step.output_tokens != null ? `${step.output_tokens} out` : null,
+  ].filter(Boolean);
+  if (tokens.length > 0) metrics.push({ label: "Tokens", value: tokens.join(" · ") });
+  const models = list(step.metadata ?? {}, "models");
+  if (models && models.length > 1) metrics.push({ label: "Models", value: models.join(", "), mono: true });
+  return metrics;
+}
+
+function payloadMetrics(step: ResearchStepRead): StepMetric[] {
   const payload = step.output_payload;
   if (!payload) return [];
 
@@ -100,6 +114,21 @@ export function stepMetrics(step: ResearchStepRead): StepMetric[] {
   }
 
   return metrics;
+}
+
+/** The model a step used, short form ("groq/llama-3.1" -> "llama-3.1"). */
+export function modelLabel(step: ResearchStepRead): string | undefined {
+  return step.model_name ? step.model_name.split("/").pop() : undefined;
+}
+
+/** The knowledge-base-vs-web decision, in plain language, when the
+ * step recorded one, e.g. "Web search: not used. Found enough in your
+ * documents." Undefined for every step that made no such decision. */
+export function decisionLine(step: ResearchStepRead): string | undefined {
+  const metadata = step.metadata ?? {};
+  if (typeof metadata.used_web !== "boolean") return undefined;
+  const reason = str(metadata, "reason");
+  return `Web search: ${metadata.used_web ? "used" : "not used"}.${reason ? ` ${reason}` : ""}`;
 }
 
 /** The evidence funnel, assembled only from fields the API actually
