@@ -17,6 +17,7 @@ import { EvidenceDrawer } from "@/features/research/EvidenceDrawer";
 import { EvidenceGapPanel, GeneralKnowledgeAnswer } from "@/features/research/EvidenceGapPanel";
 import { PaperSuggestionsPanel, type SuggestedPaper } from "@/features/research/PaperSuggestionsPanel";
 import { EvidenceWorkspace } from "@/features/research/EvidenceWorkspace";
+import { isPdfSource, SourceViewer } from "@/features/research/SourceViewer";
 import { fadeUp } from "@/lib/motion";
 import { asSynthesisOutput } from "@/types/research-meta";
 import { asCitation, type Citation } from "@/types/citation";
@@ -42,7 +43,30 @@ export function ResearchResult({ run, followUp }: { run: ResearchRunDetail; foll
   const synthesisStep = steps.find((step) => step.node_name === "synthesis");
   const synthesis = asSynthesisOutput(synthesisStep?.output_payload ?? null);
 
-  const openEvidence = (citation: Citation, index: number) => setSelected({ citation, index });
+  const [source, setSource] = useState<Citation | null>(null);
+
+  /** Web citations open their page; knowledge-base PDF citations open
+   * at the cited passage; anything else shows the evidence detail. */
+  const openEvidence = (citation: Citation, index: number) => {
+    if (citation.source === "web" && citation.url && !citation.simulated) {
+      window.open(citation.url, "_blank", "noopener,noreferrer");
+    } else if (isPdfSource(citation)) {
+      setSource(citation);
+    } else {
+      setSelected({ citation, index });
+    }
+  };
+
+  const evidencePanels = (
+    <>
+      <EvidenceDrawer
+        citation={selected?.citation ?? null}
+        index={selected?.index ?? null}
+        onClose={() => setSelected(null)}
+      />
+      <SourceViewer citation={source} onClose={() => setSource(null)} />
+    </>
+  );
 
   if (run.grounding_status === "insufficient_evidence") {
     return (
@@ -110,11 +134,7 @@ export function ResearchResult({ run, followUp }: { run: ResearchRunDetail; foll
           />
         </motion.div>
 
-        <EvidenceDrawer
-          citation={selected?.citation ?? null}
-          index={selected?.index ?? null}
-          onClose={() => setSelected(null)}
-        />
+        {evidencePanels}
       </>
     );
   }
@@ -278,11 +298,7 @@ export function ResearchResult({ run, followUp }: { run: ResearchRunDetail; foll
         <EvidenceWorkspace query={run.query} claims={claims} citations={citations} onSelectCitation={openEvidence} />
       </motion.div>
 
-      <EvidenceDrawer
-        citation={selected?.citation ?? null}
-        index={selected?.index ?? null}
-        onClose={() => setSelected(null)}
-      />
+      {evidencePanels}
     </>
   );
 }

@@ -19,6 +19,7 @@ from app.modules.assets.repository import AssetRepository
 from app.modules.knowledge_base.embeddings import EmbeddingProvider, get_embedding_provider
 from app.modules.knowledge_base.models import KnowledgeChunk
 from app.modules.knowledge_base.repository import KnowledgeChunkRepository
+from app.modules.knowledge_base.schemas import ChunkLocationRead
 from app.modules.knowledge_base.relevance import RelevanceGate, get_relevance_gate
 from app.modules.knowledge_base.reranking import (
     RerankCandidate,
@@ -143,6 +144,33 @@ class KnowledgeBaseService:
         if project is None or project.owner_id != owner_id:
             raise KnowledgeChunkNotFoundError(chunk_id)
         return chunk
+
+    async def get_location(self, owner_id: uuid.UUID, chunk_id: uuid.UUID) -> ChunkLocationRead:
+        """Where an owned chunk sits in its source PDF (click-to-source).
+
+        A chunk with no stored position degrades to its own page with
+        `match_quality="none"` rather than a 404: the chunk exists and
+        is the caller's, only the highlight is unavailable.
+        """
+        chunk = await self.get_owned(owner_id, chunk_id)
+        position = await self._repository.get_position(chunk_id)
+        if position is None:
+            return ChunkLocationRead(
+                chunk_id=chunk.id,
+                document_id=chunk.asset_id,
+                page_start=chunk.page_number,
+                page_end=chunk.page_number,
+                match_quality="none",
+                spans=[],
+            )
+        return ChunkLocationRead(
+            chunk_id=chunk.id,
+            document_id=position.document_id,
+            page_start=position.page_start,
+            page_end=position.page_end,
+            match_quality=position.match_quality,
+            spans=position.spans,
+        )
 
     async def replace_chunks_for_asset(
         self,

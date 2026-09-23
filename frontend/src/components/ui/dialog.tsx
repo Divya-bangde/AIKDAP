@@ -17,7 +17,7 @@ import { dialogVariants, overlayVariants } from "@/lib/motion";
  * Mirroring rather than replacing: Radix still drives focus trapping,
  * scroll locking, `aria-*` wiring and Escape handling. The only thing
  * taken from it is *when the node disappears*. */
-const DialogOpenContext = React.createContext(false);
+export const DialogOpenContext = React.createContext(false);
 
 type DialogProps = React.ComponentPropsWithoutRef<typeof DialogPrimitive.Root>;
 

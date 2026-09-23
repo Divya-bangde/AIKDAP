@@ -438,6 +438,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/knowledge-base/chunks/{chunk_id}/location": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Chunk Location
+         * @description Where a cited chunk sits in its source PDF, for highlighting it.
+         *
+         *     404 when the chunk is missing or not in one of the caller's
+         *     projects. The PDF itself comes from `GET /assets/download/{id}`
+         *     with `document_id`.
+         */
+        get: operations["get_chunk_location_api_v1_knowledge_base_chunks__chunk_id__location_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/research/run": {
         parameters: {
             query?: never;
@@ -1354,6 +1378,40 @@ export interface components {
         BuildPlanRequest: {
             /** Asset Ids */
             asset_ids: string[];
+        };
+        /**
+         * ChunkLocationRead
+         * @description Where a cited chunk sits in its source PDF (click-to-source).
+         *
+         *     `spans` is `[{page, page_width, page_height, rects: [[x0, y0, x1,
+         *     y1], ...]}]` in PDF points with a top-left origin, so a viewer
+         *     scales by `rendered_width / page_width` with no y-flip. A chunk with
+         *     no stored position (a non-PDF, an OCR'd page, a rotated page, or an
+         *     asset not yet backfilled) comes back as `match_quality="none"` with
+         *     empty `spans` and the chunk's own page, so the viewer can still open
+         *     the right page.
+         */
+        ChunkLocationRead: {
+            /**
+             * Chunk Id
+             * Format: uuid
+             */
+            chunk_id: string;
+            /**
+             * Document Id
+             * Format: uuid
+             */
+            document_id: string;
+            /** Page Start */
+            page_start: number | null;
+            /** Page End */
+            page_end: number | null;
+            /** Match Quality */
+            match_quality: string;
+            /** Spans */
+            spans: {
+                [key: string]: unknown;
+            }[];
         };
         /** ComparisonItem */
         ComparisonItem: {
@@ -4181,6 +4239,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KnowledgeChunkRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_chunk_location_api_v1_knowledge_base_chunks__chunk_id__location_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chunk_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChunkLocationRead"];
                 };
             };
             /** @description Validation Error */

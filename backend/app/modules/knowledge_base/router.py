@@ -20,6 +20,7 @@ from app.modules.auth.security import get_current_user
 from app.modules.knowledge_base.dependencies import get_knowledge_base_service
 from app.modules.knowledge_base.models import KnowledgeChunk
 from app.modules.knowledge_base.schemas import (
+    ChunkLocationRead,
     KnowledgeChunkRead,
     SemanticSearchRequest,
     SemanticSearchResponse,
@@ -145,5 +146,23 @@ async def get_chunk(
     """Fetch a single knowledge chunk owned by the current user."""
     try:
         return await service.get_owned(current_user.id, chunk_id)
+    except KnowledgeChunkNotFoundError as exc:
+        raise _CHUNK_NOT_FOUND from exc
+
+
+@router.get("/chunks/{chunk_id}/location", response_model=ChunkLocationRead)
+async def get_chunk_location(
+    chunk_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    service: KnowledgeBaseService = Depends(get_knowledge_base_service),
+) -> ChunkLocationRead:
+    """Where a cited chunk sits in its source PDF, for highlighting it.
+
+    404 when the chunk is missing or not in one of the caller's
+    projects. The PDF itself comes from `GET /assets/download/{id}`
+    with `document_id`.
+    """
+    try:
+        return await service.get_location(current_user.id, chunk_id)
     except KnowledgeChunkNotFoundError as exc:
         raise _CHUNK_NOT_FOUND from exc

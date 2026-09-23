@@ -24,6 +24,8 @@ export interface Citation {
   file_name?: string;
   reference?: string;
   simulated?: boolean;
+  /** The page a web result came from (web citations only). */
+  url?: string;
   rerank_score?: number;
   retrieval_rank?: number;
   retrieval_score?: number;

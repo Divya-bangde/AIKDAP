@@ -16,7 +16,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.assets.enums import EmbeddingStatus
-from app.modules.knowledge_base.models import KnowledgeChunk
+from app.modules.knowledge_base.models import ChunkPosition, KnowledgeChunk
 from app.modules.projects.models import Project
 
 
@@ -29,6 +29,13 @@ class KnowledgeChunkRepository:
     async def get_by_id(self, chunk_id: uuid.UUID) -> KnowledgeChunk | None:
         """Fetch a chunk by primary key, or None if not found."""
         return await self._session.get(KnowledgeChunk, chunk_id)
+
+    async def get_position(self, chunk_id: uuid.UUID) -> ChunkPosition | None:
+        """Fetch a chunk's stored page position, or None if it has none."""
+        result = await self._session.execute(
+            select(ChunkPosition).where(ChunkPosition.chunk_id == chunk_id)
+        )
+        return result.scalar_one_or_none()
 
     async def list_by_project(
         self,

@@ -8,6 +8,7 @@ schema in this module — it's a query, not a chunk mutation.
 
 import uuid
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -131,3 +132,24 @@ class SemanticSearchResponse(BaseModel):
     #: Number of accepted results returned, i.e. `len(results)`.
     count: int
     results: list[SemanticSearchResult]
+
+
+class ChunkLocationRead(BaseModel):
+    """Where a cited chunk sits in its source PDF (click-to-source).
+
+    `spans` is `[{page, page_width, page_height, rects: [[x0, y0, x1,
+    y1], ...]}]` in PDF points with a top-left origin, so a viewer
+    scales by `rendered_width / page_width` with no y-flip. A chunk with
+    no stored position (a non-PDF, an OCR'd page, a rotated page, or an
+    asset not yet backfilled) comes back as `match_quality="none"` with
+    empty `spans` and the chunk's own page, so the viewer can still open
+    the right page.
+    """
+
+    chunk_id: uuid.UUID
+    document_id: uuid.UUID
+    page_start: int | None
+    page_end: int | None
+    #: "exact" | "fuzzy" | "none".
+    match_quality: str
+    spans: list[dict[str, Any]]

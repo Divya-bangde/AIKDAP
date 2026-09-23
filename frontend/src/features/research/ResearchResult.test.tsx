@@ -18,6 +18,12 @@ vi.mock("@/services/research", () => ({
   createUnsourcedAnswer: vi.fn(() => new Promise(() => {})),
 }));
 
+// pdf.js cannot run in jsdom; the viewer's shell and routing are what
+// these tests cover (the highlight math has its own unit test).
+vi.mock("@/features/research/PdfSourcePane", () => ({
+  default: ({ chunkId }: { chunkId: string }) => <p>PDF pane for {chunkId}</p>,
+}));
+
 const render = renderWithProviders;
 
 type ResearchRunDetail = components["schemas"]["ResearchRunDetail"];
@@ -339,6 +345,49 @@ describe("ResearchResult", () => {
     const text = drawer.textContent ?? "";
     expect(text).not.toMatch(/0\.638\s*%|63\.8\s*%|4\.89\s*%|489\s*%/);
     expect(text).not.toMatch(/confidence/i);
+  });
+
+  it("opens a knowledge-base PDF citation in the source viewer", async () => {
+    const run = makeRun({
+      grounding_status: "grounded",
+      final_answer: "Feed costs rose sharply.",
+      citations: [
+        {
+          id: "c1",
+          title: "ABC Poultry FY2026 Review",
+          chunk_id: "chunk-abc",
+          asset_id: "asset-1",
+          file_name: "review.PDF",
+        },
+      ],
+    });
+    const user = userEvent.setup();
+
+    render(<ResearchResult run={run} />);
+    await user.click(screen.getByRole("button", { name: /ABC Poultry FY2026 Review/ }));
+
+    const sheet = await screen.findByRole("dialog");
+    expect(sheet).toHaveTextContent("Source · c1");
+    expect(await screen.findByText("PDF pane for chunk-abc")).toBeInTheDocument();
+  });
+
+  it("opens a web citation's page in a new tab", async () => {
+    const open = vi.spyOn(window, "open").mockReturnValue(null);
+    const run = makeRun({
+      grounding_status: "grounded",
+      final_answer: "Feed costs rose sharply.",
+      citations: [
+        { id: "c1", title: "Industry news", source: "web", url: "https://example.com/a", simulated: false },
+      ],
+    });
+    const user = userEvent.setup();
+
+    render(<ResearchResult run={run} />);
+    await user.click(screen.getByRole("button", { name: /Industry news/ }));
+
+    expect(open).toHaveBeenCalledWith("https://example.com/a", "_blank", "noopener,noreferrer");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    open.mockRestore();
   });
 
   it("does not make up a citation for a marker the backend never returned", () => {

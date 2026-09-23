@@ -30,6 +30,7 @@
     "plotly.js-dist-min": "^4.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-pdf": "^10.5.0",
     "react-plotly.js": "^4.1.0",
     "react-router-dom": "^6.28.1",
     "tailwind-merge": "^2.6.0",
