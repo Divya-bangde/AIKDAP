@@ -21,6 +21,7 @@ from app.modules.research.enums import (
     ResearchStepStatus,
 )
 from app.modules.research.models import AgentMessage, ResearchRun
+from app.modules.research.source_mix import SourceMix
 
 # `ClaimSupport` (claim_verification.py) and `EvidenceState`
 # (evidence_state.py) are not imported here even though `VerifiedClaimRead`
@@ -375,6 +376,9 @@ class ResearchRunRead(BaseModel):
     #: any were found. Never used to ground `final_answer` -- see
     #: `agents.planner.paper_suggestion`.
     suggested_papers: list[dict[str, Any]] | None = None
+    #: Where the answer's support came from. `None` for runs saved
+    #: before this was computed and not yet backfilled.
+    source_mix: SourceMix | None = None
     error_message: str | None
     celery_task_id: str | None
     started_at: datetime | None

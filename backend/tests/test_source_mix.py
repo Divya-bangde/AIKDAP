@@ -1,6 +1,6 @@
 """Source mix computation (Phase 1d). Unit: citations."""
 
-from app.modules.research.source_mix import compute_report_source_mix, compute_run_source_mix
+from app.modules.research.source_mix import SourceMix, compute_report_source_mix, compute_run_source_mix
 
 
 def _c(cid: str, source: str, **extra) -> dict:
@@ -51,3 +51,8 @@ def test_report_counts_section_citations_and_distinct_links():
         "general": 0,
         "unit": "citations",
     }
+
+
+def test_stored_mix_matches_the_api_schema():
+    SourceMix.model_validate(compute_run_source_mix("x", [], "unsourced"))
+    SourceMix.model_validate(compute_report_source_mix([]))

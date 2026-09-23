@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/common/StatusBadge";
+import { SourceMixBar } from "@/features/research/SourceMixBar";
 import { WorkflowTimeline } from "@/features/workflow-timeline/WorkflowTimeline";
 import { messageFor } from "@/lib/api-error";
 import * as reportsService from "@/services/reports";
@@ -104,6 +105,8 @@ export function ReportRunPanel({
           </div>
         </div>
       )}
+
+      {completed && report && <SourceMixBar mix={report.source_mix} />}
 
       {completed && report && (
         <div className="flex gap-2" role="status">

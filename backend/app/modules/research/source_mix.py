@@ -17,11 +17,22 @@ the same code.
 """
 
 import re
-from typing import Any
+from typing import Any, Literal
+
+from pydantic import BaseModel
 
 _URL_RE = re.compile(r"https?://[^\s)\]>\"']+")
 
 UNSOURCED = "unsourced"
+
+
+class SourceMix(BaseModel):
+    """API shape of a stored source mix: counts per origin, and what was counted."""
+
+    kb: int
+    web: int
+    general: int
+    unit: Literal["citations"]
 
 
 def _mix(kb: int, web: int, general: int) -> dict[str, Any]:

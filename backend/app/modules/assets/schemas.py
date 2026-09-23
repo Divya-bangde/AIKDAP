@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.modules.assets.ai_profile import AIProfile
 from app.modules.assets.enums import AssetProcessingStatus, AssetSource, AssetStatus, AssetType
 from app.modules.assets.models import Asset
+from app.modules.research.source_mix import SourceMix
 
 
 class AssetUpdate(BaseModel):
@@ -51,6 +52,9 @@ class AssetRead(BaseModel):
     tags: list[str]
     metadata: dict[str, Any]
     ai_profile: AIProfile
+    #: Where a generated report's support came from. `None` for uploads
+    #: and for reports saved before this was computed.
+    source_mix: SourceMix | None = None
     created_by: uuid.UUID | None
     processing_status: AssetProcessingStatus
     processing_error: str | None
@@ -85,6 +89,7 @@ class AssetRead(BaseModel):
             tags=list(asset.tags or []),
             metadata=asset.asset_metadata or {},
             ai_profile=asset.ai_profile or {},
+            source_mix=asset.source_mix,
             created_by=asset.created_by,
             processing_status=asset.processing_status,
             processing_error=asset.processing_error,

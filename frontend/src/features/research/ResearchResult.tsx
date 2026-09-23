@@ -17,6 +17,7 @@ import { EvidenceDrawer } from "@/features/research/EvidenceDrawer";
 import { EvidenceGapPanel, GeneralKnowledgeAnswer } from "@/features/research/EvidenceGapPanel";
 import { PaperSuggestionsPanel, type SuggestedPaper } from "@/features/research/PaperSuggestionsPanel";
 import { EvidenceWorkspace } from "@/features/research/EvidenceWorkspace";
+import { SourceMixBar } from "@/features/research/SourceMixBar";
 import { isPdfSource, SourceViewer } from "@/features/research/SourceViewer";
 import { fadeUp } from "@/lib/motion";
 import { asSynthesisOutput } from "@/types/research-meta";
@@ -161,8 +162,9 @@ export function ResearchResult({ run, followUp }: { run: ResearchRunDetail; foll
               <StatusBadge domain="grounding" value={run.grounding_status} />
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-col gap-5">
             <GeneralKnowledgeAnswer answer={run.final_answer ?? ""} />
+            <SourceMixBar mix={run.source_mix} />
           </CardContent>
         </Card>
         {followUp}
@@ -226,6 +228,8 @@ export function ResearchResult({ run, followUp }: { run: ResearchRunDetail; foll
                 Supported by {citations.length} evidence item{citations.length === 1 ? "" : "s"}
               </p>
             )}
+
+            <SourceMixBar mix={run.source_mix} />
 
             {/* Provider, model and fallback detail move behind the same
              * technical disclosure the pipeline steps use (Sprint 9K.8,

@@ -1326,6 +1326,7 @@ export interface components {
                 [key: string]: unknown;
             };
             ai_profile: components["schemas"]["AIProfile"];
+            source_mix?: components["schemas"]["SourceMix"] | null;
             /** Created By */
             created_by: string | null;
             processing_status: components["schemas"]["AssetProcessingStatus"];
@@ -2554,6 +2555,7 @@ export interface components {
                 [key: string]: unknown;
             };
             ai_profile: components["schemas"]["AIProfile"];
+            source_mix?: components["schemas"]["SourceMix"] | null;
             /** Created By */
             created_by: string | null;
             processing_status: components["schemas"]["AssetProcessingStatus"];
@@ -2831,6 +2833,7 @@ export interface components {
             suggested_papers?: {
                 [key: string]: unknown;
             }[] | null;
+            source_mix?: components["schemas"]["SourceMix"] | null;
             /** Error Message */
             error_message: string | null;
             /** Celery Task Id */
@@ -2920,6 +2923,7 @@ export interface components {
             suggested_papers?: {
                 [key: string]: unknown;
             }[] | null;
+            source_mix?: components["schemas"]["SourceMix"] | null;
             /** Error Message */
             error_message: string | null;
             /** Celery Task Id */
@@ -3165,6 +3169,23 @@ export interface components {
             similarity: number;
             /** Rerank Score */
             rerank_score?: number | null;
+        };
+        /**
+         * SourceMix
+         * @description API shape of a stored source mix: counts per origin, and what was counted.
+         */
+        SourceMix: {
+            /** Kb */
+            kb: number;
+            /** Web */
+            web: number;
+            /** General */
+            general: number;
+            /**
+             * Unit
+             * @constant
+             */
+            unit: "citations";
         };
         /** SourceReference */
         SourceReference: {
