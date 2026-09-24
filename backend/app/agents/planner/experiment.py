@@ -743,6 +743,49 @@ def prepare_input_output_series(
     return sorted(pairs, key=_sort_key)
 
 
+_NOT_CAUSAL = "This describes a trend in the data shown, not a causal relationship."
+
+
+def describe_trend(
+    pairs: list[tuple[str, float | None]], input_name: str, output_name: str
+) -> str | None:
+    """A one-line description of how the output moves as the input
+    increases, or None when there is no trend to describe.
+
+    Only points with a numeric input and output count, and the inputs
+    must all differ: a repeated input value (the same x measured twice)
+    or a categorical input has no direction, so no note is made up for
+    it. The wording is always correlational, never causal (Part H).
+    """
+    points: list[tuple[float, float]] = []
+    for x, y in pairs:
+        if y is None:
+            continue
+        try:
+            points.append((float(x), y))
+        except ValueError:
+            return None
+    xs = [x for x, _ in points]
+    if len(points) < 2 or len(set(xs)) != len(xs):
+        return None
+
+    ys = [y for _, y in sorted(points)]
+    steps = [b - a for a, b in zip(ys, ys[1:])]
+    if all(s == 0 for s in steps):
+        trend = f"{output_name} stays the same as {input_name} increases"
+    elif all(s > 0 for s in steps):
+        trend = f"{output_name} increases as {input_name} increases"
+    elif all(s >= 0 for s in steps):
+        trend = f"{output_name} does not decrease as {input_name} increases"
+    elif all(s < 0 for s in steps):
+        trend = f"{output_name} decreases as {input_name} increases"
+    elif all(s <= 0 for s in steps):
+        trend = f"{output_name} does not increase as {input_name} increases"
+    else:
+        trend = f"{output_name} both rises and falls as {input_name} increases, with no single direction"
+    return f"{trend} across these test cases. {_NOT_CAUSAL}"
+
+
 def new_plan_id() -> uuid.UUID:
     return uuid.uuid4()
 

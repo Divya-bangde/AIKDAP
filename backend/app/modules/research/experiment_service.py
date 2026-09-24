@@ -48,6 +48,7 @@ from app.agents.planner.experiment import (
     build_variables_from_equation,
     check_all_constraints,
     classify_variable_role,
+    describe_trend,
     now_utc,
     parse_equation,
     parse_test_cases,
@@ -506,21 +507,12 @@ class ExperimentPlanService:
             y=[p[1] for p in pairs],
             kind="scatter",
         )
-        note = None
-        if len(pairs) >= 2:
-            numeric_y = [p[1] for p in pairs if p[1] is not None]
-            if len(numeric_y) >= 2 and numeric_y == sorted(numeric_y):
-                note = (
-                    f"{output_name} does not decrease as {input_name} increases across these "
-                    "test cases. This describes a trend in the data shown, not a causal "
-                    "relationship."
-                )
         return VisualizationData(
             chart_type="scatter",
             x_label=input_name,
             y_label=output_name,
             series=[series],
-            note=note,
+            note=describe_trend(pairs, input_name, output_name),
         )
 
     # ------------------------------------------------------------------

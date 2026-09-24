@@ -6,7 +6,7 @@ server-side, and no causal claim is generated from a mere trend.
 
 import pytest
 
-from app.agents.planner.experiment import prepare_input_output_series
+from app.agents.planner.experiment import describe_trend, prepare_input_output_series
 from app.modules.research.experiment_schemas import (
     ExperimentPlanCreateFromEquation,
     ExperimentOutputValue,
@@ -52,6 +52,43 @@ class TestPrepareInputOutputSeries:
         cases = [_case("c1", "adam", "0.9"), _case("c2", "sgd", "0.85")]
         pairs = prepare_input_output_series(cases, "X", "Y")
         assert {p[0] for p in pairs} == {"adam", "sgd"}
+
+
+class TestDescribeTrend:
+    @pytest.mark.parametrize(
+        ("ys", "expected"),
+        [
+            ([1.0, 2.0, 3.0], "Y increases as X increases"),
+            ([1.0, 1.0, 3.0], "Y does not decrease as X increases"),
+            ([3.0, 2.0, 1.0], "Y decreases as X increases"),
+            ([3.0, 3.0, 1.0], "Y does not increase as X increases"),
+            ([2.0, 2.0, 2.0], "Y stays the same as X increases"),
+            ([1.0, 3.0, 2.0], "Y both rises and falls as X increases"),
+        ],
+    )
+    def test_every_direction_is_described(self, ys, expected):
+        pairs = [(str(x), y) for x, y in enumerate(ys, start=1)]
+        note = describe_trend(pairs, "X", "Y")
+        assert note is not None
+        assert note.startswith(expected)
+        assert note.endswith("not a causal relationship.")
+
+    @pytest.mark.parametrize(
+        "pairs",
+        [
+            [("1", 1.0)],  # a single point has no direction
+            [("32", 0.7), ("32", 0.8)],  # the input never changes
+            [("adam", 0.9), ("sgd", 0.8)],  # categorical input has no order
+            [("1", 1.0), ("2", None)],  # only one point has an output
+        ],
+    )
+    def test_no_note_without_a_real_trend(self, pairs):
+        assert describe_trend(pairs, "X", "Y") is None
+
+    def test_points_missing_an_output_are_ignored(self):
+        note = describe_trend([("1", 1.0), ("2", None), ("3", 2.0)], "X", "Y")
+        assert note is not None
+        assert note.startswith("Y increases as X increases")
 
 
 class TestVisualizationEndpointBehavior:
