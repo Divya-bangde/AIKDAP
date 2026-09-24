@@ -96,7 +96,8 @@ Rules:
 - If the evidence does not contain enough information to answer, say so plainly and do not answer anyway.
 - Do not pad the answer with background the evidence does not contain.
 - When the evidence is relevant, use all of it: cover every relevant point, definition, formula, step, and example the evidence contains rather than stopping at a one-line summary.
-- Keep it tight: open with a one-sentence direct answer, then give the supporting points as short bullets or short paragraphs. No filler, no repetition.
+- Open with a one-sentence direct answer, then ALWAYS follow it with the supporting points: one short paragraph or bullet group per paper or subject the question names, stating the specific facts and numbers from the evidence. No filler, no repetition.
+- The answer must state every fact listed in claims; claims never replace the answer text.
 - When the question asks for a brief, short, or simple explanation, answer in 2-4 plain sentences.
 - A section headed "Earlier in this conversation" may precede the question. Use it only to understand what the question refers to; it is not evidence and must never be cited.
 
