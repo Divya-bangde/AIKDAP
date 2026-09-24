@@ -1,0 +1,14 @@
+Model Training Benchmark Notes
+
+Papers published on transformer models per year: 2019: 2890, 2020: 5310, 2021: 8920, 2022: 13400, 2023: 21750.
+
+Validation loss by epoch. Baseline model: epoch 1: 2.41, epoch 2: 1.98, epoch 3: 1.72, epoch 4: 1.55, epoch 5: 1.46.
+Model with warm-up: epoch 1: 2.52, epoch 2: 1.86, epoch 3: 1.54, epoch 4: 1.38, epoch 5: 1.29.
+
+Retrieval accuracy by source mix. Papers only: 0.61. Papers plus web: 0.66. Papers plus web plus knowledge base: 0.72.
+
+Embedding sample points (x, y, z): Vision (2.1, 1.0, 0.2), (1.8, 1.3, -0.1), (2.4, 0.7, 0.3). Language (-2.0, 0.4, 1.6), (-1.7, 0.8, 1.2), (-2.3, 0.2, 1.9).
+
+Loss surface grid (rows y = -1, 0, 1; columns x = -1, 0, 1): [2.3, 1.4, 2.3], [1.6, 1.0, 1.6], [2.3, 1.4, 2.3].
+
+Pipeline: a request passes through authentication, then intent analysis, then the planner, then the LangGraph orchestrator, which dispatches specialized agents that use the tool registry and knowledge layer; the response aggregator combines results, validation checks them, and explainable AI records the trace before the final response.

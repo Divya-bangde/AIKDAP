@@ -1,0 +1,5 @@
+learning_rate,batch_size,expected_accuracy
+0.0001,32,0.71
+0.0005,32,0.78
+0.001,32,0.82
+0.003,32,0.85
