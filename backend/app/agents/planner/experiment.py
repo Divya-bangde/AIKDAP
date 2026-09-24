@@ -733,14 +733,48 @@ def prepare_input_output_series(
                     y_value = None
                 break
         pairs.append((x_value, y_value))
+    return sorted(pairs, key=lambda pair: _numeric_sort_key(pair[0]))
 
-    def _sort_key(pair: tuple[str, float | None]) -> float:
-        try:
-            return float(pair[0])
-        except ValueError:
-            return float("inf")
 
-    return sorted(pairs, key=_sort_key)
+def _numeric_sort_key(value: str) -> float:
+    """Numbers in numeric order; anything non-numeric sorts last."""
+    try:
+        return float(value)
+    except ValueError:
+        return float("inf")
+
+
+def _is_number(value: str) -> bool:
+    return _numeric_sort_key(value) != float("inf")
+
+
+NO_GROUP_VALUE = "(not set)"
+
+
+def group_test_cases(
+    test_cases: list[ExperimentTestCase], group_by: str
+) -> list[tuple[str, list[ExperimentTestCase]]]:
+    """Test cases split by their value for the `group_by` input, ordered
+    numerically when possible. Cases without that input form their own
+    group, so no test case is silently dropped from the chart."""
+    groups: dict[str, list[ExperimentTestCase]] = {}
+    for case in test_cases:
+        groups.setdefault(case.inputs.get(group_by, NO_GROUP_VALUE), []).append(case)
+    return sorted(groups.items(), key=lambda item: _numeric_sort_key(item[0]))
+
+
+def choose_series_kind(pair_lists: list[list[tuple[str, float | None]]]) -> str:
+    """The chart type that reads the data honestly: `scatter` when an
+    input value repeats within a series (a line would zig-zag between
+    the duplicates) or there is nothing to draw, `bar` when the inputs
+    are labels rather than numbers, and `line` otherwise."""
+    xs_per_series = [[x for x, _ in pairs] for pairs in pair_lists]
+    all_xs = [x for xs in xs_per_series for x in xs]
+    if not all_xs or any(len(set(xs)) != len(xs) for xs in xs_per_series):
+        return "scatter"
+    if not all(_is_number(x) for x in all_xs):
+        return "bar"
+    return "line"
 
 
 _NOT_CAUSAL = "This describes a trend in the data shown, not a causal relationship."
@@ -761,10 +795,9 @@ def describe_trend(
     for x, y in pairs:
         if y is None:
             continue
-        try:
-            points.append((float(x), y))
-        except ValueError:
+        if not _is_number(x):
             return None
+        points.append((float(x), y))
     xs = [x for x, _ in points]
     if len(points) < 2 or len(set(xs)) != len(xs):
         return None

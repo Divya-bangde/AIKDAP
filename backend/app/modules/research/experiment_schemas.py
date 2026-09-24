@@ -390,7 +390,7 @@ class VisualizationSeries(BaseModel):
     name: str
     x: list[str]
     y: list[float | None]
-    kind: str = Field(description="'scatter' | 'line' | 'bar' | 'histogram'")
+    kind: str = Field(description="'scatter' | 'line' | 'bar'")
 
 
 class VisualizationData(BaseModel):

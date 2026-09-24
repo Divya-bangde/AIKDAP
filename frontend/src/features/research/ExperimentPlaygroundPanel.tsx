@@ -95,6 +95,7 @@ export function ExperimentPlaygroundPanel({ plan: initialPlan }: { plan: Experim
   const [vizOpen, setVizOpen] = useState(false);
   const [vizInput, setVizInput] = useState(plan.inputs[0]?.name ?? plan.variables[0]?.name ?? "");
   const [vizOutput, setVizOutput] = useState(plan.outputs[0]?.name ?? "");
+  const [vizGroupBy, setVizGroupBy] = useState("");
   const [vizData, setVizData] = useState<VisualizationData | null>(null);
   const [vizLoading, setVizLoading] = useState(false);
 
@@ -179,7 +180,9 @@ export function ExperimentPlaygroundPanel({ plan: initialPlan }: { plan: Experim
     if (!vizInput || !vizOutput) return;
     setVizLoading(true);
     try {
-      const data = await getExperimentVisualization(plan.id, vizInput, vizOutput);
+      // Grouping by the x-axis input itself is meaningless (one point per series).
+      const groupBy = vizGroupBy && vizGroupBy !== vizInput ? vizGroupBy : undefined;
+      const data = await getExperimentVisualization(plan.id, vizInput, vizOutput, groupBy);
       setVizData(data);
     } catch (err: any) {
       setError(err.message || "Could not load visualization.");
@@ -530,7 +533,7 @@ export function ExperimentPlaygroundPanel({ plan: initialPlan }: { plan: Experim
               Test Case Visualization
             </DialogTitle>
           </DialogHeader>
-          <div className="flex gap-3">
+          <div className="grid gap-3 sm:grid-cols-[1fr_1fr_1fr_auto]">
             <div className="flex-1">
               <Label className="text-xs">Input (x-axis)</Label>
               <select
@@ -559,6 +562,26 @@ export function ExperimentPlaygroundPanel({ plan: initialPlan }: { plan: Experim
                     {o.name}
                   </option>
                 ))}
+              </select>
+            </div>
+            <div className="flex-1">
+              <Label htmlFor="viz-group-by" className="text-xs">
+                Compare by
+              </Label>
+              <select
+                id="viz-group-by"
+                className="mt-1 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
+                value={vizGroupBy === vizInput ? "" : vizGroupBy}
+                onChange={(e) => setVizGroupBy(e.target.value)}
+              >
+                <option value="">None</option>
+                {[...plan.inputs.map((i) => i.name), ...plan.variables.map((v) => v.name)]
+                  .filter((name) => name !== vizInput)
+                  .map((name) => (
+                    <option key={name} value={name}>
+                      {name}
+                    </option>
+                  ))}
               </select>
             </div>
             <Button size="sm" className="mt-auto" onClick={handleOpenVisualization} disabled={vizLoading}>

@@ -47,8 +47,10 @@ from app.agents.planner.experiment import (
     analyze_mutability,
     build_variables_from_equation,
     check_all_constraints,
+    choose_series_kind,
     classify_variable_role,
     describe_trend,
+    group_test_cases,
     now_utc,
     parse_equation,
     parse_test_cases,
@@ -495,24 +497,50 @@ class ExperimentPlanService:
     # ------------------------------------------------------------------
 
     async def get_visualization_data(
-        self, owner_id: uuid.UUID, plan_id: uuid.UUID, input_name: str, output_name: str
+        self,
+        owner_id: uuid.UUID,
+        plan_id: uuid.UUID,
+        input_name: str,
+        output_name: str,
+        group_by: str | None = None,
     ) -> VisualizationData:
+        """One series of `output_name` against `input_name`, or one per
+        value of the `group_by` input. The chart type follows the data
+        (see `choose_series_kind`)."""
+        if group_by == input_name:
+            raise ExperimentPlanValidationError("Compare by must be a different input than the x-axis.")
         asset = await self._get_owned_asset(owner_id, plan_id)
         plan = self._plan_from_asset(asset)
 
-        pairs = prepare_input_output_series(plan.test_cases, input_name, output_name)
-        series = VisualizationSeries(
-            name=f"{output_name} vs {input_name}",
-            x=[p[0] for p in pairs],
-            y=[p[1] for p in pairs],
-            kind="scatter",
-        )
+        if group_by:
+            named_pairs = [
+                (f"{group_by} = {value}", prepare_input_output_series(cases, input_name, output_name))
+                for value, cases in group_test_cases(plan.test_cases, group_by)
+            ]
+            # A group whose cases lack the x-axis input has nothing to plot.
+            named_pairs = [(name, pairs) for name, pairs in named_pairs if pairs]
+        else:
+            named_pairs = [
+                (
+                    f"{output_name} vs {input_name}",
+                    prepare_input_output_series(plan.test_cases, input_name, output_name),
+                )
+            ]
+
+        kind = choose_series_kind([pairs for _, pairs in named_pairs])
+        series = [
+            VisualizationSeries(name=name, x=[p[0] for p in pairs], y=[p[1] for p in pairs], kind=kind)
+            for name, pairs in named_pairs
+        ]
+        # One trend note per chart: with several series it would have to
+        # describe each group separately, which the legend already shows.
+        note = describe_trend(named_pairs[0][1], input_name, output_name) if len(named_pairs) == 1 else None
         return VisualizationData(
-            chart_type="scatter",
+            chart_type=kind,
             x_label=input_name,
             y_label=output_name,
-            series=[series],
-            note=describe_trend(pairs, input_name, output_name),
+            series=series,
+            note=note,
         )
 
     # ------------------------------------------------------------------

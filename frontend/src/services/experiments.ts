@@ -74,9 +74,11 @@ export async function importExperimentTestCases(planId: string, file: File) {
 export function getExperimentVisualization(
   planId: string,
   inputName: string,
-  outputName: string
+  outputName: string,
+  groupBy?: string
 ) {
   const params = new URLSearchParams({ input_name: inputName, output_name: outputName });
+  if (groupBy) params.set("group_by", groupBy);
   return request<VisualizationData>(
     `/api/v1/research/experiments/${planId}/visualization?${params.toString()}`
   );

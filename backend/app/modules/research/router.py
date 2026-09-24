@@ -475,13 +475,18 @@ async def get_experiment_visualization_route(
     plan_id: uuid.UUID,
     input_name: str = Query(...),
     output_name: str = Query(...),
+    group_by: str | None = Query(None, description="Another input; draws one series per value of it."),
     current_user: User = Depends(get_current_user),
     service: ExperimentPlanService = Depends(get_experiment_service),
 ) -> VisualizationData:
     """Raw trace data for the frontend to render with Plotly.js (Part
     H/R) -- never a rendered image, never a causal claim."""
     try:
-        return await service.get_visualization_data(current_user.id, plan_id, input_name, output_name)
+        return await service.get_visualization_data(
+            current_user.id, plan_id, input_name, output_name, group_by
+        )
     except ExperimentPlanNotFoundError as exc:
         raise _EXPERIMENT_PLAN_NOT_FOUND from exc
+    except ExperimentPlanValidationError as exc:
+        raise _raise_validation(exc) from exc
 

@@ -6,7 +6,13 @@ server-side, and no causal claim is generated from a mere trend.
 
 import pytest
 
-from app.agents.planner.experiment import describe_trend, prepare_input_output_series
+from app.agents.planner.experiment import (
+    NO_GROUP_VALUE,
+    choose_series_kind,
+    describe_trend,
+    group_test_cases,
+    prepare_input_output_series,
+)
 from app.modules.research.experiment_schemas import (
     ExperimentPlanCreateFromEquation,
     ExperimentOutputValue,
@@ -91,6 +97,33 @@ class TestDescribeTrend:
         assert note.startswith("Y increases as X increases")
 
 
+class TestChooseSeriesKind:
+    @pytest.mark.parametrize(
+        ("pair_lists", "expected"),
+        [
+            ([[("1", 1.0), ("2", 2.0)]], "line"),
+            ([[("adam", 0.9), ("sgd", 0.8)]], "bar"),
+            ([[("32", 0.7), ("32", 0.8)]], "scatter"),  # repeated x within a series
+            ([[("1", 1.0), ("2", 2.0)], [("1", 3.0), ("2", 4.0)]], "line"),  # repeats across series are fine
+            ([[]], "scatter"),  # nothing to draw
+        ],
+    )
+    def test_kind_follows_the_data(self, pair_lists, expected):
+        assert choose_series_kind(pair_lists) == expected
+
+
+class TestGroupTestCases:
+    def test_groups_ordered_numerically_and_missing_values_kept(self):
+        cases = [
+            ExperimentTestCase(id="a", inputs={"X": "1", "B": "64"}, expected_outputs=[]),
+            ExperimentTestCase(id="b", inputs={"X": "1", "B": "8"}, expected_outputs=[]),
+            ExperimentTestCase(id="c", inputs={"X": "1"}, expected_outputs=[]),
+        ]
+        groups = group_test_cases(cases, "B")
+        assert [value for value, _ in groups] == ["8", "64", NO_GROUP_VALUE]
+        assert [c.id for c in groups[2][1]] == ["c"]
+
+
 class TestVisualizationEndpointBehavior:
     @pytest.fixture
     def service(self, session) -> ExperimentPlanService:
@@ -114,7 +147,8 @@ class TestVisualizationEndpointBehavior:
         await service.import_test_cases(project.owner_id, created.id, content, "application/json")
 
         viz = await service.get_visualization_data(project.owner_id, created.id, "X", "Y")
-        assert viz.chart_type == "scatter"
+        assert viz.chart_type == "line"
+        assert viz.series[0].kind == "line"
         assert viz.x_label == "X"
         assert viz.y_label == "Y"
         assert len(viz.series) == 1
@@ -153,3 +187,38 @@ class TestVisualizationEndpointBehavior:
         viz = await service.get_visualization_data(project.owner_id, created.id, "X", "Y")
         assert viz.series[0].x == []
         assert viz.series[0].y == []
+
+    @pytest.mark.asyncio
+    async def test_group_by_draws_one_series_per_value(self, service, project):
+        import json
+
+        created = await service.create_from_equation(
+            project.owner_id,
+            ExperimentPlanCreateFromEquation(
+                project_id=project.id, title="grouped viz", expression="Y = a*X", known_inputs=["X"]
+            ),
+        )
+        content = json.dumps([
+            {"X": "1", "B": "64", "expected_Y": "3.0"},
+            {"X": "2", "B": "64", "expected_Y": "5.0"},
+            {"X": "1", "B": "32", "expected_Y": "2.0"},
+            {"X": "2", "B": "32", "expected_Y": "4.0"},
+        ]).encode()
+        await service.import_test_cases(project.owner_id, created.id, content, "application/json")
+
+        viz = await service.get_visualization_data(project.owner_id, created.id, "X", "Y", group_by="B")
+        assert viz.chart_type == "line"
+        assert [s.name for s in viz.series] == ["B = 32", "B = 64"]
+        assert viz.series[0].y == [2.0, 4.0]
+        assert viz.note is None
+
+    @pytest.mark.asyncio
+    async def test_group_by_the_x_axis_input_is_rejected(self, service, project):
+        from app.modules.research.experiment_service import ExperimentPlanValidationError
+
+        created = await service.create_from_equation(
+            project.owner_id,
+            ExperimentPlanCreateFromEquation(project_id=project.id, title="bad group", expression="Y = a*X"),
+        )
+        with pytest.raises(ExperimentPlanValidationError):
+            await service.get_visualization_data(project.owner_id, created.id, "X", "Y", group_by="X")

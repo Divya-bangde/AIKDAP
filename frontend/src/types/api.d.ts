@@ -3528,7 +3528,7 @@ export interface components {
             y: (number | null)[];
             /**
              * Kind
-             * @description 'scatter' | 'line' | 'bar' | 'histogram'
+             * @description 'scatter' | 'line' | 'bar'
              */
             kind: string;
         };
@@ -5139,6 +5139,8 @@ export interface operations {
             query: {
                 input_name: string;
                 output_name: string;
+                /** @description Another input; draws one series per value of it. */
+                group_by?: string | null;
             };
             header?: never;
             path: {
