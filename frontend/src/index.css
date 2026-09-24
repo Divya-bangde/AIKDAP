@@ -86,6 +86,18 @@
     --destructive: 0 72% 45%;
     --destructive-foreground: 0 0% 100%;
 
+    /* Categorical chart series, in fixed order (Plotly's `colorway`).
+     * Checked for colour-blind separation as a set, so the order matters:
+     * never reorder or cycle it. Hex because only Plotly/canvas read them. */
+    --chart-1: #2a78d6;
+    --chart-2: #eb6834;
+    --chart-3: #1baf7a;
+    --chart-4: #eda100;
+    --chart-5: #e87ba4;
+    --chart-6: #008300;
+    --chart-7: #4a3aa7;
+    --chart-8: #e34948;
+
     --border: 220 16% 90%;
     --border-strong: 220 14% 80%;
     --input: 220 16% 88%;
@@ -163,6 +175,16 @@
 
       --destructive: 0 72% 62%;
       --destructive-foreground: 224 47% 6%;
+
+      /* Same eight hues, stepped for the dark canvas. */
+      --chart-1: #3987e5;
+      --chart-2: #d95926;
+      --chart-3: #199e70;
+      --chart-4: #c98500;
+      --chart-5: #d55181;
+      --chart-6: #008300;
+      --chart-7: #9085e9;
+      --chart-8: #e66767;
 
       --border: 222 24% 16%;
       --border-strong: 222 20% 27%;

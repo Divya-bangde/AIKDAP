@@ -1,6 +1,7 @@
 import Plotly from "plotly.js-dist-min";
 import createPlotlyComponent from "react-plotly.js/factory";
 
+import { themedLayout, usePlotlyTheme } from "@/features/research/plotly-theme";
 import type { VisualizationData } from "@/services/experiments";
 
 // `react-plotly.js`'s default export pulls in the full `plotly.js`
@@ -18,6 +19,7 @@ const Plot = createPlotlyComponent(Plotly);
  * claim, because the backend never generates one.
  */
 export function ExperimentVisualizationChart({ data }: { data: VisualizationData }) {
+  const theme = usePlotlyTheme();
   const series = data.series ?? [];
   const hasAnyPoints = series.some((s) => (s.x?.length ?? 0) > 0);
 
@@ -40,15 +42,13 @@ export function ExperimentVisualizationChart({ data }: { data: VisualizationData
           mode: s.kind === "line" ? "lines+markers" : "markers",
           name: s.name,
         }))}
-        layout={{
+        layout={themedLayout(theme, {
           autosize: true,
           height: 360,
           margin: { t: 20, r: 20, b: 50, l: 60 },
           xaxis: { title: { text: data.x_label } },
           yaxis: { title: { text: data.y_label } },
-          paper_bgcolor: "transparent",
-          plot_bgcolor: "transparent",
-        }}
+        })}
         config={{ displayModeBar: false, responsive: true }}
         style={{ width: "100%" }}
         useResizeHandler

@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import PaperMap, { paperUrl } from "@/features/paper-map/PaperMap";
-import { toCanvasColor } from "@/features/paper-map/graph-colors";
+import { toCanvasColor } from "@/lib/theme-colors";
 import * as papersService from "@/services/papers";
 import { renderWithProviders } from "@/test/render";
 
