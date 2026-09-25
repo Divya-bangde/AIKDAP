@@ -11,6 +11,7 @@ in isolation from the rest of the pipeline.
 """
 
 import io
+from pathlib import Path
 
 import pytest
 
@@ -69,9 +70,9 @@ def _make_text_image(text: str | None, *, size: tuple[int, int] = (900, 200)) ->
 
     img = PILImage.new("RGB", size, color="white")
     if text:
-        font = ImageFont.truetype(
-            "/usr/local/lib/python3.12/site-packages/reportlab/fonts/Vera.ttf", 28
-        )
+        import reportlab
+
+        font = ImageFont.truetype(str(Path(reportlab.__file__).parent / "fonts" / "Vera.ttf"), 28)
         ImageDraw.Draw(img).text((20, 20), text, fill="black", font=font)
     buffer = io.BytesIO()
     img.save(buffer, format="PNG")
@@ -415,6 +416,7 @@ async def test_pdf_empty_bytes_fail_cleanly():
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_tesseract
 async def test_ocr_recovers_readable_text_from_a_scanned_page():
     pdf_bytes = _make_scanned_pdf(["Invoice number 4471, total due $250.00."])
     doc = await PdfExtractor().extract(pdf_bytes)
@@ -424,6 +426,7 @@ async def test_ocr_recovers_readable_text_from_a_scanned_page():
     assert "Invoice number 4471" in doc.units[0].text
 
 
+@pytest.mark.requires_tesseract
 async def test_ocr_multi_page_scanned_document_preserves_page_numbers():
     pdf_bytes = _make_scanned_pdf(
         ["First scanned page content here.", "Second scanned page content here."]
@@ -435,6 +438,7 @@ async def test_ocr_multi_page_scanned_document_preserves_page_numbers():
     assert "Second scanned page" in doc.units[1].text
 
 
+@pytest.mark.requires_tesseract
 async def test_ocr_mixed_native_and_scanned_pages_both_recovered():
     """The Phase 3 diagram's exact case: page 1 native text, page 2
     scanned. Both must appear, correctly attributed."""
@@ -460,6 +464,7 @@ async def test_ocr_mixed_native_and_scanned_pages_both_recovered():
     assert "Scanned page two" in by_page[2].text
 
 
+@pytest.mark.requires_tesseract
 async def test_ocr_unreadable_scanned_page_fails_not_silently_empty():
     """A page that IS an image (unlike the blank/no-image fixtures
     above) but whose image has no recognizable text -- OCR runs,
@@ -484,6 +489,7 @@ async def test_ocr_disabled_reports_ocr_required_not_failed(monkeypatch):
         await PdfExtractor().extract(pdf_bytes)
 
 
+@pytest.mark.requires_tesseract
 async def test_ocr_page_limit_is_respected(monkeypatch):
     """The `ocr_max_pages_per_document` cap must actually bound how
     many pages get OCR'd -- verified by setting it to 2 against a
@@ -512,6 +518,7 @@ async def test_ocr_page_limit_is_respected(monkeypatch):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_tesseract
 @pytest.mark.parametrize("angle", [90, 180, 270])
 async def test_ocr_rotated_scanned_page_recovers_correct_text(angle):
     text = "Invoice number 4471, total due $250.00."
@@ -529,6 +536,7 @@ async def test_ocr_rotated_scanned_page_recovers_correct_text(angle):
     )
 
 
+@pytest.mark.requires_tesseract
 async def test_ocr_normal_orientation_unaffected_by_osd_correction():
     """0 degrees (no rotation needed) must behave exactly as before --
     OSD detecting 'rotate: 0' must be a no-op, not a regression."""
@@ -542,6 +550,7 @@ async def test_ocr_normal_orientation_unaffected_by_osd_correction():
     assert doc.units[0].extraction_method == "ocr"
 
 
+@pytest.mark.requires_tesseract
 async def test_ocr_rotation_correction_applies_only_to_pages_that_need_ocr():
     """Mixed PDF: page 1 native text, page 2 a 90-degree-rotated scan.
     OSD/rotation correction must never touch the native page -- it only
@@ -580,6 +589,7 @@ async def test_ocr_rotation_correction_applies_only_to_pages_that_need_ocr():
     assert text in by_page[2].text
 
 
+@pytest.mark.requires_tesseract
 async def test_ocr_osd_genuinely_inconclusive_on_very_short_text_fails_honestly():
     """A real (not mocked) OSD limitation, discovered while writing
     these tests: Tesseract OSD raises its own 'too few characters'
@@ -599,6 +609,7 @@ async def test_ocr_osd_genuinely_inconclusive_on_very_short_text_fails_honestly(
         await PdfExtractor().extract(pdf_bytes)
 
 
+@pytest.mark.requires_tesseract
 async def test_ocr_osd_failure_falls_back_to_unrotated_ocr(monkeypatch):
     """If OSD itself raises (simulating a Tesseract OSD failure, e.g.
     unreadable/too-few-characters), OCR must still succeed on the
@@ -619,6 +630,7 @@ async def test_ocr_osd_failure_falls_back_to_unrotated_ocr(monkeypatch):
     assert text in doc.units[0].text
 
 
+@pytest.mark.requires_tesseract
 async def test_ocr_osd_low_confidence_suggestion_is_ignored(monkeypatch):
     """A structurally 'successful' but low-confidence OSD read (the
     real random-noise measurement was orientation_conf=0.13) must not
@@ -647,6 +659,7 @@ async def test_ocr_osd_low_confidence_suggestion_is_ignored(monkeypatch):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_tesseract
 async def test_image_extractor_recovers_readable_text():
     png_bytes = _make_text_image("AIKDAP was created in 2026.")
     doc = await ImageExtractor().extract(png_bytes)
@@ -656,6 +669,7 @@ async def test_image_extractor_recovers_readable_text():
     assert "AIKDAP was created in 2026" in doc.units[0].text
 
 
+@pytest.mark.requires_tesseract
 async def test_image_extractor_unreadable_image_fails_cleanly():
     png_bytes = _make_text_image(None)
     with pytest.raises(ExtractionFailedError):
@@ -676,6 +690,7 @@ async def test_image_extractor_ocr_disabled_reports_ocr_required(monkeypatch):
         await ImageExtractor().extract(png_bytes)
 
 
+@pytest.mark.requires_tesseract
 async def test_image_extractor_recovers_readable_text_from_jpeg():
     """JPEG regression (Sprint 12.5 Phase 3): unchanged behavior,
     exercised explicitly rather than only via registry dispatch."""
@@ -740,6 +755,7 @@ async def test_webp_registry_dispatches_to_image_extractor():
     assert isinstance(get_text_extractor("image/webp"), ImageExtractor)
 
 
+@pytest.mark.requires_tesseract
 async def test_static_gif_recovers_readable_text():
     gif_bytes = _make_text_gif("AIKDAP was created in 2026.")
     doc = await get_text_extractor("image/gif").extract(gif_bytes)
@@ -749,6 +765,7 @@ async def test_static_gif_recovers_readable_text():
     assert "AIKDAP was created in 2026" in doc.units[0].text
 
 
+@pytest.mark.requires_tesseract
 async def test_webp_recovers_readable_text():
     webp_bytes = _make_text_webp("AIKDAP was created in 2026.")
     doc = await get_text_extractor("image/webp").extract(webp_bytes)
@@ -758,6 +775,7 @@ async def test_webp_recovers_readable_text():
     assert "AIKDAP was created in 2026" in doc.units[0].text
 
 
+@pytest.mark.requires_tesseract
 async def test_animated_gif_uses_first_frame_only():
     """Documented, tested behavior (Sprint 12.5 Phase 3): an animated
     GIF is OCR'd on its first frame only -- never treated as a

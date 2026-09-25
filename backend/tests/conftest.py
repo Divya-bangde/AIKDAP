@@ -9,6 +9,7 @@ Every fixture cleans up after itself — the user cascade removes the
 project, runs, steps, and messages it created.
 """
 
+import shutil
 import uuid
 from collections.abc import AsyncIterator
 
@@ -27,6 +28,17 @@ from app.modules.projects.models import Project, ProjectStatus, ProjectType
 from app.modules.assets.ai_profile import AIProfile
 from app.modules.assets.enums import AssetProcessingStatus, AssetSource, AssetStatus, AssetType
 from app.modules.assets.models import Asset
+
+
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+    """Skip OCR tests where the tesseract binary is absent (it ships in
+    the backend Docker image, not on every dev machine)."""
+    if shutil.which("tesseract"):
+        return
+    skip = pytest.mark.skip(reason="tesseract OCR binary not on PATH")
+    for item in items:
+        if "requires_tesseract" in item.keywords:
+            item.add_marker(skip)
 
 
 @pytest.fixture(autouse=True)

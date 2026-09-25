@@ -10,6 +10,7 @@ extract -> chunk -> persist, not the AI steps layered on top of it.
 """
 
 import io
+from pathlib import Path
 import uuid
 from typing import Any
 
@@ -153,9 +154,9 @@ def _make_text_image(text: str | None) -> bytes:
 
     img = PILImage.new("RGB", (900, 200), color="white")
     if text:
-        font = ImageFont.truetype(
-            "/usr/local/lib/python3.12/site-packages/reportlab/fonts/Vera.ttf", 28
-        )
+        import reportlab
+
+        font = ImageFont.truetype(str(Path(reportlab.__file__).parent / "fonts" / "Vera.ttf"), 28)
         ImageDraw.Draw(img).text((20, 20), text, fill="black", font=font)
     buffer = io.BytesIO()
     img.save(buffer, format="PNG")
@@ -284,6 +285,7 @@ async def test_content_less_pdf_marks_failed_not_completed(session, project):
     assert chunks == [], "no chunks must be created for a document with zero usable content"
 
 
+@pytest.mark.requires_tesseract
 async def test_scanned_pdf_marks_completed_via_ocr(session, project):
     """Sprint 12.5: a genuinely scanned page (a real embedded image
     with readable text) must now reach COMPLETED, with OCR-recovered
@@ -452,6 +454,7 @@ def _make_rotated_scanned_pdf(text: str, angle: int) -> bytes:
     return buffer.getvalue()
 
 
+@pytest.mark.requires_tesseract
 @pytest.mark.parametrize("angle", [90, 180, 270])
 async def test_rotated_scanned_pdf_marks_completed_with_correct_text(session, project, angle):
     """The real defect Phase 2 found: a 90-/180-degree-rotated scanned
@@ -484,6 +487,7 @@ async def test_rotated_scanned_pdf_marks_completed_with_correct_text(session, pr
     assert text in chunks[0].content, f"rotation={angle}: expected correct text, got {chunks[0].content!r}"
 
 
+@pytest.mark.requires_tesseract
 async def test_gif_marks_completed_via_ocr(session, project):
     from PIL import Image as PILImage
 
@@ -518,6 +522,7 @@ async def test_gif_marks_completed_via_ocr(session, project):
     assert text in chunks[0].content
 
 
+@pytest.mark.requires_tesseract
 async def test_webp_marks_completed_via_ocr(session, project):
     from PIL import Image as PILImage
 
