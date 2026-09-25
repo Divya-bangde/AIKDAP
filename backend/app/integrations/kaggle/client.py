@@ -17,6 +17,12 @@ from app.core.config.settings import settings
 KAGGLE_API = "https://www.kaggle.com/api/v1"
 _SLUG = re.compile(r"^[A-Za-z0-9._-]+$")
 TABULAR_SUFFIXES = (".csv", ".xlsx", ".xls")
+#: Zip containers carry a small fixed overhead (local + central directory
+#: headers) on top of the member's real size; without this slack a
+#: legitimately small zipped file can trip the raw-stream size guard
+#: before it's ever unzipped. The true per-member size is still enforced
+#: strictly, against the actual decompressed bytes, in `_unzip`.
+_ZIP_CONTAINER_SLACK_BYTES = 4096
 
 
 class KaggleError(Exception):
@@ -58,8 +64,11 @@ class KaggleClient:
 
     async def list_files(self, owner: str, dataset: str) -> list[KaggleFile]:
         _check_slug(owner, dataset)
-        async with self._client() as client:
-            response = await client.get(f"/datasets/list/{owner}/{dataset}")
+        try:
+            async with self._client() as client:
+                response = await client.get(f"/datasets/list/{owner}/{dataset}")
+        except httpx.HTTPError as exc:
+            raise KaggleError(f"Could not reach Kaggle ({type(exc).__name__}).") from exc
         if response.status_code != 200:
             raise KaggleError(f"Kaggle returned {response.status_code} listing {owner}/{dataset}.")
         return [
@@ -74,28 +83,33 @@ class KaggleClient:
             raise KaggleError("Only CSV and XLSX files can be imported.")
         buffer = bytearray()
         is_zip: bool | None = None
-        async with self._client() as client:
-            async with client.stream(
-                "GET", f"/datasets/download/{owner}/{dataset}/{quote(file_name, safe='')}"
-            ) as response:
-                if response.status_code != 200:
-                    raise KaggleError(f"Kaggle returned {response.status_code} downloading {file_name}.")
-                async for chunk in response.aiter_bytes():
-                    buffer.extend(chunk)
-                    if is_zip is None and len(buffer) >= 4:
-                        is_zip = bytes(buffer[:4]) == b"PK\x03\x04"
-                    # Zip containers carry a small fixed overhead (local/central
-                    # directory headers) on top of the member's real size, so the
-                    # raw-stream guard needs slack for zips; the true per-member
-                    # size is still enforced strictly by `_unzip` below.
-                    limit = max_bytes + 4096 if is_zip else max_bytes
-                    if len(buffer) > limit:
-                        raise KaggleFileTooLargeError(f"{file_name} is larger than {max_bytes // (1024 * 1024)} MB.")
+        try:
+            async with self._client() as client:
+                async with client.stream(
+                    "GET", f"/datasets/download/{owner}/{dataset}/{quote(file_name, safe='')}"
+                ) as response:
+                    if response.status_code != 200:
+                        raise KaggleError(f"Kaggle returned {response.status_code} downloading {file_name}.")
+                    async for chunk in response.aiter_bytes():
+                        buffer.extend(chunk)
+                        if is_zip is None and len(buffer) >= 4:
+                            is_zip = bytes(buffer[:4]) == b"PK\x03\x04"
+                        limit = max_bytes + _ZIP_CONTAINER_SLACK_BYTES if is_zip else max_bytes
+                        if len(buffer) > limit:
+                            raise KaggleFileTooLargeError(f"{file_name} is larger than {max_bytes // (1024 * 1024)} MB.")
+        except httpx.HTTPError as exc:
+            raise KaggleError(f"Could not reach Kaggle ({type(exc).__name__}).") from exc
         return _unzip(bytes(buffer), file_name, max_bytes)
 
 
 def _unzip(content: bytes, file_name: str, max_bytes: int) -> bytes:
-    """Kaggle serves some single files zipped; return the member itself."""
+    """Kaggle serves some single files zipped; return the member itself.
+
+    Reads via `archive.open()` in chunks and counts the actual
+    decompressed bytes, rather than trusting `ZipInfo.file_size` (a
+    value taken from the archive's own declared metadata, so an
+    attacker-controlled zip bomb could declare a small size while
+    decompressing to something enormous)."""
     if not zipfile.is_zipfile(io.BytesIO(content)):
         return content
     with zipfile.ZipFile(io.BytesIO(content)) as archive:
@@ -103,9 +117,13 @@ def _unzip(content: bytes, file_name: str, max_bytes: int) -> bytes:
         member = next((info for info in archive.infolist() if PurePosixPath(info.filename).name == wanted), None)
         if member is None:
             raise KaggleError(f"{file_name} was not found in Kaggle's archive.")
-        if member.file_size > max_bytes:
-            raise KaggleFileTooLargeError(f"{file_name} is larger than {max_bytes // (1024 * 1024)} MB.")
-        return archive.read(member)
+        decompressed = bytearray()
+        with archive.open(member) as source:
+            while chunk := source.read(64 * 1024):
+                decompressed.extend(chunk)
+                if len(decompressed) > max_bytes:
+                    raise KaggleFileTooLargeError(f"{file_name} is larger than {max_bytes // (1024 * 1024)} MB.")
+        return bytes(decompressed)
 
 
 def get_kaggle_client() -> KaggleClient:

@@ -67,3 +67,36 @@ async def test_http_error_raises_kaggle_error():
 async def test_rejects_bad_slug():
     with pytest.raises(KaggleError):
         await client(lambda r: httpx.Response(200)).list_files("../etc", "x")
+
+
+async def test_transport_error_raises_kaggle_error():
+    def handler(request):
+        raise httpx.ConnectError("boom", request=request)
+
+    with pytest.raises(KaggleError):
+        await client(handler).list_files("acme", "sales")
+
+
+async def test_transport_error_during_download_raises_kaggle_error():
+    def handler(request):
+        raise httpx.ConnectError("boom", request=request)
+
+    with pytest.raises(KaggleError):
+        await client(handler).download_file("acme", "sales", "sales.csv", max_bytes=100)
+
+
+async def test_zip_bomb_aborts_on_actual_decompressed_size():
+    max_bytes = 1000
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("sales.csv", "0" * (max_bytes + 1))
+    zip_bytes = buffer.getvalue()
+    # The declared size is huge but highly compressible, so the zip container
+    # itself is small (well under max_bytes) -- only decompressing it reveals
+    # it exceeds the limit.
+    assert len(zip_bytes) < max_bytes
+
+    with pytest.raises(KaggleFileTooLargeError):
+        await client(lambda r: httpx.Response(200, content=zip_bytes)).download_file(
+            "acme", "sales", "sales.csv", max_bytes=max_bytes
+        )
