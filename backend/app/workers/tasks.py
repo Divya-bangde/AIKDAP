@@ -1016,10 +1016,17 @@ async def _run_analysis(asset_id: uuid.UUID) -> dict[str, str]:
             return {"status": "skipped", "asset_id": str(asset_id)}
 
         asset = await assets.get_by_id(asset_id)
-        analysis = dict(asset.asset_metadata.get("analysis") or {})
-        dataset = await assets.get_by_id(uuid.UUID(analysis["dataset_id"]))
+        if asset is None:
+            logger.error("analysis_asset_missing", asset_id=str(asset_id))
+            return {"status": "asset_missing", "asset_id": str(asset_id)}
+
         tracker: ReportStepTracker | None = None
         try:
+            # Moved inside `try`: malformed/missing `asset_metadata["analysis"]`
+            # (KeyError) or a missing dataset must take the failure path
+            # below, not escape and leave the asset stuck at RUNNING.
+            analysis = dict(asset.asset_metadata.get("analysis") or {})
+            dataset = await assets.get_by_id(uuid.UUID(analysis["dataset_id"]))
             if dataset is None:
                 raise LookupError("The dataset no longer exists.")
             attempt = await ResearchStepRepository(session).latest_attempt(asset_id) + 1

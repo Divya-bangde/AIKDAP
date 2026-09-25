@@ -178,3 +178,47 @@ async def test_run_analysis_fails_with_scrubbed_error_and_skipped_steps(session,
     steps = await ResearchStepRepository(session).list_by_asset(analysis.id)
     statuses = {step.node_name: step.status.value for step in steps}
     assert "skipped" in statuses.values()
+
+
+@pytest.mark.asyncio
+async def test_run_analysis_with_malformed_metadata_fails_instead_of_staying_running(
+    session, project, monkeypatch, tmp_path
+):
+    """Fix round 1: `asset_metadata["analysis"]` missing `dataset_id`
+    (KeyError) must take the failure path, not escape `_run_analysis`
+    and leave the asset stuck at RUNNING."""
+    storage = LocalStorageProvider(base_dir=Path(tmp_path))
+    monkeypatch.setattr("app.agents.analytics.nodes.get_storage_provider", lambda: storage)
+    monkeypatch.setattr("app.agents.analytics.nodes.get_llm_gateway", lambda: ScriptedGateway())
+
+    asset = Asset(
+        project_id=project.id,
+        owner_id=project.owner_id,
+        title="Broken analysis",
+        description=None,
+        asset_type=AssetType.CHART,
+        status=AssetStatus.ACTIVE,
+        mime_type="application/json",
+        file_name="analysis.json",
+        file_extension="json",
+        file_size=0,
+        storage_path="",
+        checksum="",
+        source=AssetSource.GENERATED,
+        version=1,
+        tags=["analysis"],
+        asset_metadata={"analysis": {"question": "Revenue by region?"}},  # no dataset_id
+        ai_profile=AIProfile().model_dump(mode="json"),
+        created_by=project.owner_id,
+        processing_status=AssetProcessingStatus.PENDING,
+    )
+    session.add(asset)
+    await session.commit()
+    await session.refresh(asset)
+
+    result = await tasks_module._run_analysis(asset.id)
+
+    assert result["status"] == "ok"
+    await session.refresh(asset)
+    assert asset.processing_status is AssetProcessingStatus.FAILED
+    assert asset.processing_error is not None
