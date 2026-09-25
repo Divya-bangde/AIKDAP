@@ -198,6 +198,7 @@ async def _run(job, attempt, project, spec) -> tuple:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t1_normal_success_still_works(session, project, docker_client):
     job, attempt = await _make_job_and_attempt(session, project)
@@ -223,6 +224,7 @@ async def test_t1_normal_success_still_works(session, project, docker_client):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t2_normal_failure_still_works(session, project, docker_client):
     job, attempt = await _make_job_and_attempt(session, project)
@@ -248,6 +250,7 @@ async def test_t2_normal_failure_still_works(session, project, docker_client):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t3_timeout_terminates_and_persists_timed_out(session, project, docker_client):
     job, attempt = await _make_job_and_attempt(session, project)
@@ -274,6 +277,7 @@ async def test_t3_timeout_terminates_and_persists_timed_out(session, project, do
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t4_timeout_output_still_collectible(session, project, docker_client):
     job, attempt = await _make_job_and_attempt(session, project)
@@ -318,6 +322,7 @@ async def test_t5_timeout_cleanup_idempotent(session, project, docker_client):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t6_cancellation_while_running(project, docker_client):
     async with async_session_factory() as setup_session:
@@ -352,6 +357,7 @@ async def test_t6_cancellation_while_running(project, docker_client):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t7_cancellation_near_natural_completion_no_corruption(project, docker_client):
     async with async_session_factory() as setup_session:
@@ -387,6 +393,7 @@ async def test_t7_cancellation_near_natural_completion_no_corruption(project, do
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t8_cancellation_after_completion_is_a_no_op(session, project, docker_client):
     job, attempt = await _make_job_and_attempt(session, project)
@@ -412,6 +419,7 @@ async def test_t8_cancellation_after_completion_is_a_no_op(session, project, doc
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t9_two_simultaneous_cancellation_requests(project, docker_client):
     async with async_session_factory() as setup_session:
@@ -445,6 +453,7 @@ async def test_t9_two_simultaneous_cancellation_requests(project, docker_client)
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t10_timeout_and_cancellation_race_exactly_one_outcome(project, docker_client):
     async with async_session_factory() as setup_session:
@@ -503,6 +512,7 @@ async def test_t11_repeated_terminate_remove_handled_safely(session, project, do
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t12_daemon_failure_during_termination_bounded_diagnostic(session, project, docker_client):
     job, attempt = await _make_job_and_attempt(session, project)
@@ -537,6 +547,7 @@ async def test_t12_daemon_failure_during_termination_bounded_diagnostic(session,
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t13_security_posture_unchanged_under_bounded_wait(session, project, docker_client):
     job, attempt = await _make_job_and_attempt(session, project)
@@ -566,6 +577,7 @@ async def test_t13_security_posture_unchanged_under_bounded_wait(session, projec
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 def test_t14_real_front_door_still_produces_14():
     async def _setup():
         async with async_session_factory() as setup_session:

@@ -224,6 +224,7 @@ async def _mark_running(session, job: ExecutionJob, attempt: ExecutionAttempt, c
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t1_created_attempt_container_created_recovered_as_abandoned(session, project, docker_client):
     job, attempt = await _make_job_and_attempt(session, project)
@@ -254,6 +255,7 @@ async def test_t1_created_attempt_container_created_recovered_as_abandoned(sessi
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t2_running_attempt_container_running_recovers_naturally(session, project, docker_client):
     job, attempt = await _make_job_and_attempt(session, project)
@@ -283,6 +285,7 @@ async def test_t2_running_attempt_container_running_recovers_naturally(session, 
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t3_running_attempt_container_already_exited_zero(session, project, docker_client):
     job, attempt = await _make_job_and_attempt(session, project)
@@ -311,6 +314,7 @@ async def test_t3_running_attempt_container_already_exited_zero(session, project
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t4_running_attempt_container_already_exited_nonzero(session, project, docker_client):
     job, attempt = await _make_job_and_attempt(session, project)
@@ -384,6 +388,7 @@ async def test_t6_created_attempt_container_missing_marked_unknown(session, proj
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t7_exited_attempt_leftover_container_cleaned_up_only(session, project, docker_client):
     job, attempt = await _make_job_and_attempt(session, project)
@@ -425,6 +430,7 @@ async def test_t7_exited_attempt_leftover_container_cleaned_up_only(session, pro
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t8_exited_attempt_container_already_gone_noop(session, project):
     job, attempt = await _make_job_and_attempt(session, project)
@@ -452,6 +458,7 @@ async def test_t8_exited_attempt_container_already_gone_noop(session, project):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t9_two_concurrent_reconcilers_one_terminal_outcome(session, project, docker_client):
     job, attempt = await _make_job_and_attempt(session, project)
@@ -479,6 +486,7 @@ async def test_t9_two_concurrent_reconcilers_one_terminal_outcome(session, proje
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t10_launcher_and_reconciler_race_one_terminal_outcome(session, project, docker_client):
     job, attempt = await _make_job_and_attempt(session, project)
@@ -520,6 +528,7 @@ async def test_t10_launcher_and_reconciler_race_one_terminal_outcome(session, pr
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t11_container_removed_between_get_and_inspect(session, project, docker_client):
     job, attempt = await _make_job_and_attempt(session, project)
@@ -569,6 +578,7 @@ async def _finalized_attempt_with_leftover_container(session, project, docker_cl
     return job, attempt, leftover
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t12_succeeded_job_leftover_container_cleaned_up(session, project, docker_client):
     job, attempt, leftover = await _finalized_attempt_with_leftover_container(
@@ -581,6 +591,7 @@ async def test_t12_succeeded_job_leftover_container_cleaned_up(session, project,
     _assert_container_gone(docker_client, attempt.container_name)
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t13_cancelled_job_leftover_container_cleaned_up(session, project, docker_client):
     job, attempt, leftover = await _finalized_attempt_with_leftover_container(
@@ -593,6 +604,7 @@ async def test_t13_cancelled_job_leftover_container_cleaned_up(session, project,
     _assert_container_gone(docker_client, attempt.container_name)
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t14_timed_out_job_leftover_container_cleaned_up(session, project, docker_client):
     job, attempt, leftover = await _finalized_attempt_with_leftover_container(
@@ -610,6 +622,7 @@ async def test_t14_timed_out_job_leftover_container_cleaned_up(session, project,
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t15_repeated_reconciliation_idempotent(session, project, docker_client):
     job, attempt = await _make_job_and_attempt(session, project)
@@ -638,6 +651,7 @@ async def test_t15_repeated_reconciliation_idempotent(session, project, docker_c
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t17_cleanup_of_already_removed_container_is_safe(session, project):
     job, attempt = await _make_job_and_attempt(session, project)
@@ -664,6 +678,7 @@ async def test_t17_cleanup_of_already_removed_container_is_safe(session, project
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t18_cleanup_failure_preserves_recovered_result(session, project, docker_client):
     job, attempt = await _make_job_and_attempt(session, project)
@@ -721,6 +736,7 @@ async def test_t19_daemon_unreachable_preserves_state_no_false_write(session, pr
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 def test_t20_real_front_door_crash_and_reconcile_recovers_14(docker_client):
     async def _setup():
         async with async_session_factory() as setup_session:

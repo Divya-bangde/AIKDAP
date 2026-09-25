@@ -227,6 +227,7 @@ async def test_t4_guard_rejects_non_approved_digest():
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("aikdap-exec-class-expr")
 @pytest.mark.asyncio
 async def test_t5_through_t14_real_launch_of_the_real_image(session, project, docker_client):
     job, attempt = await _make_job_and_attempt(session, project)
@@ -279,6 +280,7 @@ async def test_t5_through_t14_real_launch_of_the_real_image(session, project, do
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("aikdap-exec-class-expr")
 @pytest.mark.asyncio
 async def test_t14_security_posture_on_real_container(session, project, docker_client):
     job, attempt = await _make_job_and_attempt(session, project)

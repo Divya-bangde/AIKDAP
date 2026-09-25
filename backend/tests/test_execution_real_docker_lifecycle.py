@@ -217,6 +217,7 @@ def _assert_container_gone(docker_client, name: str) -> None:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t1_successful_execution_full_lifecycle(session, project, docker_client):
     job, attempt = await _make_job_and_attempt(session, project)
@@ -261,6 +262,7 @@ async def test_t1_successful_execution_full_lifecycle(session, project, docker_c
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t2_nonzero_exit_classified_as_failed(session, project, docker_client):
     job, attempt = await _make_job_and_attempt(session, project)
@@ -330,6 +332,7 @@ async def test_t3_image_not_found_no_phantom_state(session, project):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t4_name_collision_existing_container_unaffected(session, project, docker_client):
     job, attempt = await _make_job_and_attempt(session, project)
@@ -372,6 +375,7 @@ async def test_t4_name_collision_existing_container_unaffected(session, project,
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t5_start_failure_container_id_durable_status_accurate(session, project, docker_client):
     job, attempt = await _make_job_and_attempt(session, project)
@@ -410,6 +414,7 @@ async def test_t5_start_failure_container_id_durable_status_accurate(session, pr
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 def test_t6_crash_between_create_and_start_observable_by_separate_process(monkeypatch):
     import os
     import subprocess
@@ -493,6 +498,7 @@ async def _teardown_project(project: Project) -> None:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 def test_t7_crash_between_start_and_wait_container_continues_independently():
     import os
     import subprocess
@@ -564,6 +570,7 @@ def test_t7_crash_between_start_and_wait_container_continues_independently():
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t8_repeated_cleanup_idempotent(session, project, docker_client):
     job, attempt = await _make_job_and_attempt(session, project)
@@ -584,6 +591,7 @@ async def test_t8_repeated_cleanup_idempotent(session, project, docker_client):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 @pytest.mark.asyncio
 async def test_t9_output_exceeding_bound_is_truncated(session, project, docker_client):
     job, attempt = await _make_job_and_attempt(session, project)
@@ -618,6 +626,7 @@ async def test_t9_output_exceeding_bound_is_truncated(session, project, docker_c
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("alpine:3.19")
 def test_t10_security_and_resource_posture_confirmed_by_real_inspect(docker_client):
     fake_job_id = uuid.uuid4()
     spec = ApprovedLaunchSpec(

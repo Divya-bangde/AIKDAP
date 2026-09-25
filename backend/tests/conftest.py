@@ -16,13 +16,21 @@ from collections.abc import AsyncIterator
 import pytest
 import pytest_asyncio
 
+# Tests mix async tests (one fresh loop each) with sync tests that drive
+# Celery tasks through their own `asyncio.run()`, exactly like the worker.
+# Use the worker's NullPool engine so no connection outlives its loop.
+# Must run before anything below imports `async_session_factory` by name.
+from app.database.session import configure_for_worker_process
+
+configure_for_worker_process()
+
 # Registers every ORM model on `Base.metadata`. Without it the test
 # process cannot resolve the users/projects foreign keys, exactly as a
 # worker process could not.
 import app.workers.celery_app  # noqa: F401
 from app.core.config import settings
 from app.core.llm.provider_health import get_provider_health_registry
-from app.database.session import async_session_factory, engine
+from app.database.session import async_session_factory
 from app.modules.auth.models import User
 from app.modules.projects.models import Project, ProjectStatus, ProjectType
 from app.modules.assets.ai_profile import AIProfile
@@ -30,15 +38,43 @@ from app.modules.assets.enums import AssetProcessingStatus, AssetSource, AssetSt
 from app.modules.assets.models import Asset
 
 
+def _local_docker_images() -> set[str] | None:
+    """Every `repo` and `repo:tag` present locally, or None when the
+    Docker daemon is unreachable."""
+    try:
+        import docker
+
+        images = docker.from_env().images.list()
+    except Exception:
+        return None
+    names: set[str] = set()
+    for image in images:
+        for tag in image.tags:
+            names.update((tag, tag.rsplit(":", 1)[0]))
+        names.update(digest.split("@", 1)[0] for digest in image.attrs.get("RepoDigests", []))
+    return names
+
+
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
-    """Skip OCR tests where the tesseract binary is absent (it ships in
-    the backend Docker image, not on every dev machine)."""
-    if shutil.which("tesseract"):
+    """Skip tests whose external dependency is absent on this machine:
+    the tesseract binary (ships in the backend Docker image) and the
+    images real-container execution tests launch."""
+    if not shutil.which("tesseract"):
+        skip = pytest.mark.skip(reason="tesseract OCR binary not on PATH")
+        for item in items:
+            if "requires_tesseract" in item.keywords:
+                item.add_marker(skip)
+
+    image_tests = [item for item in items if item.get_closest_marker("requires_docker_image")]
+    if not image_tests:
         return
-    skip = pytest.mark.skip(reason="tesseract OCR binary not on PATH")
-    for item in items:
-        if "requires_tesseract" in item.keywords:
-            item.add_marker(skip)
+    available = _local_docker_images()
+    for item in image_tests:
+        image = item.get_closest_marker("requires_docker_image").args[0]
+        if available is None:
+            item.add_marker(pytest.mark.skip(reason="Docker daemon unreachable"))
+        elif image not in available:
+            item.add_marker(pytest.mark.skip(reason=f"Docker image {image} not present locally"))
 
 
 @pytest.fixture(autouse=True)
@@ -74,17 +110,6 @@ def instant_retries(monkeypatch):
     """
     monkeypatch.setattr(settings, "llm_retry_base_delay", 0.0)
     monkeypatch.setattr(settings, "llm_retry_max_delay", 0.0)
-
-
-@pytest_asyncio.fixture(autouse=True)
-async def _dispose_engine_between_loops() -> AsyncIterator[None]:
-    """`app.database.session.engine` is module-level, so its asyncpg pool
-    binds to whichever event loop first used it. Every async test gets a
-    fresh function-scoped loop (pytest.ini), so the pool is disposed after
-    each test; the next test reconnects on its own loop instead of
-    reusing connections attached to a closed one."""
-    yield
-    await engine.dispose()
 
 
 @pytest_asyncio.fixture

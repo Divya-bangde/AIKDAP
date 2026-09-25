@@ -242,6 +242,7 @@ def test_t3_unrelated_parameters_do_not_leak():
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("aikdap-exec-class-expr")
 @pytest.mark.asyncio
 async def test_t4_invalid_expression_is_a_normal_dispatcher_result(session, project, docker_client):
     job, attempt = await _make_job_and_attempt(session, project, expression="2 +++ * (")
@@ -277,6 +278,7 @@ async def test_t4_invalid_expression_is_a_normal_dispatcher_result(session, proj
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("aikdap-exec-class-expr")
 @pytest.mark.asyncio
 async def test_t5_t6_real_docker_direct_verification(docker_client):
     resolver = StaticInputResolver()
@@ -303,6 +305,7 @@ async def test_t5_t6_real_docker_direct_verification(docker_client):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("aikdap-exec-class-expr")
 def test_t7_t8_real_front_door_produces_14():
     """Plain `def`, not `async def` -- `launch_execution_job`'s body
     calls `asyncio.run()` internally (established pattern, see
@@ -371,6 +374,7 @@ def test_t7_t8_real_front_door_produces_14():
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("aikdap-exec-class-expr")
 @pytest.mark.asyncio
 async def test_t9_absent_channel_preserves_original_empty_stdin_semantics(session, project, docker_client):
     job, attempt = await _make_job_and_attempt(session, project)
@@ -417,6 +421,7 @@ async def test_t9_absent_channel_preserves_original_empty_stdin_semantics(sessio
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_docker_image("aikdap-exec-class-expr")
 @pytest.mark.asyncio
 async def test_t10_security_posture_unchanged_under_new_transport(docker_client):
     resolver = StaticInputResolver()
