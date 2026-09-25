@@ -326,7 +326,7 @@ def test_research_pipeline_never_imports_a_provider_sdk():
 def test_litellm_is_imported_only_by_the_gateway():
     """The containment claim in `app.core.llm` must actually hold."""
     importers = {
-        str(path.relative_to(BACKEND_ROOT))
+        path.relative_to(BACKEND_ROOT).as_posix()
         for path in (BACKEND_ROOT / "app").rglob("*.py")
         if "litellm" in imported_roots(path)
     }
