@@ -165,8 +165,9 @@ async def test_the_fallback_gets_the_same_structured_output_contract(
 
     await synthesize(citations_from(EVIDENCE))
 
-    for request in call.await_args_list:
-        assert request.kwargs["response_format"] == {"type": "json_object"}
+    formats = [request.kwargs["response_format"] for request in call.await_args_list]
+    assert formats[0]["type"] == "json_schema"
+    assert all(fmt == formats[0] for fmt in formats)
 
 
 @pytest.mark.asyncio
@@ -414,7 +415,7 @@ async def test_openrouter_receives_the_same_evidence_as_gemini(
 
     assert prompt_of(call, 0) == prompt_of(call, 4)
     assert call.await_args_list[4].kwargs["model"] == OPENROUTER
-    assert call.await_args_list[4].kwargs["response_format"] == {"type": "json_object"}
+    assert call.await_args_list[4].kwargs["response_format"] == call.await_args_list[0].kwargs["response_format"]
 
 
 @pytest.mark.asyncio
