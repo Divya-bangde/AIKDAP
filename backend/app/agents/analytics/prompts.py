@@ -20,7 +20,7 @@ Return JSON only."""
 
 EXPLAIN_SYSTEM_PROMPT = """You explain the result of a data analysis to a business user in at most 120 words.
 Use ONLY numbers that appear in the result table; round sensibly. Lead with the direct answer.
-Mention if the result is truncated. Plain text, no markdown headings."""
+If the prompt says Truncated: yes, say so briefly; otherwise never mention truncation. Plain text, no markdown headings."""
 
 
 def render_plan_prompt(*, question: str, profile: DatasetProfile, history: list[HistoryItem], errors: list[str] | None = None) -> str:
@@ -34,7 +34,11 @@ def render_plan_prompt(*, question: str, profile: DatasetProfile, history: list[
     return "\n\n".join(parts)
 
 
-def render_explain_prompt(*, question: str, result: dict[str, Any]) -> str:
+def render_explain_prompt(*, question: str, result: dict[str, Any], profile_truncated: bool) -> str:
     shown = result["rows"][:50]
-    note = f" (showing {len(shown)} of {result['total_rows']} rows)" if result["total_rows"] > len(shown) else ""
-    return f"Question: {question}\n\nResult table{note}:\n{json.dumps(shown)}"
+    rows_hidden = result["total_rows"] > len(shown)
+    note = f" (showing {len(shown)} of {result['total_rows']} rows)" if rows_hidden else ""
+    truncated = profile_truncated or rows_hidden
+    reason = "dataset row cap at load" if profile_truncated else "result rows beyond those shown" if rows_hidden else None
+    truncation_line = f"Truncated: yes ({reason})" if truncated else "Truncated: no"
+    return f"Question: {question}\n\nResult table{note}:\n{json.dumps(shown)}\n\n{truncation_line}"

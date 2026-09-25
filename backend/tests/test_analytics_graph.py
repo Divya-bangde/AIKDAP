@@ -51,6 +51,18 @@ async def test_happy_path():
     assert state["narrative"].startswith("East leads")
     assert state["unverified_numbers"] == []
     assert state["profile"]["row_count"] == 3
+    assert "Truncated: no" in gateway.calls[1]["prompt"]
+
+
+@pytest.mark.asyncio
+async def test_truncated_dataset_notes_it_in_explain_prompt(monkeypatch):
+    import app.agents.analytics.nodes as nodes_module
+
+    monkeypatch.setattr(nodes_module.settings, "analytics_max_rows", 2)
+    gateway = ScriptedGateway(json.dumps(GOOD_PLAN), "East leads.")
+    state = await run(gateway)
+    assert state["profile"]["truncated"] is True
+    assert "Truncated: yes" in gateway.calls[1]["prompt"]
 
 
 @pytest.mark.asyncio

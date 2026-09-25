@@ -115,7 +115,9 @@ async def explain_node(state: AnalyticsState, config: RunnableConfig) -> dict[st
     if reason:
         return {"narrative": reason, "step": {"summary": "Explained why the question cannot be answered."}}
     response = await _dependencies(config).llm_gateway.generate(
-        prompt=render_explain_prompt(question=state["question"], result=state["result"]),
+        prompt=render_explain_prompt(
+            question=state["question"], result=state["result"], profile_truncated=state["profile"]["truncated"]
+        ),
         system_prompt=EXPLAIN_SYSTEM_PROMPT,
         model=settings.synthesis_model,
     )
