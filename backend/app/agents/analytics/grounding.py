@@ -49,6 +49,11 @@ def find_unverified_numbers(narrative: str, rows: list[dict[str, Any]]) -> list[
         # extracted from a date-like label) are not falsely flagged either.
         if number.is_integer() and 0 <= abs(number) <= _SMALL_INT_MAX and not token.endswith("%"):
             continue
-        if not _matches(number, known) and token not in flagged:
+        # A "%" token may state either the raw number ("79" from a fraction
+        # already expressed as a whole-number percent) or the fraction itself
+        # (0.79) -- accept either. `_parse`'s suffix handling above (rstrip("%"))
+        # is what makes `number` the whole-number reading here.
+        matches = _matches(number, known) or (token.endswith("%") and _matches(number / 100, known))
+        if not matches and token not in flagged:
             flagged.append(token)
     return flagged

@@ -23,3 +23,11 @@ def test_small_counting_words_ignored():
 def test_numbers_inside_labels_count():
     rows = [{"date": "2024-01", "rev": 5.0}]
     assert find_unverified_numbers("In 2024-01 revenue was 5.", rows) == []
+
+
+def test_percent_matches_fraction_form():
+    assert find_unverified_numbers("about 79%", [{"acc": 0.79}]) == []
+
+
+def test_percent_mismatch_still_flagged():
+    assert find_unverified_numbers("12%", [{"acc": 0.5}]) == ["12%"]
