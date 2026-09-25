@@ -110,7 +110,7 @@ export function AnswerBody({
           return (
             <p
               key={index}
-              className="mt-2 text-label uppercase text-muted-foreground first:mt-0"
+              className="mt-4 text-base font-semibold text-foreground first:mt-0"
             >
               {inlineNodes(heading[2], byId, onSelect)}
             </p>
