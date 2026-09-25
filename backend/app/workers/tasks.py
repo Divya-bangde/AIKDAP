@@ -1049,7 +1049,11 @@ async def _run_analysis(asset_id: uuid.UUID) -> dict[str, str]:
                 },
                 config={"configurable": {"dependencies": build_analytics_dependencies(), TRACKER_CONFIG_KEY: tracker}},
             )
-            dataset.asset_metadata = {**dataset.asset_metadata, "profile": state["profile"]}
+            # `get_profile` treats `dataset.asset_metadata["profile"]` as the cache
+            # for the DEFAULT sheet only; writing it for a non-default sheet would
+            # poison later default-sheet lookups.
+            if analysis.get("sheet") is None:
+                dataset.asset_metadata = {**dataset.asset_metadata, "profile": state["profile"]}
             asset.asset_metadata = {
                 **asset.asset_metadata,
                 "analysis": {

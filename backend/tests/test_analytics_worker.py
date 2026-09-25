@@ -89,7 +89,7 @@ async def _make_dataset_asset(session, project, storage: LocalStorageProvider) -
     return asset
 
 
-async def _make_analysis_asset(session, project, *, dataset_id: uuid.UUID) -> Asset:
+async def _make_analysis_asset(session, project, *, dataset_id: uuid.UUID, sheet: str | None = None) -> Asset:
     asset = Asset(
         project_id=project.id,
         owner_id=project.owner_id,
@@ -110,7 +110,7 @@ async def _make_analysis_asset(session, project, *, dataset_id: uuid.UUID) -> As
             "analysis": {
                 "dataset_id": str(dataset_id),
                 "question": "Revenue by region?",
-                "sheet": None,
+                "sheet": sheet,
                 "history": [],
                 "plan": None,
                 "result": None,
@@ -152,6 +152,29 @@ async def test_run_analysis_completes_and_persists_result_and_profile(session, p
 
     steps = await ResearchStepRepository(session).list_by_asset(analysis.id)
     assert len(steps) == 5
+
+
+@pytest.mark.asyncio
+async def test_run_analysis_with_non_default_sheet_does_not_write_dataset_profile_cache(
+    session, project, monkeypatch, tmp_path
+):
+    """R5 item 1: `get_profile` treats `dataset.asset_metadata["profile"]` as the
+    DEFAULT sheet's cached profile. An analysis with `sheet` set must not write it,
+    even though `read_dataframe` ignores `sheet` for CSV -- the cache write is
+    gated on `analysis["sheet"]`, not on whether the sheet actually mattered."""
+    storage = LocalStorageProvider(base_dir=Path(tmp_path))
+    monkeypatch.setattr("app.agents.analytics.nodes.get_storage_provider", lambda: storage)
+    gateway = ScriptedGateway(json.dumps(GOOD_PLAN), "East leads with 300, West has 150.")
+    monkeypatch.setattr("app.agents.analytics.nodes.get_llm_gateway", lambda: gateway)
+
+    dataset = await _make_dataset_asset(session, project, storage)
+    analysis = await _make_analysis_asset(session, project, dataset_id=dataset.id, sheet="Other")
+
+    result = await tasks_module._run_analysis(analysis.id)
+
+    assert result["status"] == "ok"
+    await session.refresh(dataset)
+    assert "profile" not in dataset.asset_metadata
 
 
 @pytest.mark.asyncio
