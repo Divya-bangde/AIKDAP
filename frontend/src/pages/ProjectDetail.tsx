@@ -23,10 +23,17 @@ const TABS = [
   { value: "documents", label: "Documents" },
   { value: "research", label: "Research" },
   { value: "papers", label: "Paper map" },
+  { value: "analytics", label: "Analytics" },
 ];
 
 // The force-graph canvas library loads only when this tab is opened.
 const PaperMap = lazy(() => import("@/features/paper-map/PaperMap"));
+// Plotly and the analytics workspace load only when this tab is opened.
+const AnalyticsWorkspace = lazy(() =>
+  import("@/features/business-analytics/AnalyticsWorkspace").then((m) => ({
+    default: m.AnalyticsWorkspace,
+  })),
+);
 
 /** One real, backend-counted figure about this project's knowledge base. */
 function KnowledgeStat({ label, value, detail }: { label: string; value: number; detail: string }) {
@@ -138,6 +145,14 @@ export function ProjectDetail() {
           {tab === "papers" && (
             <Suspense fallback={<RowListSkeleton label="Loading paper map" />}>
               <PaperMap projectId={project.id} />
+            </Suspense>
+          )}
+        </TabsContent>
+
+        <TabsContent value="analytics">
+          {tab === "analytics" && (
+            <Suspense fallback={<RowListSkeleton label="Loading analytics" />}>
+              <AnalyticsWorkspace projectId={project.id} />
             </Suspense>
           )}
         </TabsContent>

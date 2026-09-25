@@ -1118,6 +1118,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/analytics/datasets/{dataset_id}/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Profile */
+        get: operations["get_profile_api_v1_analytics_datasets__dataset_id__profile_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/datasets/{dataset_id}/analyses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Analyses */
+        get: operations["list_analyses_api_v1_analytics_datasets__dataset_id__analyses_get"];
+        put?: never;
+        /** Create Analysis */
+        post: operations["create_analysis_api_v1_analytics_datasets__dataset_id__analyses_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/analyses/{asset_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Analysis */
+        get: operations["get_analysis_api_v1_analytics_analyses__asset_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/kaggle/{owner}/{dataset}/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Kaggle Files */
+        get: operations["list_kaggle_files_api_v1_analytics_kaggle__owner___dataset__files_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/analytics/kaggle/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Kaggle */
+        post: operations["import_kaggle_api_v1_projects__project_id__analytics_kaggle_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/": {
         parameters: {
             query?: never;
@@ -1250,6 +1336,48 @@ export interface components {
          * @enum {string}
          */
         AgentMessageRole: "system" | "planner" | "router" | "agent" | "tool" | "aggregator";
+        /** AnalysisCreate */
+        AnalysisCreate: {
+            /** Question */
+            question: string;
+            /** Sheet */
+            sheet?: string | null;
+        };
+        /** AnalysisRead */
+        AnalysisRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Dataset Id
+             * Format: uuid
+             */
+            dataset_id: string;
+            /** Question */
+            question: string;
+            status: components["schemas"]["AssetProcessingStatus"];
+            /** Error */
+            error: string | null;
+            /** Plan */
+            plan: {
+                [key: string]: unknown;
+            } | null;
+            /** Result */
+            result: {
+                [key: string]: unknown;
+            } | null;
+            /** Narrative */
+            narrative: string | null;
+            /** Unverified Numbers */
+            unverified_numbers: string[];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** AnalyzeDocumentRequest */
         AnalyzeDocumentRequest: {
             goal: components["schemas"]["ResearchGoal"];
@@ -1458,6 +1586,25 @@ export interface components {
                 [key: string]: unknown;
             }[];
         };
+        /** ColumnProfileRead */
+        ColumnProfileRead: {
+            /** Name */
+            name: string;
+            /** Kind */
+            kind: string;
+            /** Dtype */
+            dtype: string;
+            /** Null Pct */
+            null_pct: number;
+            /** Distinct */
+            distinct: number;
+            /** Min */
+            min?: unknown;
+            /** Max */
+            max?: unknown;
+            /** Samples */
+            samples: unknown[];
+        };
         /** ComparisonItem */
         ComparisonItem: {
             /** Topic */
@@ -1536,6 +1683,15 @@ export interface components {
              * @default Cross-Paper Reducer
              */
             source_provenance: string;
+        };
+        /** DatasetProfileRead */
+        DatasetProfileRead: {
+            /** Row Count */
+            row_count: number;
+            /** Truncated */
+            truncated: boolean;
+            /** Columns */
+            columns: components["schemas"]["ColumnProfileRead"][];
         };
         /**
          * EmbeddingProviderName
@@ -2178,6 +2334,30 @@ export interface components {
          * @enum {string}
          */
         HypothesisStatus: "PROPOSED" | "ACCEPTED" | "REJECTED";
+        /** KaggleFileRead */
+        KaggleFileRead: {
+            /** Name */
+            name: string;
+            /** Size */
+            size: number;
+        };
+        /** KaggleImportAccepted */
+        KaggleImportAccepted: {
+            /**
+             * Status
+             * @default queued
+             */
+            status: string;
+        };
+        /** KaggleImportRequest */
+        KaggleImportRequest: {
+            /** Owner */
+            owner: string;
+            /** Dataset */
+            dataset: string;
+            /** File Name */
+            file_name: string;
+        };
         /**
          * KnowledgeChunkRead
          * @description Public representation of a knowledge chunk.
@@ -5468,6 +5648,203 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReportGenerationAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_profile_api_v1_analytics_datasets__dataset_id__profile_get: {
+        parameters: {
+            query?: {
+                sheet?: string | null;
+            };
+            header?: never;
+            path: {
+                dataset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DatasetProfileRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_analyses_api_v1_analytics_datasets__dataset_id__analyses_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dataset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_analysis_api_v1_analytics_datasets__dataset_id__analyses_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dataset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalysisCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_analysis_api_v1_analytics_analyses__asset_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_kaggle_files_api_v1_analytics_kaggle__owner___dataset__files_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                owner: string;
+                dataset: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KaggleFileRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_kaggle_api_v1_projects__project_id__analytics_kaggle_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KaggleImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KaggleImportAccepted"];
                 };
             };
             /** @description Validation Error */
