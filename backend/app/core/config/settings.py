@@ -195,6 +195,23 @@ class Settings(BaseSettings):
     llm_timeout: float = Field(default=60.0, gt=0)
 
     # ------------------------------------------------------------------
+    # Business analytics (Milestone 6)
+    # ------------------------------------------------------------------
+    analytics_max_file_mb: int = Field(default=50, gt=0)
+    analytics_max_rows: int = Field(default=500_000, gt=0)
+    kaggle_username: str | None = None
+    kaggle_key: SecretStr | None = None
+    kaggle_timeout: float = Field(default=60.0, gt=0)
+
+    @field_validator("kaggle_username", "kaggle_key", mode="before")
+    @classmethod
+    def blank_kaggle_credential_is_unset(cls, value: object) -> object:
+        """A bare `KAGGLE_KEY=` means "not configured" (same rule as Tavily/OpenAlex)."""
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
+
+    # ------------------------------------------------------------------
     # Provider resilience (Sprint 9G)
     #
     # One retry policy, applied in the gateway and nowhere else. Nodes,
