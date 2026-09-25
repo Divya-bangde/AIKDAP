@@ -75,3 +75,13 @@ def test_bounds_enforced_by_schema():
 
 def test_unanswerable_plan_skips_checks():
     assert validate_plan(AnalysisPlan(unanswerable_reason="No cost column."), PROFILE) == []
+
+
+def test_plan_system_prompt_carries_the_plan_schema():
+    """`json_object` mode enforces JSON but not field names; without the
+    schema in the prompt the LLM invents keys (e.g. a metric with no
+    `column`) that Pydantic silently drops."""
+    from app.agents.analytics.prompts import PLAN_SYSTEM_PROMPT
+
+    for field in ('"column"', '"agg"', '"alias"', '"group_by"', '"metrics"'):
+        assert field in PLAN_SYSTEM_PROMPT

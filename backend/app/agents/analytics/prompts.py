@@ -4,9 +4,10 @@ import json
 from typing import Any
 
 from app.agents.analytics.dataset import DatasetProfile
+from app.agents.analytics.plan import AnalysisPlan
 from app.agents.analytics.state import HistoryItem
 
-PLAN_SYSTEM_PROMPT = """You translate a business question about ONE tabular dataset into a JSON analysis plan.
+PLAN_SYSTEM_PROMPT = f"""You translate a business question about ONE tabular dataset into a JSON analysis plan.
 Rules:
 - Use only column names from the dataset profile, spelled exactly.
 - sum/mean/median only on numeric columns. count may omit "column" to count rows.
@@ -15,7 +16,9 @@ Rules:
   sort.by and every chart field must be output columns.
 - Chart: "line" for trends over time, "bar" for comparing categories, "pie" for shares
   (use as_share), "kpi" for a single number, "table" otherwise.
-- If the dataset cannot answer the question, return only {"unanswerable_reason": "<why, one sentence>"}.
+- If the dataset cannot answer the question, return only {{"unanswerable_reason": "<why, one sentence>"}}.
+The plan must match this JSON schema, using exactly these field names:
+{json.dumps(AnalysisPlan.model_json_schema())}
 Return JSON only."""
 
 EXPLAIN_SYSTEM_PROMPT = """You explain the result of a data analysis to a business user in at most 120 words.
