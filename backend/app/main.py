@@ -16,6 +16,7 @@ from app.core.llm.startup_validation import run_startup_validation
 from app.core.logging.logger import configure_logging, get_logger
 from app.modules.assets.router import router as assets_router
 from app.modules.auth.router import router as auth_router
+from app.modules.business_analytics.router import router as analytics_router
 from app.modules.execution.router import router as execution_router
 from app.modules.health.router import router as health_router
 from app.modules.knowledge_base.router import router as knowledge_base_router
@@ -126,6 +127,7 @@ app.include_router(papers_router, prefix=settings.api_v1_prefix)
 app.include_router(research_router, prefix=settings.api_v1_prefix)
 app.include_router(execution_router, prefix=settings.api_v1_prefix)
 app.include_router(reports_router, prefix=settings.api_v1_prefix)
+app.include_router(analytics_router, prefix=settings.api_v1_prefix)
 
 
 @app.get("/", tags=["Root"])
