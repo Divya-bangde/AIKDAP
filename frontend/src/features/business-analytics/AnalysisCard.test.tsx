@@ -61,6 +61,19 @@ describe("AnalysisCard", () => {
     expect(mark).toHaveTextContent("42%");
   });
 
+  it("marks the longer token when a short unverified number is a substring of another", () => {
+    renderWithProviders(
+      <AnalysisCard
+        analysis={makeAnalysis({ narrative: "grew 12% to 12", unverified_numbers: ["12", "12%"] })}
+      />,
+    );
+
+    const marks = screen.getAllByTitle("Not found in the result");
+    expect(marks).toHaveLength(2);
+    expect(marks[0]).toHaveTextContent("12%");
+    expect(marks[1].textContent).toBe("12");
+  });
+
   it("shows the error message when failed", () => {
     renderWithProviders(
       <AnalysisCard analysis={makeAnalysis({ status: "failed", error: "Could not parse question." })} />,

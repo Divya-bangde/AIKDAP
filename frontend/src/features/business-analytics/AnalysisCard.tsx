@@ -34,7 +34,10 @@ function asResult(result: AnalysisRead["result"]): AnalysisResultData | null {
  * rather than trusted the same as everything else in the sentence. */
 function NarrativeText({ narrative, unverified }: { narrative: string; unverified: string[] }) {
   if (unverified.length === 0) return <p className="text-sm">{narrative}</p>;
-  const pattern = new RegExp(`(${unverified.map((token) => token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`, "g");
+  // Longest-first: otherwise a shorter token like "12" matches inside "12%"
+  // before the alternation ever gets to try the longer one.
+  const sorted = [...unverified].sort((a, b) => b.length - a.length);
+  const pattern = new RegExp(`(${sorted.map((token) => token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`, "g");
   const parts = narrative.split(pattern);
   return (
     <p className="text-sm">
