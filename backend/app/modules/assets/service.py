@@ -212,6 +212,48 @@ class AssetService:
         )
         return created
 
+    async def record_failed_import(
+        self,
+        *,
+        owner_id: uuid.UUID,
+        project_id: uuid.UUID,
+        file_name: str,
+        mime_type: str,
+        title: str,
+        asset_type: AssetType,
+        error: str,
+    ) -> Asset:
+        """Record an import that failed before any file was stored, so the
+        user sees the failure and its reason instead of nothing at all."""
+        await self._ensure_project_owned(owner_id, project_id)
+        file_name = sanitize_filename(file_name)
+        asset = Asset(
+            project_id=project_id,
+            owner_id=owner_id,
+            title=title,
+            description=None,
+            asset_type=asset_type,
+            status=AssetStatus.ACTIVE,
+            mime_type=mime_type,
+            file_name=file_name,
+            file_extension=file_name.rsplit(".", 1)[-1].lower() if "." in file_name else "",
+            file_size=0,
+            storage_path="",
+            checksum="",
+            source=AssetSource.IMPORTED,
+            version=1,
+            tags=[],
+            asset_metadata={},
+            ai_profile=AIProfile().model_dump(mode="json"),
+            created_by=owner_id,
+            processing_status=AssetProcessingStatus.FAILED,
+            processing_error=error,
+        )
+        created = await self._repository.create(asset)
+        await self._session.commit()
+        logger.info("asset_import_failed_recorded", asset_id=str(created.id), project_id=str(project_id))
+        return created
+
     async def create_imported_asset(
         self,
         *,
@@ -409,7 +451,10 @@ class AssetService:
         """
         asset = await self.get_owned(current_user_id, asset_id)
 
-        if asset.source is AssetSource.GENERATED:
+        # No stored file (a generated report, or an import that failed
+        # before its download landed): nothing to extract, and the empty
+        # storage path would resolve to the storage root.
+        if asset.source is AssetSource.GENERATED or not asset.storage_path:
             raise GeneratedAssetReprocessError(asset_id)
 
         if not force and await self._already_fully_processed(asset):

@@ -1116,24 +1116,35 @@ async def _import_kaggle_dataset(project_id: uuid.UUID, owner_id: uuid.UUID, own
 
     max_bytes = min(settings.analytics_max_file_mb, settings.max_upload_size_mb) * 1024 * 1024
     base_name = PurePosixPath(file_name).name
+    # Unsupported suffixes are rejected by the client with a readable error.
+    mime_type = _MIME_BY_SUFFIX.get(PurePosixPath(base_name).suffix.lower(), "application/octet-stream")
+    title = f"{owner}/{dataset}: {base_name}"
+
+    async def _record_failure(reason: str) -> dict[str, Any]:
+        logger.warning("kaggle_import_failed", owner=owner, dataset=dataset, reason=reason)
+        async with async_session_factory() as session:
+            await AssetService(session, get_storage_provider()).record_failed_import(
+                owner_id=owner_id, project_id=project_id, file_name=base_name, mime_type=mime_type,
+                title=title, asset_type=AssetType.DATASET, error=reason,
+            )
+        return {"status": "failed", "reason": reason}
+
     try:
         content = await get_kaggle_client().download_file(owner, dataset, file_name, max_bytes=max_bytes)
     except KaggleError as exc:
-        logger.warning("kaggle_import_failed", owner=owner, dataset=dataset, reason=str(exc))
-        return {"status": "failed", "reason": str(exc)}
+        return await _record_failure(str(exc))
 
     async with async_session_factory() as session:
         storage = get_storage_provider()
         try:
             asset = await AssetService(session, storage).create_imported_asset(
                 owner_id=owner_id, project_id=project_id, content=content, file_name=base_name,
-                mime_type=_MIME_BY_SUFFIX[PurePosixPath(base_name).suffix.lower()],
-                title=f"{owner}/{dataset}: {base_name}", asset_type=AssetType.DATASET,
+                mime_type=mime_type, title=title, asset_type=AssetType.DATASET,
             )
         except DuplicateAssetError as exc:
             return {"status": "added", "asset_id": str(exc.existing_asset.id)}
         except AssetValidationError as exc:
-            return {"status": "failed", "reason": str(exc)}
+            return await _record_failure(str(exc))
         await get_asset_processing_service(session, storage).process_asset(asset.id)
     logger.info("kaggle_import_done", asset_id=str(asset.id), owner=owner, dataset=dataset)
     return {"status": "added", "asset_id": str(asset.id)}

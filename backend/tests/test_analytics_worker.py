@@ -235,3 +235,44 @@ async def test_run_analysis_with_malformed_metadata_fails_instead_of_staying_run
     await session.refresh(asset)
     assert asset.processing_status is AssetProcessingStatus.FAILED
     assert asset.processing_error is not None
+
+
+@pytest.mark.asyncio
+async def test_failed_kaggle_import_is_recorded_as_a_failed_dataset_asset(session, project, monkeypatch):
+    """A download failure must be visible to the user, not only in worker
+    logs: the import leaves a FAILED dataset asset carrying the reason."""
+    from sqlalchemy import select
+
+    from app.integrations.kaggle import client as kaggle_client
+
+    class FailingClient:
+        async def download_file(self, *args, **kwargs):
+            raise kaggle_client.KaggleError("Kaggle returned 404 downloading Iris.csv.")
+
+    monkeypatch.setattr(kaggle_client, "get_kaggle_client", lambda: FailingClient())
+
+    result = await tasks_module._import_kaggle_dataset(project.id, project.owner_id, "uciml", "iris", "Iris.csv")
+
+    assert result["status"] == "failed"
+    asset = (await session.execute(select(Asset).where(Asset.project_id == project.id))).scalar_one()
+    assert asset.asset_type is AssetType.DATASET
+    assert asset.processing_status is AssetProcessingStatus.FAILED
+    assert asset.processing_error == "Kaggle returned 404 downloading Iris.csv."
+    assert asset.title == "uciml/iris: Iris.csv"
+    assert asset.storage_path == ""
+
+
+@pytest.mark.asyncio
+async def test_asset_without_stored_file_cannot_be_reprocessed(session, project, tmp_path):
+    """A failed import has no stored file; reprocessing it would read the
+    empty storage path, which resolves to the storage root."""
+    from app.modules.assets.service import AssetService, GeneratedAssetReprocessError
+
+    service = AssetService(session, LocalStorageProvider(base_dir=Path(tmp_path)))
+    asset = await service.record_failed_import(
+        owner_id=project.owner_id, project_id=project.id, file_name="Iris.csv", mime_type="text/csv",
+        title="uciml/iris: Iris.csv", asset_type=AssetType.DATASET, error="boom",
+    )
+
+    with pytest.raises(GeneratedAssetReprocessError):
+        await service.reprocess(project.owner_id, asset.id)

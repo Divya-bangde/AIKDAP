@@ -31,6 +31,7 @@ export function AnalyticsWorkspace({ projectId }: { projectId: string }) {
 
   const datasets = (assetsQuery.data ?? []).filter((asset) => asset.asset_type === "dataset");
   const completedDatasets = datasets.filter((asset) => asset.processing_status === "completed");
+  const failedDatasets = datasets.filter((asset) => asset.processing_status === "failed");
   const selectedId = datasetId ?? completedDatasets[0]?.id ?? null;
 
   const queryClient = useQueryClient();
@@ -87,6 +88,16 @@ export function AnalyticsWorkspace({ projectId }: { projectId: string }) {
         </div>
       )}
 
+      {failedDatasets.length > 0 && (
+        <ul className="flex flex-col gap-1" aria-label="Failed datasets">
+          {failedDatasets.map((asset) => (
+            <li key={asset.id} role="alert" className="text-sm text-destructive">
+              {asset.title} could not be loaded{asset.processing_error ? `: ${asset.processing_error}` : "."}
+            </li>
+          ))}
+        </ul>
+      )}
+
       <KaggleImportDialog
         open={kaggleOpen}
         onOpenChange={setKaggleOpen}
@@ -128,12 +139,9 @@ export function AnalyticsWorkspace({ projectId }: { projectId: string }) {
           </form>
 
           <div className="flex flex-col gap-4">
-            {analyses
-              .slice()
-              .reverse()
-              .map((analysis) => (
-                <AnalysisCard key={analysis.id} analysis={analysis} />
-              ))}
+            {analyses.map((analysis) => (
+              <AnalysisCard key={analysis.id} analysis={analysis} />
+            ))}
           </div>
         </>
       )}
