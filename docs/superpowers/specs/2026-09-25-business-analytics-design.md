@@ -1,6 +1,6 @@
 # Milestone 6 — Business Analytics: Design
 
-Status: Approved 2026-09-25
+Status: Approved 2026-09-25 (revised in planning: step endpoints and Kaggle import reuse existing paths)
 
 ## Goal
 
@@ -82,11 +82,18 @@ min/max (numeric/date), up to 5 sample values. The LLM sees the profile, never r
 | POST | `/analytics/datasets/{dataset_id}/analyses` `{question, sheet?}` | 202, analysis asset queued |
 | GET | `/analytics/datasets/{dataset_id}/analyses` | Thread, oldest first |
 | GET | `/analytics/analyses/{asset_id}` | Full analysis |
-| GET | `/analytics/analyses/{asset_id}/steps`, `/steps/stream-token`, `/steps/stream` | Trace + live SSE |
 | GET | `/analytics/kaggle/{owner}/{dataset}/files` | CSV/XLSX files + sizes |
-| POST | `/projects/{project_id}/analytics/kaggle/import` `{owner, dataset, file_name}` | 202, DATASET asset (IMPORTED) queued |
+| POST | `/projects/{project_id}/analytics/kaggle/import` `{owner, dataset, file_name}` | 202, import queued |
 
 CSV/XLSX uploads without an explicit type become `DATASET`.
+
+Step trace and live stream: the existing `/reports/{asset_id}/steps`,
+`/steps/stream-token` and `/steps/stream` endpoints already serve any owned GENERATED
+asset, so analyses reuse them (no duplicate endpoints).
+
+Kaggle import reuses `AssetService.create_imported_asset(asset_type=DATASET)` and runs
+the processing pipeline inline, exactly like the OpenAlex paper import. The asset
+appears once the download succeeds (no placeholder row).
 
 ## Errors
 
