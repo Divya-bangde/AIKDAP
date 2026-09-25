@@ -1086,3 +1086,50 @@ def _analysis_error(exc: Exception) -> str:
     if isinstance(exc, (AnalysisPlanError, DatasetReadError, LookupError)):
         return str(exc)
     return scrub_report_error(exc)
+
+
+_MIME_BY_SUFFIX = {
+    ".csv": "text/csv",
+    ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ".xls": "application/vnd.ms-excel",
+}
+
+
+@celery_app.task(name="workers.import_kaggle_dataset", bind=True, max_retries=0)
+@log_task_execution
+def import_kaggle_dataset(self, project_id: str, owner_id: str, owner: str, dataset: str, file_name: str) -> dict[str, Any]:
+    """Download one Kaggle file and process it as a DATASET asset, the
+    same path an OpenAlex paper import takes (`add_open_access_paper`)."""
+    return _run_task_loop(_import_kaggle_dataset(uuid.UUID(project_id), uuid.UUID(owner_id), owner, dataset, file_name))
+
+
+async def _import_kaggle_dataset(project_id: uuid.UUID, owner_id: uuid.UUID, owner: str, dataset: str, file_name: str) -> dict[str, Any]:
+    from pathlib import PurePosixPath
+
+    from app.integrations.kaggle.client import KaggleError, get_kaggle_client
+    from app.modules.assets.enums import AssetType
+    from app.modules.assets.service import AssetService, DuplicateAssetError
+
+    max_bytes = min(settings.analytics_max_file_mb, settings.max_upload_size_mb) * 1024 * 1024
+    base_name = PurePosixPath(file_name).name
+    try:
+        content = await get_kaggle_client().download_file(owner, dataset, file_name, max_bytes=max_bytes)
+    except KaggleError as exc:
+        logger.warning("kaggle_import_failed", owner=owner, dataset=dataset, reason=str(exc))
+        return {"status": "failed", "reason": str(exc)}
+
+    async with async_session_factory() as session:
+        storage = get_storage_provider()
+        try:
+            asset = await AssetService(session, storage).create_imported_asset(
+                owner_id=owner_id, project_id=project_id, content=content, file_name=base_name,
+                mime_type=_MIME_BY_SUFFIX[PurePosixPath(base_name).suffix.lower()],
+                title=f"{owner}/{dataset}: {base_name}", asset_type=AssetType.DATASET,
+            )
+        except DuplicateAssetError as exc:
+            return {"status": "added", "asset_id": str(exc.existing_asset.id)}
+        except AssetValidationError as exc:
+            return {"status": "failed", "reason": str(exc)}
+        await get_asset_processing_service(session, storage).process_asset(asset.id)
+    logger.info("kaggle_import_done", asset_id=str(asset.id), owner=owner, dataset=dataset)
+    return {"status": "added", "asset_id": str(asset.id)}

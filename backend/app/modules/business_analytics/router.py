@@ -8,17 +8,27 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.agents.analytics.dataset import DatasetReadError
+from app.integrations.kaggle.client import KaggleError, KaggleNotConfiguredError
 from app.modules.auth.models import User
 from app.modules.auth.security import get_current_user
-from app.modules.business_analytics.schemas import AnalysisCreate, AnalysisRead, DatasetProfileRead
+from app.modules.business_analytics.schemas import (
+    AnalysisCreate,
+    AnalysisRead,
+    DatasetProfileRead,
+    KaggleFileRead,
+    KaggleImportAccepted,
+    KaggleImportRequest,
+)
 from app.modules.business_analytics.service import (
     AnalyticsNotFoundError,
     AnalyticsService,
     DatasetNotReadyError,
+    ProjectAccessDeniedError,
     get_analytics_service,
 )
 
 router = APIRouter(prefix="/analytics", tags=["Business Analytics"])
+project_router = APIRouter(tags=["Business Analytics"])
 
 _NOT_FOUND = HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found.")
 _NOT_READY = HTTPException(
@@ -82,3 +92,36 @@ async def get_analysis(
         return AnalysisRead.from_asset(await service.get_analysis(current_user.id, asset_id))
     except AnalyticsNotFoundError as exc:
         raise _NOT_FOUND from exc
+
+
+def _kaggle_http_error(exc: KaggleError) -> HTTPException:
+    if isinstance(exc, KaggleNotConfiguredError):
+        return HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Kaggle is not configured.")
+    return HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc))
+
+
+@router.get("/kaggle/{owner}/{dataset}/files", response_model=list[KaggleFileRead])
+async def list_kaggle_files(
+    owner: str, dataset: str,
+    current_user: User = Depends(get_current_user),
+    service: AnalyticsService = Depends(get_analytics_service),
+) -> list[KaggleFileRead]:
+    try:
+        return [KaggleFileRead(name=item.name, size=item.size) for item in await service.list_kaggle_files(owner, dataset)]
+    except KaggleError as exc:
+        raise _kaggle_http_error(exc) from exc
+
+
+@project_router.post("/projects/{project_id}/analytics/kaggle/import", response_model=KaggleImportAccepted, status_code=status.HTTP_202_ACCEPTED)
+async def import_kaggle(
+    project_id: uuid.UUID, data: KaggleImportRequest,
+    current_user: User = Depends(get_current_user),
+    service: AnalyticsService = Depends(get_analytics_service),
+) -> KaggleImportAccepted:
+    try:
+        await service.import_from_kaggle(current_user.id, project_id, data)
+    except ProjectAccessDeniedError as exc:
+        raise _NOT_FOUND from exc
+    except KaggleError as exc:
+        raise _kaggle_http_error(exc) from exc
+    return KaggleImportAccepted()

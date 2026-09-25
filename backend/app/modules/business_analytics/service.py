@@ -15,7 +15,10 @@ from app.modules.assets.models import Asset
 from app.modules.assets.repository import AssetRepository
 from app.modules.assets.storage import StorageProvider, get_storage_provider
 from app.modules.business_analytics.repository import ANALYSIS_TAG, AnalysisRepository, dataset_tag
-from app.workers.tasks import run_analysis
+from app.modules.business_analytics.schemas import KaggleImportRequest
+from app.modules.projects.repository import ProjectRepository
+from app.integrations.kaggle.client import KaggleFile, get_kaggle_client
+from app.workers.tasks import import_kaggle_dataset, run_analysis
 
 #: How many earlier completed analyses the planner sees.
 HISTORY_SIZE = 3
@@ -27,6 +30,10 @@ class AnalyticsNotFoundError(Exception):
 
 class DatasetNotReadyError(Exception):
     """The asset is not a dataset, or has not finished processing."""
+
+
+class ProjectAccessDeniedError(Exception):
+    """Project missing or not owned by the caller."""
 
 
 class AnalyticsService:
@@ -115,6 +122,16 @@ class AnalyticsService:
         if ANALYSIS_TAG not in asset.tags:
             raise AnalyticsNotFoundError(asset_id)
         return asset
+
+    async def list_kaggle_files(self, owner: str, dataset: str) -> list[KaggleFile]:
+        return await get_kaggle_client().list_files(owner, dataset)
+
+    async def import_from_kaggle(self, owner_id: uuid.UUID, project_id: uuid.UUID, request: KaggleImportRequest) -> None:
+        project = await ProjectRepository(self._session).get_by_id(project_id)
+        if project is None or project.owner_id != owner_id:
+            raise ProjectAccessDeniedError(project_id)
+        get_kaggle_client()  # fail fast with 503 before queueing
+        import_kaggle_dataset.delay(str(project_id), str(owner_id), request.owner, request.dataset, request.file_name)
 
 
 async def get_analytics_service(session: AsyncSession = Depends(get_db)) -> AnalyticsService:

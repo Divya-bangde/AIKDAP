@@ -11,6 +11,7 @@ from types import SimpleNamespace
 import httpx
 import pytest
 import pytest_asyncio
+from pydantic import SecretStr
 from sqlalchemy import delete
 
 from app.database.session import async_session_factory, engine
@@ -339,5 +340,79 @@ async def test_question_length_validation(enqueued):
 
             assert empty.status_code == 422
             assert too_long.status_code == 422
+        finally:
+            await _cleanup(emails)
+
+
+@pytest.mark.asyncio
+async def test_kaggle_routes_503_when_not_configured(monkeypatch):
+    from app.core.config.settings import settings as analytics_settings
+    monkeypatch.setattr(analytics_settings, "kaggle_username", None)
+    emails: list[str] = []
+    async with _client() as client:
+        try:
+            headers, _ = await _register(client, emails)
+            project_id = await _create_project(client, headers)
+
+            files = await client.get("/api/v1/analytics/kaggle/acme/sales/files", headers=headers)
+            imported = await client.post(
+                f"/api/v1/projects/{project_id}/analytics/kaggle/import",
+                json={"owner": "acme", "dataset": "sales", "file_name": "sales.csv"},
+                headers=headers,
+            )
+
+            assert files.status_code == 503
+            assert imported.status_code == 503
+        finally:
+            await _cleanup(emails)
+
+
+@pytest.mark.asyncio
+async def test_kaggle_import_enqueues_when_configured(monkeypatch):
+    from app.core.config.settings import settings as analytics_settings
+    monkeypatch.setattr(analytics_settings, "kaggle_username", "user")
+    monkeypatch.setattr(analytics_settings, "kaggle_key", SecretStr("key"))
+    calls: list[tuple] = []
+    monkeypatch.setattr(
+        "app.modules.business_analytics.service.import_kaggle_dataset",
+        SimpleNamespace(delay=lambda *args: calls.append(args)),
+    )
+    emails: list[str] = []
+    async with _client() as client:
+        try:
+            headers, _ = await _register(client, emails)
+            project_id = await _create_project(client, headers)
+
+            imported = await client.post(
+                f"/api/v1/projects/{project_id}/analytics/kaggle/import",
+                json={"owner": "acme", "dataset": "sales", "file_name": "sales.csv"},
+                headers=headers,
+            )
+
+            assert imported.status_code == 202
+            assert len(calls) == 1
+        finally:
+            await _cleanup(emails)
+
+
+@pytest.mark.asyncio
+async def test_kaggle_import_other_users_project_is_404(monkeypatch):
+    from app.core.config.settings import settings as analytics_settings
+    monkeypatch.setattr(analytics_settings, "kaggle_username", "user")
+    monkeypatch.setattr(analytics_settings, "kaggle_key", SecretStr("key"))
+    emails: list[str] = []
+    async with _client() as client:
+        try:
+            headers_a, _ = await _register(client, emails)
+            project_id = await _create_project(client, headers_a)
+            headers_b, _ = await _register(client, emails)
+
+            imported = await client.post(
+                f"/api/v1/projects/{project_id}/analytics/kaggle/import",
+                json={"owner": "acme", "dataset": "sales", "file_name": "sales.csv"},
+                headers=headers_b,
+            )
+
+            assert imported.status_code == 404
         finally:
             await _cleanup(emails)
