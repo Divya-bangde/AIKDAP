@@ -60,6 +60,10 @@ DOCUMENT_EXTENSIONS: frozenset[str] = frozenset(
     {".pdf", ".txt", ".md", ".html", ".htm", ".docx", ".doc"}
 )
 
+#: Tabular formats business analytics can query; an upload of one with no
+#: explicit type is a DATASET.
+DATASET_EXTENSIONS: frozenset[str] = frozenset({".csv", ".xlsx", ".xls"})
+
 
 class AssetValidationError(Exception):
     """Raised when an uploaded file fails MIME type, extension, or size checks."""

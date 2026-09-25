@@ -187,6 +187,18 @@ async def test_reconciling_twice_only_mutates_once(session, project):
     assert asset.processing_status is AssetProcessingStatus.FAILED
 
 
+@pytest.mark.asyncio
+async def test_a_stale_running_chart_analysis_is_marked_failed(session, project):
+    asset = await _make_report_asset(session, project, updated_at=_stale_timestamp(), asset_type=AssetType.CHART)
+
+    reconciled_count = await reconcile_stale_report_generations()
+
+    await session.refresh(asset)
+    assert reconciled_count == 1
+    assert asset.processing_status is AssetProcessingStatus.FAILED
+    assert asset.processing_error == STALE_REPORT_FAILURE_REASON
+
+
 def _report_step(asset: Asset, index: int, status: ResearchStepStatus) -> ResearchStep:
     return ResearchStep(
         asset_id=asset.id,

@@ -59,6 +59,9 @@ from app.modules.assets.validators import AssetValidationError
 from app.modules.execution.repository import ExecutionJobRepository
 from app.modules.execution.service import prepare_approved_launch, recover_interrupted_retry_attempt
 from execution_launcher.launcher import execute_approved_launch, reconcile_attempt
+from app.agents.analytics.graph import get_analytics_graph
+from app.agents.analytics.nodes import build_analytics_dependencies
+from app.agents.analytics.registry import ANALYTICS_AGENT_REGISTRY
 from app.agents.planner.tracking import TRACKER_CONFIG_KEY
 from app.agents.reports.build_plan_graph import get_build_plan_graph
 from app.agents.reports.build_plan_nodes import build_build_plan_dependencies
@@ -989,3 +992,90 @@ async def _generate_report(asset_id: uuid.UUID) -> dict[str, str]:
             return {"status": "ok", "asset_id": str(asset_id)}
 
     return {"status": "ok", "asset_id": str(asset_id)}
+
+
+# ---------------------------------------------------------------------------
+# Milestone 6: business analytics
+# ---------------------------------------------------------------------------
+
+
+@celery_app.task(name="workers.run_analysis", bind=True, max_retries=0)
+@log_task_execution
+def run_analysis(self, asset_id: str) -> dict[str, str]:
+    """Answer one analysis question over its dataset. Same lifecycle as
+    `generate_report`: claim, trace, terminal status on the asset."""
+    return _run_task_loop(_run_analysis(uuid.UUID(asset_id)))
+
+
+async def _run_analysis(asset_id: uuid.UUID) -> dict[str, str]:
+    async with async_session_factory() as session:
+        assets = AssetRepository(session)
+        claimed = await ReportRepository(session).claim_pending(asset_id)
+        await session.commit()
+        if not claimed:
+            return {"status": "skipped", "asset_id": str(asset_id)}
+
+        asset = await assets.get_by_id(asset_id)
+        analysis = dict(asset.asset_metadata.get("analysis") or {})
+        dataset = await assets.get_by_id(uuid.UUID(analysis["dataset_id"]))
+        tracker: ReportStepTracker | None = None
+        try:
+            if dataset is None:
+                raise LookupError("The dataset no longer exists.")
+            attempt = await ResearchStepRepository(session).latest_attempt(asset_id) + 1
+            tracker = ReportStepTracker(
+                session, asset_id, attempt=attempt,
+                registry=ANALYTICS_AGENT_REGISTRY, session_factory=own_session_factory(),
+            )
+            history = [
+                {"question": item["question"], "plan": item["plan"]}
+                for item in analysis.get("history", [])
+            ]
+            state = await get_analytics_graph().ainvoke(
+                {
+                    "analysis_id": str(asset_id),
+                    "question": analysis["question"],
+                    "storage_path": dataset.storage_path,
+                    "file_extension": f".{dataset.file_extension.lstrip('.')}",
+                    "sheet": analysis.get("sheet"),
+                    "history": history,
+                },
+                config={"configurable": {"dependencies": build_analytics_dependencies(), TRACKER_CONFIG_KEY: tracker}},
+            )
+            dataset.asset_metadata = {**dataset.asset_metadata, "profile": state["profile"]}
+            asset.asset_metadata = {
+                **asset.asset_metadata,
+                "analysis": {
+                    **analysis,
+                    "plan": state["plan"],
+                    "result": state.get("result"),
+                    "narrative": state.get("narrative"),
+                    "unverified_numbers": state.get("unverified_numbers", []),
+                },
+            }
+            asset.processing_status = AssetProcessingStatus.COMPLETED
+            asset.processing_error = None
+            await session.commit()
+        except Exception as exc:
+            logger.error("analysis_failed", asset_id=str(asset_id), error_type=type(exc).__name__, exc_info=True)
+            await session.rollback()
+            if tracker is not None:
+                await tracker.record_skipped()
+            asset = await assets.get_by_id(asset_id)
+            if asset is not None:
+                asset.processing_status = AssetProcessingStatus.FAILED
+                asset.processing_error = _analysis_error(exc)
+            await session.commit()
+    return {"status": "ok", "asset_id": str(asset_id)}
+
+
+def _analysis_error(exc: Exception) -> str:
+    """User-facing failure text. Plan and dataset errors are ours and
+    safe to show (they name columns, not secrets); anything else is
+    scrubbed like a report failure."""
+    from app.agents.analytics.dataset import DatasetReadError
+    from app.agents.analytics.nodes import AnalysisPlanError
+
+    if isinstance(exc, (AnalysisPlanError, DatasetReadError, LookupError)):
+        return str(exc)
+    return scrub_report_error(exc)

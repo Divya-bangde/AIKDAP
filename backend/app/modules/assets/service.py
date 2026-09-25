@@ -34,6 +34,7 @@ from app.modules.assets.repository import AssetRepository
 from app.modules.assets.schemas import AssetUpdate
 from app.modules.assets.storage import StorageProvider, get_storage_provider, sanitize_filename
 from app.modules.assets.validators import (
+    DATASET_EXTENSIONS,
     DOCUMENT_EXTENSIONS,
     validate_content_matches_mime,
     validate_extension,
@@ -151,7 +152,13 @@ class AssetService:
             title=title or Path(file_name).stem or "Untitled",
             description=description,
             asset_type=asset_type
-            or (AssetType.DOCUMENT if extension in DOCUMENT_EXTENSIONS else AssetType.OTHER),
+            or (
+                AssetType.DOCUMENT
+                if extension in DOCUMENT_EXTENSIONS
+                else AssetType.DATASET
+                if extension in DATASET_EXTENSIONS
+                else AssetType.OTHER
+            ),
             status=AssetStatus.ACTIVE,
             mime_type=mime_type,
             file_name=file_name,

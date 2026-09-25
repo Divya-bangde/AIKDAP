@@ -136,6 +136,22 @@ async def test_different_content_is_not_rejected(session, project):
     assert second is not None
 
 
+async def test_csv_upload_with_no_explicit_type_becomes_dataset(session, project):
+    service = AssetService(session, _FakeStorage())
+
+    asset = await service.upload(
+        current_user_id=project.owner_id,
+        project_id=project.id,
+        file=_upload_file(b"a,b\n1,2\n", filename="data.csv", content_type="text/csv"),
+        title=None,
+        description=None,
+        asset_type=None,
+        tags=[],
+    )
+
+    assert asset.asset_type is AssetType.DATASET
+
+
 async def test_archived_duplicate_does_not_block_reupload(session, project):
     """An archived asset must not block a fresh re-upload of the same
     content -- only an ACTIVE duplicate does."""

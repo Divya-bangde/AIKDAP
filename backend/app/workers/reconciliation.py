@@ -480,10 +480,10 @@ STALE_REPORT_FAILURE_REASON = (
 #: `STALE_REPORT_FAILURE_REASON`.
 STALE_REPORT_STEP_ERROR = "Worker stopped before this step finished"
 
-#: The two `AssetType` values `ReportService.generate_synopsis` ever
-#: creates (see `_KIND_ASSET_TYPE` there) -- the only asset types this
-#: reconciler is scoped to.
-_REPORT_ASSET_TYPES = (AssetType.REPORT, AssetType.SUMMARY)
+#: Asset types a GENERATED report-style job creates: synopsis/summary
+#: reports and business-analytics analyses (CHART). All run through the
+#: same pending -> running -> terminal lifecycle.
+_REPORT_ASSET_TYPES = (AssetType.REPORT, AssetType.SUMMARY, AssetType.CHART)
 
 #: `_generate_report` only ever leaves a report asset at one of these
 #: two statuses without reaching a terminal state: `pending` if the
