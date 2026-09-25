@@ -21,7 +21,7 @@ import pytest_asyncio
 import app.workers.celery_app  # noqa: F401
 from app.core.config import settings
 from app.core.llm.provider_health import get_provider_health_registry
-from app.database.session import async_session_factory
+from app.database.session import async_session_factory, engine
 from app.modules.auth.models import User
 from app.modules.projects.models import Project, ProjectStatus, ProjectType
 from app.modules.assets.ai_profile import AIProfile
@@ -62,6 +62,17 @@ def instant_retries(monkeypatch):
     """
     monkeypatch.setattr(settings, "llm_retry_base_delay", 0.0)
     monkeypatch.setattr(settings, "llm_retry_max_delay", 0.0)
+
+
+@pytest_asyncio.fixture(autouse=True)
+async def _dispose_engine_between_loops() -> AsyncIterator[None]:
+    """`app.database.session.engine` is module-level, so its asyncpg pool
+    binds to whichever event loop first used it. Every async test gets a
+    fresh function-scoped loop (pytest.ini), so the pool is disposed after
+    each test; the next test reconnects on its own loop instead of
+    reusing connections attached to a closed one."""
+    yield
+    await engine.dispose()
 
 
 @pytest_asyncio.fixture

@@ -16,7 +16,6 @@ from pathlib import Path
 import pytest
 import pytest_asyncio
 
-from app.database.session import engine
 from app.modules.assets.ai_profile import AIProfile
 from app.modules.assets.enums import AssetProcessingStatus, AssetSource, AssetStatus, AssetType
 from app.modules.assets.models import Asset
@@ -31,15 +30,6 @@ GOOD_PLAN = {
     "sort": {"by": "total"},
     "chart": {"type": "bar", "x": "region", "y": ["total"]},
 }
-
-
-@pytest_asyncio.fixture(autouse=True)
-async def _dispose_engine_between_loops():
-    """R4: `app.database.session.engine` binds to the first test's event
-    loop; each new DB-backed test file disposes it so a later test's
-    fresh loop doesn't reuse a pool bound to a closed one."""
-    yield
-    await engine.dispose()
 
 
 class ScriptedGateway:

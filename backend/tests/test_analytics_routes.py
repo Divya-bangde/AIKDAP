@@ -14,7 +14,7 @@ import pytest_asyncio
 from pydantic import SecretStr
 from sqlalchemy import delete
 
-from app.database.session import async_session_factory, engine
+from app.database.session import async_session_factory
 from app.main import app
 from app.modules.assets.enums import AssetProcessingStatus
 from app.modules.assets.models import Asset
@@ -22,15 +22,6 @@ from app.modules.auth.models import User
 
 PASSWORD = "correct-horse-battery"
 SAMPLE_CSV = Path(__file__).resolve().parents[2] / "docs" / "sample-data" / "visualization-testcases.csv"
-
-
-@pytest_asyncio.fixture(autouse=True)
-async def _dispose_engine_between_loops():
-    """R4: `app.database.session.engine` binds to the first test's event
-    loop; each new DB-backed test file disposes it so a later test's
-    fresh loop doesn't reuse a pool bound to a closed one."""
-    yield
-    await engine.dispose()
 
 
 @pytest.fixture
