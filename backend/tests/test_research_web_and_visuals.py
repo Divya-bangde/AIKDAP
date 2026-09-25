@@ -128,3 +128,67 @@ def test_missing_or_invalid_topic_relation_is_none_without_failing_the_answer(ex
     answer, *_, topic_relation, _ = _parse_response(_response(None, **extra))
     assert answer == "Feed costs rose [c1]."
     assert topic_relation is None
+
+
+# A small model often writes chart data as a list of points instead of
+# Plotly traces. Plotly draws nothing from that, so it must be turned into
+# one trace -- or the spec dropped -- never stored as an empty chart.
+
+
+def test_point_list_is_converted_to_one_trace():
+    spec = {
+        "kind": "chart2d",
+        "title": "Papers per year",
+        "data": [{"x": 2018, "y": 1240}, {"x": 2019, "y": 2890}, {"x": 2020, "y": 5310}],
+    }
+    *_, visualization = _parse_response(_response(spec))
+    assert visualization["data"] == [
+        {"type": "scatter", "mode": "lines+markers", "x": [2018, 2019, 2020], "y": [1240, 2890, 5310]}
+    ]
+
+
+def test_point_list_with_category_labels_becomes_a_bar_trace():
+    spec = {"kind": "chart2d", "data": [{"x": "SGD", "y": 0.79}, {"x": "Adam", "y": 0.86}]}
+    *_, visualization = _parse_response(_response(spec))
+    assert visualization["data"] == [{"type": "bar", "x": ["SGD", "Adam"], "y": [0.79, 0.86]}]
+
+
+def test_3d_point_list_becomes_a_scatter3d_trace():
+    spec = {"kind": "chart3d", "data": [{"x": 1, "y": 2, "z": 3}, {"x": 4, "y": 5, "z": 6}]}
+    *_, visualization = _parse_response(_response(spec))
+    assert visualization["data"] == [
+        {"type": "scatter3d", "mode": "markers", "x": [1, 4], "y": [2, 5], "z": [3, 6]}
+    ]
+
+
+@pytest.mark.parametrize(
+    "data",
+    [
+        [{"type": "bar", "name": "Papers"}],
+        [{"type": "bar", "x": 2018, "y": 1240}],
+    ],
+)
+def test_chart_with_nothing_to_draw_is_dropped(data):
+    *_, visualization = _parse_response(_response({"kind": "chart2d", "data": data}))
+    assert visualization is None
+
+
+def test_stored_point_list_is_repaired_when_a_run_is_read():
+    """Runs saved before the fix still hold the point-list shape."""
+    import uuid
+    from datetime import UTC, datetime
+
+    from app.modules.research.schemas import ResearchRunRead
+
+    now = datetime.now(UTC)
+    run = ResearchRunRead.model_validate(
+        {
+            "id": uuid.uuid4(), "project_id": uuid.uuid4(), "owner_id": uuid.uuid4(), "task_id": None,
+            "query": "Papers per year?", "status": "completed", "include_assets": True, "include_web": False,
+            "max_results": 5, "objective": None, "plan": None, "final_answer": "…", "citations": [],
+            "grounding_status": "grounded", "error_message": None, "celery_task_id": None,
+            "started_at": now, "completed_at": now, "duration_ms": 1, "created_at": now, "updated_at": now,
+            "visualization": {"kind": "chart2d", "title": "T", "data": [{"x": 2018, "y": 1}, {"x": 2019, "y": 2}], "layout": {}, "mermaid": None},
+        }
+    )
+    assert run.visualization["data"] == [{"type": "scatter", "mode": "lines+markers", "x": [2018, 2019], "y": [1, 2]}]

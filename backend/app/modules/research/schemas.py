@@ -12,7 +12,7 @@ from typing import Any, Literal, Self
 
 from enum import Enum
 
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from app.modules.research.enums import (
     AgentMessageRole,
@@ -202,14 +202,49 @@ class Visualization(BaseModel):
     layout: dict[str, Any] = Field(default_factory=dict)
     mermaid: str | None = None
 
+    @model_validator(mode="before")
+    @classmethod
+    def _points_to_trace(cls, data: Any) -> Any:
+        # Small models often write `data` as points ([{"x": 2018, "y": 5}, ...])
+        # instead of traces. Plotly draws nothing from that, so it becomes
+        # the one trace it describes.
+        if isinstance(data, dict):
+            trace = _trace_from_points(data.get("kind"), data.get("data"))
+            if trace is not None:
+                return {**data, "data": [trace]}
+        return data
+
     @model_validator(mode="after")
     def _has_content_for_kind(self) -> Self:
         if self.kind is VisualizationKind.DIAGRAM:
             if not (self.mermaid and self.mermaid.strip()):
                 raise ValueError("a diagram needs Mermaid source")
-        elif not self.data:
-            raise ValueError("a chart needs at least one Plotly trace")
+        elif not any(isinstance(value, list) and value for trace in self.data for value in trace.values()):
+            raise ValueError("a chart needs at least one Plotly trace with data to draw")
         return self
+
+
+def _trace_from_points(kind: Any, points: Any) -> dict[str, Any] | None:
+    """The single Plotly trace a list of `{x, y[, z]}` points describes, or
+    None when `points` is not such a list (3D needs `z` on every point)."""
+    axes = ("x", "y", "z") if kind == VisualizationKind.CHART3D else ("x", "y")
+    if not (
+        isinstance(points, list)
+        and points
+        and all(
+            isinstance(point, dict)
+            and set(point) == set(axes)
+            and not any(isinstance(value, (list, dict)) for value in point.values())
+            for point in points
+        )
+    ):
+        return None
+    trace: dict[str, Any] = {axis: [point[axis] for point in points] for axis in axes}
+    if kind == VisualizationKind.CHART3D:
+        return {"type": "scatter3d", "mode": "markers", **trace}
+    if any(isinstance(x, str) for x in trace["x"]):
+        return {"type": "bar", **trace}
+    return {"type": "scatter", "mode": "lines+markers", **trace}
 
 
 class EquationVariable(BaseModel):
@@ -369,6 +404,18 @@ class ResearchRunRead(BaseModel):
     grounding_status: ResearchGroundingStatus | None
     #: A validated `Visualization` spec, when the question asked for one.
     visualization: dict[str, Any] | None = None
+
+    @field_validator("visualization", mode="before")
+    @classmethod
+    def _drawable_visualization(cls, value: Any) -> Any:
+        # Specs stored before `Visualization` converted point lists are
+        # repaired here on read, or hidden when nothing in them is drawable.
+        if value is None:
+            return None
+        try:
+            return Visualization.model_validate(value).model_dump(mode="json")
+        except ValidationError:
+            return None
     #: Validated `Equation`s the answer relies on, each with its
     #: backend-sampled `curve` (or null), when the question involved any.
     equations: list[dict[str, Any]] | None = None

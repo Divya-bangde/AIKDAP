@@ -189,6 +189,9 @@ Set "visualization" ONLY when the question explicitly asks for a chart,
 graph, plot, diagram, flowchart, or other visual; otherwise it must be
 null. When set, it is exactly one object:
 - 2D chart: {"kind": "chart2d", "title": "...", "data": [Plotly traces], "layout": {}}
+  Each trace holds whole arrays, one trace per series, e.g.
+  {"type": "bar", "name": "Papers", "x": [2018, 2019], "y": [1240, 2890]}
+  -- never one object per point.
 - 3D chart: {"kind": "chart3d", "title": "...", "data": [Plotly scatter3d or surface traces], "layout": {}}
 - diagram: {"kind": "diagram", "title": "...", "mermaid": "Mermaid source, e.g. flowchart TD ..."}
 Every number plotted in a chart must appear in the evidence; never plot
