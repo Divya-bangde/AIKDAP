@@ -8,6 +8,11 @@ describe("chartFigure", () => {
     const figure = chartFigure(result, { type: "bar", x: "region", y: ["rev"], series: null });
     expect(figure?.data).toEqual([{ type: "bar", name: "rev", x: ["West", "East"], y: [150, 300] }]);
   });
+  it("uses a categorical x-axis for bar charts with numeric categories", () => {
+    const numericResult = { columns: ["batch_size", "rev"], rows: [{ batch_size: 32, rev: 150 }, { batch_size: 64, rev: 300 }], total_rows: 2 };
+    const figure = chartFigure(numericResult, { type: "bar", x: "batch_size", y: ["rev"], series: null });
+    expect(figure?.layout.xaxis).toMatchObject({ type: "category" });
+  });
   it("maps pie charts to labels/values", () => {
     const figure = chartFigure(result, { type: "pie", x: "region", y: ["rev"], series: null });
     expect(figure?.data[0]).toMatchObject({ type: "pie", labels: ["West", "East"], values: [150, 300] });

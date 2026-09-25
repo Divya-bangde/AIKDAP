@@ -22,5 +22,9 @@ export function chartFigure(result: AnalysisResultData, chart: ChartSpecData): {
   const data: Trace[] = groups
     ? groups.map(({ name, rows }) => ({ ...base, name, x: rows.map((row) => row[x]), y: rows.map((row) => row[chart.y[0]]) }))
     : chart.y.map((y) => ({ ...base, name: y, x: result.rows.map((row) => row[x]), y: result.rows.map((row) => row[y]) }));
-  return { data, layout: { xaxis: { title: { text: x } }, barmode: "group", showlegend: data.length > 1 } };
+  // Bar charts must force a categorical x-axis: numeric categories (e.g.
+  // batch_size 32/64) would otherwise get an automatic linear axis, spacing
+  // bars by value instead of one per category. Line charts keep automatic typing.
+  const xaxis = chart.type === "bar" ? { type: "category", title: { text: x } } : { title: { text: x } };
+  return { data, layout: { xaxis, barmode: "group", showlegend: data.length > 1 } };
 }
