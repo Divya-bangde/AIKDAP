@@ -12,6 +12,7 @@ from app.modules.research.schemas import (
     GapResolutionState,
 )
 
+@pytest.mark.live_ollama
 @pytest.mark.asyncio
 async def test_cross_paper_preserves_boundaries_and_resolves_gaps():
     primary = ResearchDocumentUnderstanding(
