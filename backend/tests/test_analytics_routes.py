@@ -21,7 +21,7 @@ from app.modules.assets.models import Asset
 from app.modules.auth.models import User
 
 PASSWORD = "correct-horse-battery"
-SAMPLE_CSV = Path(__file__).resolve().parents[2] / "docs" / "sample-data" / "visualization-testcases.csv"
+SAMPLE_CSV = Path(__file__).resolve().parent / "visualization-testcases.csv"
 
 
 @pytest.fixture

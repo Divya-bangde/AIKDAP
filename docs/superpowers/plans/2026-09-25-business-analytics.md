@@ -1390,7 +1390,7 @@ History is stored on the analysis asset at creation by the service (Task 7), so 
 - `AnalysisRead`: `id, dataset_id, question, status (AssetProcessingStatus), error (str|None), plan (dict|None), result (dict|None), narrative (str|None), unverified_numbers (list[str]), created_at`.
 - `DatasetProfileRead`: `row_count: int, truncated: bool, columns: list[ColumnProfileRead]` (fields as Task 1).
 
-- [ ] **Step 1: Failing route tests** — follow `tests/test_reports_routes.py` (`_register`, `_create_project`, `httpx.ASGITransport`, cleanup in `finally`). Upload `docs/sample-data/visualization-testcases.csv` bytes via `POST /api/v1/assets/upload` (monkeypatch `app.modules.assets.service.process_uploaded_asset` to a no-op `SimpleNamespace(delay=...)`), then set its `processing_status` to COMPLETED directly in the DB. Monkeypatch `app.modules.business_analytics.service.run_analysis` to record `delay` calls. Cases:
+- [ ] **Step 1: Failing route tests** — follow `tests/test_reports_routes.py` (`_register`, `_create_project`, `httpx.ASGITransport`, cleanup in `finally`). Upload `backend/tests/visualization-testcases.csv` bytes via `POST /api/v1/assets/upload` (monkeypatch `app.modules.assets.service.process_uploaded_asset` to a no-op `SimpleNamespace(delay=...)`), then set its `processing_status` to COMPLETED directly in the DB. Monkeypatch `app.modules.business_analytics.service.run_analysis` to record `delay` calls. Cases:
   1. profile → 200, `row_count > 0`, cached on the dataset (`asset_metadata["profile"]`) after the call.
   2. POST analysis → 202, enqueued once, `status == "pending"`, `question` echoed.
   3. POST twice (after marking the first COMPLETED with a plan in metadata) → the second asset's stored `history` contains the first question.
@@ -2174,7 +2174,7 @@ export function chartFigure(result: AnalysisResultData, chart: ChartSpecData): {
 
 - [ ] Full backend suite: `cd backend && .venv/Scripts/python -m pytest -q` — record pass/fail counts; failures unrelated to analytics that also fail on `main` are reported, not fixed.
 - [ ] Full frontend suite: `cd frontend && npx vitest run` and `npm run build`.
-- [ ] Start the app (existing dev start script / `.claude/launch.json`), open the project's Analytics tab in the browser preview, upload `docs/sample-data/visualization-testcases.csv`, ask a question, then a follow-up refining it; confirm live steps, chart, table, narrative, and "How this was computed". Screenshot as proof.
+- [ ] Start the app (existing dev start script / `.claude/launch.json`), open the project's Analytics tab in the browser preview, upload `backend/tests/visualization-testcases.csv`, ask a question, then a follow-up refining it; confirm live steps, chart, table, narrative, and "How this was computed". Screenshot as proof.
 - [ ] `graphify update .` (if installed) and commit any graph changes separately: `chore: update knowledge graph`.
 
 ---
