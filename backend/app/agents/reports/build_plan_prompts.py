@@ -16,7 +16,6 @@ nothing a reader can click.
 """
 
 from app.agents.reports.build_plan_state import (
-    BuildPhase,
     PaperFindings,
     ResearchLink,
     TOOL_STAGES,

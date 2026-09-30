@@ -46,14 +46,3 @@ BUILD_PLAN_AGENT_REGISTRY: dict[str, NodeSpec] = {
         description="Lays out phases from reproducing the baseline to a working product, with done criteria and risks.",
     ),
 }
-
-
-def get_build_plan_node_spec(name: str) -> NodeSpec:
-    """Look up one build-plan node's spec by name."""
-    try:
-        return BUILD_PLAN_AGENT_REGISTRY[name]
-    except KeyError as exc:
-        raise KeyError(
-            f"Unknown build-plan node '{name}'. "
-            f"Registered: {', '.join(sorted(BUILD_PLAN_AGENT_REGISTRY))}."
-        ) from exc
