@@ -16,7 +16,7 @@ from sqlalchemy import delete
 
 from app.database.session import async_session_factory
 from app.main import app
-from app.modules.assets.enums import AssetProcessingStatus
+from app.modules.assets.enums import AssetProcessingStatus, AssetSource
 from app.modules.assets.models import Asset
 from app.modules.auth.models import User
 
@@ -288,6 +288,28 @@ async def test_document_asset_409s_on_post_and_profile(enqueued):
 
             assert profile.status_code == 409
             assert post.status_code == 409
+        finally:
+            await _cleanup(emails)
+
+
+@pytest.mark.asyncio
+async def test_generated_dataset_409s(enqueued):
+    """An experiment plan is stored as a GENERATED `DATASET` asset; it is
+    AIKDAP's own JSON output, not tabular data to analyse."""
+    emails: list[str] = []
+    async with _client() as client:
+        try:
+            headers, _ = await _register(client, emails)
+            project_id = await _create_project(client, headers)
+            dataset_id = await _upload_dataset(client, headers, project_id)
+            async with async_session_factory() as session:
+                asset = await session.get(Asset, dataset_id)
+                asset.source = AssetSource.GENERATED
+                await session.commit()
+
+            profile = await client.get(f"/api/v1/analytics/datasets/{dataset_id}/profile", headers=headers)
+
+            assert profile.status_code == 409
         finally:
             await _cleanup(emails)
 

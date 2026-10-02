@@ -24,7 +24,7 @@ The current implementation of AIKDAP (Milestone MVP) features a robust, scalable
 
 - **Backend Foundation:** Developed in Python 3.12+ using FastAPI for high-performance API routing and asynchronous operations. Data persistence is managed via PostgreSQL and SQLAlchemy 2. 
 - **Frontend Workspace:** A responsive, interactive command center built with React, TypeScript, Vite, Tailwind CSS, and shadcn/ui.
-- **Memory & Storage:** The platform distinguishes between short-term memory (handled by Redis) and long-term memory. Long-term vector memory is powered by ChromaDB, enabling semantic retrieval of past project knowledge. 
+- **Memory & Storage:** Project memory is durable and project-scoped in PostgreSQL. Embeddings live in the same database via pgvector, so ownership filters and vector search run in a single query, enabling semantic retrieval of past project knowledge. 
 - **Infrastructure:** The system is fully containerized using Docker and Docker Compose, ensuring consistent deployment environments. Background tasks are offloaded to Celery.
 
 ## 4. Value Proposition (What We Offer the Users)

@@ -20,6 +20,7 @@ import { SummaryCard } from "@/features/command-center/SummaryCard";
 import { isGroundedAnswer, runOutcome } from "@/features/research/research-presentation";
 import { formatDuration, formatRelativeTime } from "@/lib/format";
 import { hoverLift } from "@/lib/motion";
+import { isSource } from "@/features/assets/asset-state";
 import * as assetsService from "@/services/assets";
 import * as projectsService from "@/services/projects";
 import * as researchService from "@/services/research";
@@ -98,7 +99,7 @@ export function Dashboard() {
             icon={FileText}
             label="Documents"
             to="/documents"
-            value={assetsQuery.data?.length}
+            value={assetsQuery.data?.filter(isSource).length}
             isLoading={assetsQuery.isLoading}
             isError={assetsQuery.isError}
             tone="ai"

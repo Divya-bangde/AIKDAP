@@ -135,6 +135,22 @@ describe("EvidenceGapPanel", () => {
     expect(await screen.findByText(/drag/i)).toBeInTheDocument();
   });
 
+  it("analyzes the newest source paper, skipping newer generated reports and datasets", async () => {
+    vi.mocked(assetsService.listAssets).mockResolvedValue([
+      { ...makeAsset(), id: "report-1", asset_type: "report", source: "generated" },
+      { ...makeAsset(), id: "dataset-1", asset_type: "dataset" },
+      makeAsset(),
+    ]);
+
+    renderWithProviders(<EvidenceGapPanel projectId="project-1" query="q" runId="run-1" />);
+
+    await waitFor(() =>
+      expect(researchService.analyzeResearchDocument).toHaveBeenCalledWith("asset-1", "project-1", {
+        goal: { type: "answer_question", description: "q" },
+      }),
+    );
+  });
+
   // Sprint 16 Phase 8.13: the opt-in "answer from general knowledge"
   // control. `analyzeResearchDocument` is left unresolved in these
   // tests -- they exercise the unsourced control, not the gap list.

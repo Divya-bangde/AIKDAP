@@ -51,15 +51,20 @@ export function BuildPlanDialog({
 
   const selectedIds = papers.map((paper) => paper.id).filter((id) => !deselected.has(id));
 
+  const queryClient = useQueryClient();
   const generateMutation = useMutation({
     mutationFn: (ids: string[]) => reportsService.generateBuildPlan(projectId, ids),
-    onSuccess: (accepted) => setAssetId(accepted.asset_id),
+    onSuccess: (accepted) => {
+      setAssetId(accepted.asset_id);
+      // The Reports tab lists this run too.
+      void queryClient.invalidateQueries({ queryKey: ["reports", "list"] });
+    },
   });
 
-  const queryClient = useQueryClient();
   const retryMutation = useMutation({
     mutationFn: (id: string) => reportsService.retryReport(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["reports", "report", assetId] }),
+    // The whole `["reports"]` prefix: this report and the Reports tab list.
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["reports"] }),
   });
 
   const reportQuery = usePolling({

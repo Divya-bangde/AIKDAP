@@ -43,6 +43,14 @@ export function isSettled(asset: AssetRead): boolean {
   );
 }
 
+/** A source the user brought into the project (an upload or an
+ * imported paper), as opposed to something AIKDAP generated from them
+ * (a report, an analysis, an experiment plan). The Documents tab and
+ * every "documents" count show sources only; the Assets tab shows all. */
+export function isSource(asset: AssetRead): boolean {
+  return asset.source !== "generated";
+}
+
 export function allSettled(assets: AssetRead[]): boolean {
   return assets.every(isSettled);
 }

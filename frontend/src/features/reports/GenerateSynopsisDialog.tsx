@@ -47,18 +47,23 @@ export function GenerateSynopsisDialog({
   const [kind, setKind] = useState<ReportKind | null>(null);
   const [assetId, setAssetId] = useState<string | null>(null);
 
+  const queryClient = useQueryClient();
   const generateMutation = useMutation({
     mutationFn: (selected: ReportKind) => reportsService.generateSynopsis(projectId, selected),
-    onSuccess: (accepted) => setAssetId(accepted.asset_id),
+    onSuccess: (accepted) => {
+      setAssetId(accepted.asset_id);
+      // The Reports tab lists this run too.
+      void queryClient.invalidateQueries({ queryKey: ["reports", "list"] });
+    },
   });
 
-  const queryClient = useQueryClient();
   // ponytail: the 6-minute poll timeout keeps counting from the first
   // attempt; a retry after a timeout needs a reopened dialog. Reset
   // `usePolling`'s timer per attempt if that ever matters.
   const retryMutation = useMutation({
     mutationFn: (id: string) => reportsService.retryReport(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["reports", "report", assetId] }),
+    // The whole `["reports"]` prefix: this report and the Reports tab list.
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["reports"] }),
   });
 
   const reportQuery = usePolling({

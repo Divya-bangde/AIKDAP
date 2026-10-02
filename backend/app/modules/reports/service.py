@@ -218,6 +218,12 @@ class ReportService:
         generate_report.delay(str(created.id))
         return created
 
+    async def list_reports(self, owner_id: uuid.UUID, project_id: uuid.UUID) -> list[Asset]:
+        """Every synopsis and build plan in an owned project, newest first."""
+        await self._ensure_project_owned(owner_id, project_id)
+        kinds = [kind.value for kind in ReportKind] + [BUILD_PLAN_KIND]
+        return await self._reports.list_reports(project_id, kinds)
+
     async def get_owned_report(self, owner_id: uuid.UUID, asset_id: uuid.UUID) -> Asset:
         """Fetch a report asset, ensuring it belongs to the given user."""
         asset = await self._assets.get_by_id(asset_id)

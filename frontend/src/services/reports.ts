@@ -1,3 +1,4 @@
+import { saveBlob } from "@/lib/export";
 import { request, requestBlob } from "@/services/client";
 import type { components } from "@/types/api";
 
@@ -6,6 +7,7 @@ type ReportGenerateRequest = components["schemas"]["ReportGenerateRequest"];
 type ReportGenerationAccepted = components["schemas"]["ReportGenerationAccepted"];
 type ReportRead = components["schemas"]["ReportRead"];
 type BuildPlanRequest = components["schemas"]["BuildPlanRequest"];
+type AssetRead = components["schemas"]["AssetRead"];
 
 export function generateSynopsis(projectId: string, kind: ReportKind) {
   return request<ReportGenerationAccepted>(`/api/v1/projects/${projectId}/reports/synopsis`, {
@@ -21,6 +23,12 @@ export function generateBuildPlan(projectId: string, assetIds: string[]) {
   });
 }
 
+/** A project's synopses and build plans, newest first. Rows carry no
+ * step trace; `getReport` fetches one report's trace. */
+export function listReports(projectId: string) {
+  return request<AssetRead[]>(`/api/v1/projects/${projectId}/reports`);
+}
+
 export function getReport(assetId: string) {
   return request<ReportRead>(`/api/v1/reports/${assetId}`);
 }
@@ -29,15 +37,7 @@ export function retryReport(assetId: string) {
   return request<ReportGenerationAccepted>(`/api/v1/reports/${assetId}/retry`, { method: "POST" });
 }
 
-/** Downloads a completed report and saves it through the browser,
- * mirroring `lib/export.downloadFile`'s object-URL pattern for a
- * server-rendered binary instead of client-built text. */
+/** Downloads a completed report and saves it through the browser. */
 export async function downloadReport(assetId: string, format: "docx" | "pdf", filename: string) {
-  const blob = await requestBlob(`/api/v1/reports/${assetId}/download?format=${format}`);
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
+  saveBlob(await requestBlob(`/api/v1/reports/${assetId}/download?format=${format}`), filename);
 }

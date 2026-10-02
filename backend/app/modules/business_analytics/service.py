@@ -51,7 +51,12 @@ class AnalyticsService:
 
     async def get_dataset(self, owner_id: uuid.UUID, dataset_id: uuid.UUID) -> Asset:
         asset = await self._owned(owner_id, dataset_id)
-        if asset.asset_type is not AssetType.DATASET or asset.processing_status is not AssetProcessingStatus.COMPLETED:
+        # A GENERATED dataset is an experiment plan (AIKDAP's own JSON), not data.
+        if (
+            asset.asset_type is not AssetType.DATASET
+            or asset.source is AssetSource.GENERATED
+            or asset.processing_status is not AssetProcessingStatus.COMPLETED
+        ):
             raise DatasetNotReadyError(dataset_id)
         return asset
 

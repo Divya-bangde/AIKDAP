@@ -143,15 +143,13 @@ Project
 
 # Workspace Memory
 
-Short-term Memory
-
-Redis
-
 Long-term Memory
 
-PostgreSQL
+PostgreSQL (relational rows and pgvector embeddings in one database)
 
-ChromaDB
+Redis is infrastructure only (Celery broker, LLM provider-health state,
+run progress events). It holds no per-project working memory; all
+project memory is durable in PostgreSQL.
 
 Projects remember previous work.
 
@@ -245,7 +243,7 @@ Docker Compose
 
 Vector Database
 
-ChromaDB
+pgvector (PostgreSQL extension)
 
 AI
 

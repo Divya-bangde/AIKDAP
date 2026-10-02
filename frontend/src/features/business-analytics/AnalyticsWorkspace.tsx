@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { AnalysisCard } from "@/features/business-analytics/AnalysisCard";
+import { isSource } from "@/features/assets/asset-state";
 import { DatasetProfile } from "@/features/business-analytics/DatasetProfile";
 import { KaggleImportDialog } from "@/features/business-analytics/KaggleImportDialog";
 import { messageFor } from "@/lib/api-error";
@@ -15,6 +16,12 @@ type AssetRead = components["schemas"]["AssetRead"];
 
 const SETTLED = new Set(["completed", "failed", "unsupported"]);
 
+/** Tabular data the user brought in. A generated `dataset` asset is an
+ * experiment plan (JSON), which the analytics backend rejects. */
+function isUserDataset(asset: AssetRead): boolean {
+  return asset.asset_type === "dataset" && isSource(asset);
+}
+
 export function AnalyticsWorkspace({ projectId }: { projectId: string }) {
   const [datasetId, setDatasetId] = useState<string | null>(null);
   const [question, setQuestion] = useState("");
@@ -24,12 +31,12 @@ export function AnalyticsWorkspace({ projectId }: { projectId: string }) {
     queryKey: ["assets", projectId],
     queryFn: () => assetsService.listAssets(projectId),
     refetchInterval: (query) => {
-      const datasets = (query.state.data ?? []).filter((asset: AssetRead) => asset.asset_type === "dataset");
+      const datasets = (query.state.data ?? []).filter(isUserDataset);
       return datasets.some((asset) => !SETTLED.has(asset.processing_status)) ? 3000 : false;
     },
   });
 
-  const datasets = (assetsQuery.data ?? []).filter((asset) => asset.asset_type === "dataset");
+  const datasets = (assetsQuery.data ?? []).filter(isUserDataset);
   const completedDatasets = datasets.filter((asset) => asset.processing_status === "completed");
   const failedDatasets = datasets.filter((asset) => asset.processing_status === "failed");
   const selectedId = datasetId ?? completedDatasets[0]?.id ?? null;

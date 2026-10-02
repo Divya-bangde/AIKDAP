@@ -10,7 +10,7 @@ import uuid
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.modules.assets.enums import AssetProcessingStatus, AssetType
+from app.modules.assets.enums import AssetProcessingStatus, AssetSource, AssetType
 from app.modules.assets.models import Asset
 from app.modules.knowledge_base.models import KnowledgeChunk
 
@@ -40,6 +40,25 @@ class ReportRepository:
                 Asset.processing_status == AssetProcessingStatus.COMPLETED,
             )
             .order_by(Asset.created_at.asc())
+        )
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def list_reports(self, project_id: uuid.UUID, kinds: list[str]) -> list[Asset]:
+        """The project's generated reports, newest first.
+
+        Matched on `asset_metadata["kind"]` rather than `asset_type`:
+        `REPORT`/`SUMMARY` are also valid types for other generated
+        assets, while `kind` is set only by this module.
+        """
+        stmt = (
+            select(Asset)
+            .where(
+                Asset.project_id == project_id,
+                Asset.source == AssetSource.GENERATED,
+                Asset.asset_metadata["kind"].astext.in_(kinds),
+            )
+            .order_by(Asset.created_at.desc())
         )
         result = await self._session.execute(stmt)
         return list(result.scalars().all())

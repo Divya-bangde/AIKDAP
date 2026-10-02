@@ -53,7 +53,12 @@ async def _create_project(client: httpx.AsyncClient, headers: dict) -> uuid.UUID
     return uuid.UUID(created["id"])
 
 
-async def _report(owner_id: uuid.UUID, project_id: uuid.UUID, status: AssetProcessingStatus) -> uuid.UUID:
+async def _report(
+    owner_id: uuid.UUID,
+    project_id: uuid.UUID,
+    status: AssetProcessingStatus,
+    kind: str | None = "study_summary",
+) -> uuid.UUID:
     async with async_session_factory() as session:
         asset = Asset(
             project_id=project_id,
@@ -71,7 +76,7 @@ async def _report(owner_id: uuid.UUID, project_id: uuid.UUID, status: AssetProce
             source=AssetSource.GENERATED,
             version=1,
             tags=[],
-            asset_metadata={"kind": "study_summary", "sections": []},
+            asset_metadata={"kind": kind, "sections": []} if kind else {},
             ai_profile=AIProfile().model_dump(mode="json"),
             created_by=owner_id,
             processing_status=status,
@@ -170,5 +175,31 @@ async def test_retry_404s_for_a_non_owner_409s_unless_failed_and_202s_a_failed_r
             assert (
                 await client.get(f"/api/v1/reports/{failed_id}", headers=stranger_headers)
             ).status_code == 404
+        finally:
+            await _cleanup(emails)
+
+
+@pytest.mark.asyncio
+async def test_list_returns_only_this_projects_reports_newest_first_and_404s_for_a_non_owner():
+    emails: list[str] = []
+    async with _client() as client:
+        try:
+            owner_headers, owner_id = await _register(client, emails)
+            stranger_headers, _ = await _register(client, emails)
+            project_id = await _create_project(client, owner_headers)
+            other_project_id = await _create_project(client, owner_headers)
+            older = await _report(owner_id, project_id, AssetProcessingStatus.COMPLETED)
+            newer = await _report(owner_id, project_id, AssetProcessingStatus.RUNNING, "build_plan")
+            # A generated asset that is not a report, and a report elsewhere.
+            await _report(owner_id, project_id, AssetProcessingStatus.COMPLETED, kind=None)
+            await _report(owner_id, other_project_id, AssetProcessingStatus.COMPLETED)
+            url = f"/api/v1/projects/{project_id}/reports"
+
+            stranger = await client.get(url, headers=stranger_headers)
+            listed = await client.get(url, headers=owner_headers)
+
+            assert stranger.status_code == 404
+            assert listed.status_code == 200
+            assert [item["id"] for item in listed.json()] == [str(newer), str(older)]
         finally:
             await _cleanup(emails)

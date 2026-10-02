@@ -61,7 +61,7 @@ FastAPI (feature modules: router -> service -> repository -> model)
    |-- Celery workers (Redis broker) - async ingestion + research runs
    |-- LangGraph orchestrator (6 nodes, shared typed state)
    |-- LLM Gateway (single LiteLLM boundary; retry, fallback, breaker)
-   \-- Knowledge layer: PostgreSQL 17 + pgvector, Redis, ChromaDB
+   \-- Knowledge layer: PostgreSQL 17 + pgvector, Redis
 ```
 
 Every module follows the same five-file shape (`router / service / schemas /
@@ -388,7 +388,7 @@ than aspirational — Section V can show a real reconstructed trace.
 
 Stack: Python 3.12, FastAPI 0.116, SQLAlchemy 2.0 (async), Alembic,
 PostgreSQL 17 + pgvector 0.5, Redis 8, Celery 5.5, Pydantic v2, LangGraph
-0.6.5, LangChain 0.3.27, LiteLLM 1.80, ChromaDB 1.0.20, SymPy 1.13; React +
+0.6.5, LangChain 0.3.27, LiteLLM 1.80, SymPy 1.13; React +
 TypeScript + Vite + Tailwind + shadcn/ui + TanStack Query; Docker Compose.
 Local models: Qwen 3.5 4B (understanding), BGE-M3 1024-d (embedding),
 BGE-reranker-v2-m3 Q8_0 (reranking) — the entire retrieval and understanding
@@ -605,7 +605,6 @@ layers."*
 | Agent orchestration | **LangGraph 0.6.5** + LangChain 0.3.27 | explicit graph topology with a typed shared state and reducers — agents never call each other |
 | Model routing | **LiteLLM 1.80** | one provider-agnostic call surface; contained in a single module, enforced by a test |
 | Deterministic math | **SymPy 1.13** | equation parsing and constraint derivation must not go through an LLM |
-| Vector store (secondary) | ChromaDB 1.0.20 | present in the stack alongside pgvector |
 | Logging | structlog 25.4 | structured events, so a run is queryable in logs as well as in the database |
 | Quality | pytest, ruff, black, isort, mypy | 528 tests; static typing throughout |
 

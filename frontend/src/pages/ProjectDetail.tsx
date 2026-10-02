@@ -9,8 +9,10 @@ import { PageTransition } from "@/components/motion/PageTransition";
 import { AnimatedNumber } from "@/components/motion/AnimatedNumber";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DocumentsSection } from "@/features/assets/DocumentsSection";
-import { allSettled, knowledgeState } from "@/features/assets/asset-state";
+import { AssetsLibrary } from "@/features/assets/AssetsLibrary";
+import { allSettled, isSource, knowledgeState } from "@/features/assets/asset-state";
 import { ProjectHeader } from "@/features/projects/ProjectHeader";
+import { ReportsList } from "@/features/reports/ReportsList";
 import { ResearchHistoryList } from "@/features/research/ResearchHistoryList";
 import { usePolling } from "@/hooks/usePolling";
 import { fadeUp } from "@/lib/motion";
@@ -21,9 +23,11 @@ import * as researchService from "@/services/research";
 const TABS = [
   { value: "overview", label: "Overview" },
   { value: "documents", label: "Documents" },
+  { value: "assets", label: "Assets" },
   { value: "research", label: "Research" },
   { value: "papers", label: "Paper map" },
   { value: "analytics", label: "Analytics" },
+  { value: "reports", label: "Reports" },
 ];
 
 // The force-graph canvas library loads only when this tab is opened.
@@ -88,7 +92,8 @@ export function ProjectDetail() {
   if (!projectQuery.data) return null;
 
   const project = projectQuery.data;
-  const assets = assetsQuery.data ?? [];
+  // Sources only: generated outputs are not documents (see Assets tab).
+  const assets = (assetsQuery.data ?? []).filter(isSource);
   const stats = knowledgeState(assets);
   const runs = runsQuery.data ?? [];
 
@@ -131,6 +136,14 @@ export function ProjectDetail() {
           </motion.div>
         </TabsContent>
 
+        <TabsContent value="assets">
+          {tab === "assets" && (
+            <motion.div initial="hidden" animate="visible" variants={fadeUp}>
+              <AssetsLibrary projectId={project.id} onOpenAnalytics={() => setTab("analytics")} />
+            </motion.div>
+          )}
+        </TabsContent>
+
         <TabsContent value="research">
           <motion.div initial="hidden" animate="visible" variants={fadeUp}>
             {runsQuery.isLoading ? (
@@ -154,6 +167,14 @@ export function ProjectDetail() {
             <Suspense fallback={<RowListSkeleton label="Loading analytics" />}>
               <AnalyticsWorkspace projectId={project.id} />
             </Suspense>
+          )}
+        </TabsContent>
+
+        <TabsContent value="reports">
+          {tab === "reports" && (
+            <motion.div initial="hidden" animate="visible" variants={fadeUp}>
+              <ReportsList projectId={project.id} />
+            </motion.div>
           )}
         </TabsContent>
       </Tabs>

@@ -12,14 +12,19 @@ type ExportableRun = Pick<
   "query" | "status" | "grounding_status" | "final_answer" | "citations" | "created_at"
 >;
 
-/** Saves `content` as a file through the browser's own download. */
-export function downloadFile(filename: string, content: string, type: string) {
-  const url = URL.createObjectURL(new Blob([content], { type }));
+/** Saves `blob` as a file through the browser's own download. */
+export function saveBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
   link.download = filename;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+/** Saves `content` as a file through the browser's own download. */
+export function downloadFile(filename: string, content: string, type: string) {
+  saveBlob(new Blob([content], { type }), filename);
 }
 
 /** A filesystem-safe file name stem from free text. */

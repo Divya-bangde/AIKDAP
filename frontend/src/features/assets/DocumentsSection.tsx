@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AiProfilePanel } from "@/features/assets/AiProfilePanel";
 import { DocumentCard } from "@/features/assets/DocumentCard";
 import { UploadDropzone } from "@/features/assets/UploadDropzone";
-import { allSettled } from "@/features/assets/asset-state";
+import { allSettled, isSource } from "@/features/assets/asset-state";
 import { usePolling } from "@/hooks/usePolling";
 import * as assetsService from "@/services/assets";
 
@@ -26,7 +26,8 @@ export function DocumentsSection({ projectId }: { projectId?: string }) {
     isTerminal: allSettled,
   });
 
-  const assets = assetsQuery.data ?? [];
+  // Generated outputs live in the Assets tab, not among the sources.
+  const assets = (assetsQuery.data ?? []).filter(isSource);
   // Default to the newest document so the AI panel has something to
   // show the moment processing finishes, rather than requiring a click.
   const selectedAsset = assets.find((asset) => asset.id === selectedId) ?? assets[0];

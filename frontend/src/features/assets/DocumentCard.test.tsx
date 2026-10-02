@@ -4,13 +4,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { DocumentCard } from "@/features/assets/DocumentCard";
 import * as assetsService from "@/services/assets";
-import * as reportsService from "@/services/reports";
 import { aiProfile } from "@/test/fixtures";
 import { renderWithProviders } from "@/test/render";
 import type { components } from "@/types/api";
 
 vi.mock("@/services/assets");
-vi.mock("@/services/reports");
 
 type AssetRead = components["schemas"]["AssetRead"];
 
@@ -112,54 +110,5 @@ describe("DocumentCard", () => {
     await user.click(screen.getByText("abc_poultry.txt"));
 
     expect(onSelect).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe("DocumentCard retry", () => {
-  it("offers Retry only on a failed generated report, and retries it", async () => {
-    const user = userEvent.setup();
-    vi.mocked(reportsService.retryReport).mockResolvedValue({ asset_id: "asset-1", status: "pending" });
-
-    renderWithProviders(
-      <DocumentCard
-        asset={makeAsset({ source: "generated", processing_status: "failed" })}
-        isSelected={false}
-        onSelect={vi.fn()}
-      />,
-    );
-    await user.click(screen.getByRole("button", { name: /^retry$/i }));
-
-    await waitFor(() => expect(reportsService.retryReport).toHaveBeenCalledWith("asset-1"));
-  });
-
-  it("offers no Retry on a failed uploaded document", () => {
-    renderWithProviders(
-      <DocumentCard
-        asset={makeAsset({ source: "upload", processing_status: "failed" })}
-        isSelected={false}
-        onSelect={vi.fn()}
-      />,
-    );
-
-    expect(screen.queryByRole("button", { name: /^retry$/i })).not.toBeInTheDocument();
-  });
-
-  it("shows an error inline when the retry fails", async () => {
-    const user = userEvent.setup();
-    vi.mocked(reportsService.retryReport).mockRejectedValue({
-      status: 409,
-      message: "Only a failed report can be retried.",
-    });
-
-    renderWithProviders(
-      <DocumentCard
-        asset={makeAsset({ source: "generated", processing_status: "failed" })}
-        isSelected={false}
-        onSelect={vi.fn()}
-      />,
-    );
-    await user.click(screen.getByRole("button", { name: /^retry$/i }));
-
-    expect(await screen.findByText("Only a failed report can be retried.")).toBeInTheDocument();
   });
 });

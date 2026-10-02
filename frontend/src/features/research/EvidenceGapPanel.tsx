@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UploadDropzone } from "@/features/assets/UploadDropzone";
+import { isSource } from "@/features/assets/asset-state";
 import { AnswerBody } from "@/features/research/AnswerBody";
 import * as assetsService from "@/services/assets";
 import { analyzeResearchDocument, createUnsourcedAnswer } from "@/services/research";
@@ -29,7 +30,8 @@ type ResearchGap = components["schemas"]["ResearchGap"];
  * `EmptyState`/upload action is the honest fallback while the check is
  * still running or found nothing to name.
  *
- * Scoped to the project's first asset: every real project in this
+ * Scoped to the project's newest source paper (never a generated report
+ * or a dataset): every real project in this
  * deployment has exactly one source paper, and `analyze` is a
  * per-asset endpoint with no run-level equivalent to call instead.
  *
@@ -58,7 +60,7 @@ export function EvidenceGapPanel({
     queryKey: ["assets", projectId],
     queryFn: () => assetsService.listAssets(projectId),
   });
-  const asset = assetsQuery.data?.[0];
+  const asset = assetsQuery.data?.find((item) => isSource(item) && item.asset_type !== "dataset");
 
   const analysisQuery = useQuery({
     queryKey: ["document-analysis", asset?.id, query],

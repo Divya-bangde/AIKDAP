@@ -8,6 +8,7 @@ import { PageTransition, Stagger, StaggerItem } from "@/components/motion/PageTr
 import { CreateProjectDialog } from "@/features/projects/CreateProjectDialog";
 import { ProjectCard, type ProjectStats } from "@/features/projects/ProjectCard";
 import { isGroundedAnswer } from "@/features/research/research-presentation";
+import { isSource } from "@/features/assets/asset-state";
 import * as assetsService from "@/services/assets";
 import * as projectsService from "@/services/projects";
 import * as researchService from "@/services/research";
@@ -39,7 +40,7 @@ export function Projects() {
   function statsFor(projectId: string): ProjectStats {
     return {
       documents: assetsQuery.isSuccess
-        ? assetsQuery.data.filter((asset) => asset.project_id === projectId).length
+        ? assetsQuery.data.filter((asset) => asset.project_id === projectId && isSource(asset)).length
         : undefined,
       groundedAnswers: runsQuery.isSuccess
         ? runsQuery.data.filter(

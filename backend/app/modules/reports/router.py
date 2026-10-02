@@ -14,6 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from fastapi.responses import StreamingResponse
 
 from app.modules.assets.router import _content_disposition
+from app.modules.assets.schemas import AssetRead
 from app.modules.auth.models import User
 from app.database.session import open_session
 from app.modules.auth.security import (
@@ -108,6 +109,21 @@ async def generate_build_plan_route(
             detail="The papers you selected are still processing. Pick one that has finished.",
         ) from exc
     return ReportGenerationAccepted(asset_id=asset.id, status=asset.processing_status)
+
+
+@router.get("/projects/{project_id}/reports", response_model=list[AssetRead])
+async def list_reports_route(
+    project_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    service: ReportService = Depends(get_report_service),
+) -> list[AssetRead]:
+    """The project's synopses and build plans, newest first, without
+    step traces -- fetch `GET /reports/{asset_id}` for one report's trace."""
+    try:
+        reports = await service.list_reports(current_user.id, project_id)
+    except ProjectAccessDeniedError as exc:
+        raise _PROJECT_NOT_FOUND from exc
+    return [AssetRead.from_model(report) for report in reports]
 
 
 @router.get("/reports/{asset_id}")

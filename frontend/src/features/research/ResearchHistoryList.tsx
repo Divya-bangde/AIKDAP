@@ -4,10 +4,10 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import { EmptyState } from "@/components/common/EmptyState";
+import { FilterChip } from "@/components/common/FilterChip";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { Stagger, StaggerItem } from "@/components/motion/PageTransition";
 import { Card, CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 import { formatDuration, formatRelativeTime } from "@/lib/format";
 import { hoverLift, layoutSpring } from "@/lib/motion";
 import { availableStatuses, filterRuns } from "@/features/research/research-history";
@@ -78,9 +78,10 @@ export function ResearchHistoryList({
 
           {statuses.length > 1 && (
             <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filter by status">
-              <StatusChip label="All" active={status === null} onClick={() => setStatus(null)} />
+              <FilterChip label="All" active={status === null} onClick={() => setStatus(null)} />
               {statuses.map((value) => (
-                <StatusChip
+                <FilterChip
+                  className="capitalize"
                   key={value}
                   label={outcomeLabel(value)}
                   active={status === value}
@@ -167,31 +168,5 @@ export function ResearchHistoryList({
         </Card>
       )}
     </div>
-  );
-}
-
-function StatusChip({
-  label,
-  active,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        "whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-medium capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        active
-          ? "border-primary bg-primary text-primary-foreground"
-          : "border-border bg-background text-muted-foreground hover:border-border-strong hover:text-foreground",
-      )}
-    >
-      {label}
-    </button>
   );
 }
