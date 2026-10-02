@@ -32,11 +32,6 @@ class Settings(BaseSettings):
     app_name: str = "AIKDAP"
     app_version: str = "1.0.0"
     app_env: Literal["development", "staging", "production"] = "development"
-    app_debug: bool = False
-
-    # Server
-    host: str = "0.0.0.0"
-    port: int = 8000
 
     # API
     api_v1_prefix: str = "/api/v1"

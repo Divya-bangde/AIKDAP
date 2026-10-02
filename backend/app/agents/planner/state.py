@@ -79,15 +79,6 @@ def degraded_warnings(state: "ResearchState") -> list[str]:
     return warnings
 
 
-class PlannedStep(TypedDict):
-    """One entry in the planner's execution plan."""
-
-    index: int
-    node: str
-    title: str
-    description: str
-
-
 class EvidenceProvenance(TypedDict, total=False):
     """Optional identity a retriever attaches to the evidence it returns.
 

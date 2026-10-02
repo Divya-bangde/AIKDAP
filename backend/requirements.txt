@@ -38,32 +38,21 @@ celery==5.5.3
 # ===========================
 # AI Framework
 # ===========================
-langchain==0.3.27
 langgraph==0.6.5
-langchain-openai==0.3.31
-langchain-community==0.3.27
 
 # LLM gateway / model routing.
 #
 # Pinned to 1.80.0 rather than the latest release on purpose: litellm
-# >= 1.96 requires openai>=2.20 and pydantic-settings>=2.14.1, which
-# conflict with langchain-openai 0.3.31 (openai<2.0.0) and would force
-# an unrelated upgrade of the settings library the whole app depends
-# on. 1.80.0 is the newest release compatible with the existing pins.
+# >= 1.96 requires pydantic-settings>=2.14.1, which would force an
+# unrelated upgrade of the settings library the whole app depends on.
+# 1.80.0 is the newest release compatible with the existing pins.
 litellm==1.80.0
-
-# ===========================
-# Vector Database
-# ===========================
-chromadb==1.0.20
 
 # ===========================
 # HTTP & Utilities
 # ===========================
 httpx==0.28.1
 requests==2.32.5
-orjson==3.11.2
-tenacity==9.1.2
 
 # ===========================
 # Execution launcher (Sprint 16 Phase 7B.25) -- real Docker client.
@@ -155,8 +144,6 @@ pytest-cov==6.2.1
 # ===========================
 # Code Quality
 # ===========================
-black==25.1.0
-isort==6.0.1
 ruff==0.12.9
 mypy==1.17.1
 

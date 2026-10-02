@@ -373,24 +373,6 @@ class ExecutionAttemptRepository:
         await self._session.refresh(attempt)
         return attempt
 
-    async def attempt_exists_since(self, job_id: uuid.UUID, since: datetime) -> bool:
-        """True if any attempt for `job_id` has `created_at >= since` --
-        read-only (Sprint 16 Phase 7B.19/7B.21). `_claim_launching_for_recovery`
-        embeds this same check inline (as a correlated subquery, so it
-        can be atomic with the claim); this standalone version exists
-        for detection-side callers that only need the read, not the
-        claim.
-        """
-        result = await self._session.execute(
-            select(
-                exists().where(
-                    ExecutionAttempt.execution_job_id == job_id,
-                    ExecutionAttempt.created_at >= since,
-                )
-            )
-        )
-        return bool(result.scalar())
-
     async def find_stale_pending_attempts(self, cutoff: datetime) -> list[ExecutionAttempt]:
         """Every attempt still at `PENDING_CREATE` that was created before
         `cutoff`. A read-only query -- the staleness *policy* (how the

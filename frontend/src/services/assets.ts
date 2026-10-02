@@ -9,10 +9,6 @@ export function listAssets(projectId?: string) {
   return request<AssetRead[]>(`/api/v1/assets${query}`);
 }
 
-export function getAsset(assetId: string) {
-  return request<AssetRead>(`/api/v1/assets/${assetId}`);
-}
-
 /** Matches `Body_upload_asset_api_v1_assets_upload_post` exactly:
  * `project_id` and `file` are the only required multipart fields. */
 export function uploadAsset(projectId: string, file: File) {
@@ -20,10 +16,6 @@ export function uploadAsset(projectId: string, file: File) {
   form.append("project_id", projectId);
   form.append("file", file);
   return requestForm<AssetRead>("/api/v1/assets/upload", form);
-}
-
-export function reprocessAsset(assetId: string) {
-  return request<AssetRead>(`/api/v1/assets/${assetId}/process`, { method: "POST" });
 }
 
 /** Deletes the asset and its stored file. The backend cascades the

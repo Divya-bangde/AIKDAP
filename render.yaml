@@ -137,8 +137,6 @@ envVarGroups:
     envVars:
       - key: APP_ENV
         value: production
-      - key: APP_DEBUG
-        value: "false"
 
       # No local model server exists here. Empty disables the Ollama
       # liveness probe, which would otherwise fail on every health poll

@@ -110,13 +110,6 @@ _POLL_INTERVAL_S = 1.0
 TerminationReason = Literal["natural", "timeout", "cancelled"]
 
 
-class DockerUnavailableError(Exception):
-    """The daemon itself could not be reached -- distinct from a
-    per-container failure (ImageNotFound, name collision, ...). Wraps
-    `docker.errors.DockerException` raised by client construction or
-    any call that never got a response from the daemon at all."""
-
-
 @dataclass(frozen=True)
 class ExecutionOutcome:
     """What `execute_approved_launch` durably accomplished. `succeeded`

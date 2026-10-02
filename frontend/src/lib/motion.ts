@@ -146,11 +146,6 @@ export const fadeIn: Variants = {
   visible: { opacity: 1, transition },
 };
 
-export const scaleIn: Variants = {
-  hidden: { opacity: 0, scale: 0.96 },
-  visible: { opacity: 1, scale: 1, transition },
-};
-
 /** Parent of a list whose children should arrive in sequence. Pair
  * with `staggerItem` on each child. The 40ms step is deliberately
  * small: enough to read as ordered, short enough that a ten-item list
@@ -392,19 +387,6 @@ export const diagramStage = (index: number): Variants => ({
     opacity: 1,
     y: 0,
     transition: { duration: 0.45, ease, delay: index * 0.09 },
-  },
-});
-
-/** A connector between two diagram stages, drawn on rather than faded
- * in — the drawing is what communicates direction of flow. Vertical
- * connectors scale from the top, so `originY: 0` must be set on the
- * element using this. */
-export const diagramConnector = (index: number): Variants => ({
-  hidden: { scaleY: 0, opacity: 0 },
-  visible: {
-    scaleY: 1,
-    opacity: 1,
-    transition: { duration: 0.35, ease, delay: 0.1 + index * 0.09 },
   },
 });
 

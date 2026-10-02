@@ -5,17 +5,10 @@ from typing import Any
 from app.core.llm.gateway import get_llm_gateway, LLMError
 from app.core.logging.logger import get_logger
 from app.modules.research.schemas import (
-    ComparisonItem,
-    ComparisonRelationship,
     CrossPaperComparison,
-    GapResolution,
     GapResolutionState,
     ResearchDocumentUnderstanding,
     ResearchGoal,
-    ResearchHypothesis,
-    ResearchCertainty,
-    HypothesisStatus,
-    SourceReference,
 )
 
 logger = get_logger(__name__)

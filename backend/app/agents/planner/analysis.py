@@ -6,7 +6,6 @@ using the LLM Gateway.
 
 import json
 import uuid
-from typing import Any
 
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession

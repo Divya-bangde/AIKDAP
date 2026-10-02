@@ -5,7 +5,7 @@ Implements the validated query reformulation architecture from Sprint 15 Phase 2
 
 import json
 import re
-from typing import Any, Tuple
+from typing import Any
 
 from pydantic import BaseModel, Field
 

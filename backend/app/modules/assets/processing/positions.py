@@ -29,7 +29,6 @@ order pypdf reads, so a two-column page's columns are not interleaved.
 """
 
 import asyncio
-import bisect
 import io
 import uuid
 import unicodedata

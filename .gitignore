@@ -33,3 +33,27 @@ frontend/coverage/
 frontend/*.tsbuildinfo
 # Playwright CLI output (may contain credentials)
 .playwright-cli/
+
+# Local debugging artifacts: sprint screenshots, API response dumps
+# (login/token dumps hold live JWTs), test-run transcripts and one-off
+# investigation scripts. Git history keeps the ones already committed.
+screenshots_*/
+/*.png
+/frontend/*.png
+/backend/*.png
+/backend/.e2e_scratch*
+/backend/full_suite_*.txt
+/backend/run_detail*.json
+/backend/run_diag_*.json
+/backend/run_start_*.json
+/backend/login*.json
+/backend/token*.txt
+/backend/chunk_*_full.json
+/backend/assets_now.json
+/backend/evidence_workspace_fixture.json
+/backend/_ask.py
+/backend/block_providers.py
+/backend/component_timing.py
+/backend/ping_*.py
+/backend/reconcile_now.py
+/backend/repro_event_loop.py
