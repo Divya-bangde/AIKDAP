@@ -14,8 +14,11 @@ import uuid
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import load_only
 
-from app.modules.research.enums import ResearchRunStatus
+from app.core.pagination import cursor_scope, read_page
+
+from app.modules.research.enums import ResearchGroundingStatus, ResearchRunStatus
 from app.modules.research.models import AgentMessage, ResearchRun, ResearchStep
 
 
@@ -56,9 +59,31 @@ class ResearchRunRepository:
         if status is not None:
             stmt = stmt.where(ResearchRun.status == status)
 
-        stmt = stmt.order_by(ResearchRun.created_at.desc()).offset(skip).limit(limit)
+        stmt = stmt.order_by(ResearchRun.created_at.desc(), ResearchRun.id.desc()).offset(skip).limit(limit)
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
+
+    async def page_by_owner(self, owner_id, *, project_id=None, status=None, grounding_status=None, cursor=None, limit=50):
+        statement = select(ResearchRun).options(load_only(
+            ResearchRun.id, ResearchRun.project_id, ResearchRun.query,
+            ResearchRun.status, ResearchRun.grounding_status, ResearchRun.created_at,
+            ResearchRun.completed_at, ResearchRun.duration_ms,
+        )).where(ResearchRun.owner_id == owner_id)
+        if project_id is not None:
+            statement = statement.where(ResearchRun.project_id == project_id)
+        if status is not None:
+            statement = statement.where(ResearchRun.status == status)
+        if grounding_status is not None:
+            statement = statement.where(ResearchRun.grounding_status == grounding_status)
+            if grounding_status == ResearchGroundingStatus.GROUNDED:
+                statement = statement.where(
+                    ResearchRun.status == ResearchRunStatus.COMPLETED,
+                    func.length(func.trim(ResearchRun.final_answer)) > 0,
+                )
+        return await read_page(
+            self._session, statement, ResearchRun, cursor=cursor, limit=limit,
+            scope=cursor_scope("research", owner_id, project_id, status, grounding_status),
+        )
 
     async def create(self, run: ResearchRun) -> ResearchRun:
         """Insert a new run row and flush to populate generated fields."""

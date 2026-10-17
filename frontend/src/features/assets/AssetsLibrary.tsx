@@ -8,8 +8,8 @@ import { RowListSkeleton } from "@/components/common/Skeletons";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { allSettled } from "@/features/assets/asset-state";
-import { usePolling } from "@/hooks/usePolling";
+import { usePagedAssets } from "@/hooks/usePagedLists";
+import { LoadMore } from "@/components/common/LoadMore";
 import { messageFor } from "@/lib/api-error";
 import { saveBlob } from "@/lib/export";
 import { formatBytes, formatRelativeTime } from "@/lib/format";
@@ -66,16 +66,12 @@ export function AssetsLibrary({
   const [search, setSearch] = useState("");
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
-  const assetsQuery = usePolling({
-    queryKey: ["assets", projectId],
-    queryFn: () => assetsService.listAssets(projectId),
-    isTerminal: allSettled,
-  });
+  const assetsQuery = usePagedAssets(projectId);
 
   if (assetsQuery.isLoading) return <RowListSkeleton label="Loading assets" />;
-  if (assetsQuery.isError) return <ErrorState error={assetsQuery.error} title="Couldn't load assets" />;
+  if (assetsQuery.isError && !assetsQuery.isFetchNextPageError) return <ErrorState error={assetsQuery.error} title="Couldn't load assets" />;
 
-  const assets = assetsQuery.data ?? [];
+  const assets = assetsQuery.items;
   if (assets.length === 0) {
     return (
       <EmptyState
@@ -139,6 +135,7 @@ export function AssetsLibrary({
         </p>
       )}
 
+      {assetsQuery.hasNextPage && <p className="text-xs text-muted-foreground">Filters apply to loaded assets. Load more to include older items.</p>}
       {filtered.length === 0 ? (
         <EmptyState icon={Search} title="No assets match this filter." />
       ) : (
@@ -155,6 +152,7 @@ export function AssetsLibrary({
           </CardContent>
         </Card>
       )}
+      <LoadMore query={assetsQuery} label="assets" />
     </div>
   );
 }

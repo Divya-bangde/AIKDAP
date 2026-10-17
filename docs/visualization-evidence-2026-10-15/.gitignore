@@ -1,0 +1,4 @@
+# Local reproduction servers/builds and the preserved unrelated user diff.
+*-dist/
+check-dist/
+user-working-tree.patch

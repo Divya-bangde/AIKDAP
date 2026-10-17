@@ -1,0 +1,114 @@
+{
+  "title": "Illustrative Category A mass",
+  "finding": "Mass: 1 values, displayed range 42 to 42.",
+  "origin": "illustrative",
+  "scope": [
+    "Scope and time window were not supplied."
+  ],
+  "context": [
+    "Trace 1 y unit: kg."
+  ],
+  "sources": [
+    {
+      "id": "c1",
+      "title": "Synthetic local evidence",
+      "reference": "fixture:mass"
+    }
+  ],
+  "metadata": {
+    "run_id": "fixture-run",
+    "project_id": "fixture-project",
+    "question": "Show the independently verified sample mass of Category A in a yearly bar chart. This deliberately long synthetic question tests readable visual task presentation on a narrow viewport.",
+    "visualization_outcome": {
+      "status": "produced",
+      "reason": "Every plotted value was verified against the synthetic local evidence.",
+      "verification": "illustrative",
+      "requested": {
+        "type": "bar",
+        "axis_semantics": "category",
+        "metrics": [
+          "Mass"
+        ],
+        "series": []
+      },
+      "repair_attempts": 0
+    },
+    "provenance": [
+      {
+        "trace": 0,
+        "field": "y",
+        "point": 0,
+        "formula": "identity",
+        "unit": "kg",
+        "inputs": [
+          {
+            "citation_id": "c1",
+            "reference": "fixture:mass",
+            "unit": "kg",
+            "value": 42
+          }
+        ],
+        "received_trace": 0
+      }
+    ],
+    "intent": null,
+    "received_provenance": [
+      {
+        "trace": 0,
+        "field": "y",
+        "point": 0,
+        "formula": "identity",
+        "unit": "kg",
+        "inputs": [
+          {
+            "citation_id": "c1",
+            "reference": "fixture:mass",
+            "unit": "kg",
+            "value": 42
+          }
+        ]
+      }
+    ]
+  },
+  "layout": {
+    "xaxis": {
+      "title": {
+        "text": "Category"
+      }
+    },
+    "yaxis": {
+      "title": {
+        "text": "Mass (kg)"
+      }
+    }
+  },
+  "plotted_trace_mapping": [
+    {
+      "exported_trace": 0,
+      "received_trace": 0,
+      "uid": null,
+      "name": "Mass"
+    }
+  ],
+  "plotted_traces": [
+    {
+      "type": "bar",
+      "x": [
+        "Category A"
+      ],
+      "y": [
+        42
+      ],
+      "name": "Mass"
+    }
+  ],
+  "plotted_values": [
+    {
+      "trace": "Mass",
+      "point": 0,
+      "x": "Category A",
+      "y": 42
+    }
+  ],
+  "relationship_source": null
+}

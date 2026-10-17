@@ -141,6 +141,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Project Page */
+        get: operations["project_page_api_v1_projects_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Workspace Summary
+         * @description All owned records, including archived items; documents have type=document.
+         *
+         *     Runs include every status. Grounded answers are completed research runs
+         *     explicitly marked grounded with a nonempty final answer. No page limit.
+         */
+        get: operations["workspace_summary_api_v1_projects_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{project_id}": {
         parameters: {
             query?: never;
@@ -276,6 +316,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/assets/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Asset Page */
+        get: operations["asset_page_api_v1_assets_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/assets/{asset_id}": {
         parameters: {
             query?: never;
@@ -356,6 +413,40 @@ export interface paths {
          * @description Partially update a task owned by the current user.
          */
         patch: operations["update_task_api_v1_tasks__task_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/knowledge-base/readiness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Embedding Readiness */
+        get: operations["embedding_readiness_api_v1_knowledge_base_readiness_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/knowledge-base/rebuild": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rebuild Project Embeddings */
+        post: operations["rebuild_project_embeddings_api_v1_knowledge_base_rebuild_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/knowledge-base/search": {
@@ -549,6 +640,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/research/runs/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Page Research Runs */
+        get: operations["page_research_runs_api_v1_research_runs_page_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/research/runs/{run_id}": {
         parameters: {
             query?: never;
@@ -708,13 +816,31 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Restore Latest Comparison Route */
+        get: operations["restore_latest_comparison_route_api_v1_research_documents__asset_id__cross_paper_analysis_get"];
         put?: never;
         /**
          * Analyze Cross Paper Route
          * @description Analyze multiple research documents against a primary document.
          */
         post: operations["analyze_cross_paper_route_api_v1_research_documents__asset_id__cross_paper_analysis_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/research/comparisons/{artifact_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Restore Comparison Route */
+        get: operations["restore_comparison_route_api_v1_research_comparisons__artifact_id__get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1533,6 +1659,19 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /** Axis */
+        Axis: {
+            /** Title */
+            title?: string | components["schemas"]["TextTitle"] | null;
+            /** Type */
+            type?: ("linear" | "log" | "date" | "category") | null;
+            /** Range */
+            range?: number[] | null;
+            /** Categoryorder */
+            categoryorder?: ("array" | "trace") | null;
+            /** Categoryarray */
+            categoryarray?: (number | string | null)[] | null;
+        };
         /** Body_import_experiment_test_cases_route_api_v1_research_experiments__plan_id__test_cases_import_post */
         Body_import_experiment_test_cases_route_api_v1_research_experiments__plan_id__test_cases_import_post: {
             /**
@@ -1646,6 +1785,26 @@ export interface components {
          * @enum {string}
          */
         ComparisonRelationship: "SUPPORTS" | "EXTENDS" | "CONTRADICTS" | "DIFFERS" | "COMPLEMENTS" | "UNRELATED" | "INSUFFICIENT_EVIDENCE";
+        /** ComparisonSourceVersion */
+        ComparisonSourceVersion: {
+            /**
+             * Asset Id
+             * Format: uuid
+             */
+            asset_id: string;
+            /** Checksum */
+            checksum: string;
+            /** Asset Version */
+            asset_version: number;
+            /** Chunk Fingerprint */
+            chunk_fingerprint: string;
+            /** Extractor Version */
+            extractor_version: string;
+            /** Model Identity */
+            model_identity: string;
+            /** Prompt Version */
+            prompt_version: string;
+        };
         /**
          * ComponentHealth
          * @description One dependency's state, plus whatever context helps diagnose it.
@@ -1704,6 +1863,27 @@ export interface components {
              * @default Cross-Paper Reducer
              */
             source_provenance: string;
+            /** Artifact Id */
+            artifact_id?: string | null;
+            /** Created At */
+            created_at?: string | null;
+            goal?: components["schemas"]["ResearchGoal"] | null;
+            workspace_context?: components["schemas"]["ResearchWorkspaceContext"] | null;
+            /** Source Versions */
+            source_versions?: components["schemas"]["ComparisonSourceVersion"][];
+            /**
+             * Status
+             * @default completed
+             * @enum {string}
+             */
+            status: "completed" | "insufficient_evidence";
+            /** Insufficiency Reason */
+            insufficiency_reason?: string | null;
+            /**
+             * Stale
+             * @default false
+             */
+            stale: boolean;
         };
         /** DatasetProfileRead */
         DatasetProfileRead: {
@@ -1714,6 +1894,25 @@ export interface components {
             /** Columns */
             columns: components["schemas"]["ColumnProfileRead"][];
         };
+        /** DocumentPassage */
+        DocumentPassage: {
+            /**
+             * Asset Id
+             * Format: uuid
+             */
+            asset_id: string;
+            /**
+             * Chunk Id
+             * Format: uuid
+             */
+            chunk_id: string;
+            /** Chunk Index */
+            chunk_index: number;
+            /** Page */
+            page?: number | null;
+            /** Content */
+            content: string;
+        };
         /**
          * EmbeddingProviderName
          * @description Identifies which embedding backend produced (or will produce) a
@@ -1723,6 +1922,66 @@ export interface components {
          * @enum {string}
          */
         EmbeddingProviderName: "none" | "openai" | "nvidia_nim" | "voyage_ai" | "jina_ai" | "local";
+        /** EmbeddingReadiness */
+        EmbeddingReadiness: {
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            configured_space: components["schemas"]["EmbeddingSpaceRead"];
+            /** Active Space Id */
+            active_space_id: string | null;
+            /** Total Chunks */
+            total_chunks: number;
+            /** Searchable Chunks */
+            searchable_chunks: number;
+            /** Legacy Chunks */
+            legacy_chunks: number;
+            /** Ready */
+            ready: boolean;
+            /** Compatible */
+            compatible: boolean;
+            rebuild: components["schemas"]["EmbeddingRebuildRead"] | null;
+        };
+        /** EmbeddingRebuildRead */
+        EmbeddingRebuildRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "completed" | "failed";
+            /** Total */
+            total: number;
+            /** Completed */
+            completed: number;
+            /** Failed */
+            failed: number;
+            /** Error */
+            error?: string | null;
+        };
+        /** EmbeddingSpaceRead */
+        EmbeddingSpaceRead: {
+            /** Id */
+            id: string;
+            /** Provider */
+            provider: string;
+            /** Model */
+            model: string;
+            /** Version */
+            version: string;
+            /** Dimensions */
+            dimensions: number;
+            /** Document Task */
+            document_task?: string | null;
+            /** Query Task */
+            query_task?: string | null;
+        };
         /**
          * EmbeddingStatus
          * @description Status of the (future) embedding-generation pipeline for an asset
@@ -1731,6 +1990,25 @@ export interface components {
          * @enum {string}
          */
         EmbeddingStatus: "pending" | "processing" | "completed" | "failed" | "not_applicable";
+        /** EvidenceInput */
+        EvidenceInput: {
+            /** Citation Id */
+            citation_id: string;
+            /** Reference */
+            reference: string;
+            /** Chunk Id */
+            chunk_id?: string | null;
+            /** Asset Id */
+            asset_id?: string | null;
+            /** Quote */
+            quote: string;
+            /** Token Index */
+            token_index: number;
+            /** Value */
+            value: number;
+            /** Unit */
+            unit: string;
+        };
         /**
          * ExecutionAttemptRead
          * @description Public representation of a persisted execution attempt.
@@ -2309,12 +2587,35 @@ export interface components {
             evidence: string;
             /** Unresolved Portion */
             unresolved_portion?: string | null;
+            /** Source References */
+            source_references?: components["schemas"]["SourceReference"][];
         };
         /**
          * GapResolutionState
          * @enum {string}
          */
         GapResolutionState: "RESOLVED" | "PARTIALLY_RESOLVED" | "NOT_RESOLVED" | "CONTRADICTED" | "NEEDS_VERIFICATION";
+        /** GridTrace */
+        GridTrace: {
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+            /** Uid */
+            uid?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "contour" | "heatmap" | "surface";
+            /** Z */
+            z: (number | null)[][];
+            /** X */
+            x?: (number | string | null)[] | null;
+            /** Y */
+            y?: (number | string | null)[] | null;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -2418,6 +2719,8 @@ export interface components {
             section?: string | null;
             embedding_status: components["schemas"]["EmbeddingStatus"];
             embedding_provider: components["schemas"]["EmbeddingProviderName"] | null;
+            /** Embedding Space Id */
+            embedding_space_id?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -2428,6 +2731,23 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /** Layout */
+        Layout: {
+            /** Title */
+            title?: string | components["schemas"]["TextTitle"] | null;
+            xaxis?: components["schemas"]["Axis"] | null;
+            yaxis?: components["schemas"]["Axis"] | null;
+            /** Scene */
+            scene?: {
+                [key: string]: components["schemas"]["Axis"];
+            } | null;
+            /** Barmode */
+            barmode?: ("group" | "stack" | "relative" | "overlay") | null;
+            /** Showlegend */
+            showlegend?: boolean | null;
+            /** Height */
+            height?: number | null;
         };
         /**
          * LoginRequest
@@ -2473,6 +2793,20 @@ export interface components {
          * @enum {string}
          */
         OverallStatus: "healthy" | "degraded" | "unhealthy";
+        /** Page[AssetRead] */
+        Page_AssetRead_: {
+            /** Items */
+            items: components["schemas"]["AssetRead"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /** Page[ProjectRead] */
+        Page_ProjectRead_: {
+            /** Items */
+            items: components["schemas"]["ProjectRead"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
         /** PaperGraph */
         PaperGraph: {
             /** Nodes */
@@ -2568,6 +2902,25 @@ export interface components {
          * @enum {string}
          */
         Persona: "student" | "researcher" | "builder";
+        /** PieTrace */
+        PieTrace: {
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+            /** Uid */
+            uid?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "pie";
+            /** Labels */
+            labels: string[];
+            /** Values */
+            values: (number)[];
+        };
         /**
          * ProjectCreate
          * @description Payload for creating a new project.
@@ -2793,6 +3146,10 @@ export interface components {
         };
         /** ResearchDocumentUnderstanding */
         ResearchDocumentUnderstanding: {
+            /** Asset Id */
+            asset_id?: string | null;
+            /** Source Passages */
+            source_passages?: components["schemas"]["DocumentPassage"][];
             /** Title */
             title: string;
             /** Abstract */
@@ -3022,10 +3379,8 @@ export interface components {
                 [key: string]: unknown;
             }[] | null;
             grounding_status: components["schemas"]["ResearchGroundingStatus"] | null;
-            /** Visualization */
-            visualization?: {
-                [key: string]: unknown;
-            } | null;
+            visualization?: components["schemas"]["Visualization"] | null;
+            visualization_outcome?: components["schemas"]["VisualizationOutcome"] | null;
             /** Equations */
             equations?: {
                 [key: string]: unknown;
@@ -3065,6 +3420,13 @@ export interface components {
             rerun_run_id?: string | null;
             /** Added Paper Count */
             added_paper_count?: number | null;
+        };
+        /** ResearchRunPage */
+        ResearchRunPage: {
+            /** Items */
+            items: components["schemas"]["ResearchRunSummary"][];
+            /** Next Cursor */
+            next_cursor: string | null;
         };
         /**
          * ResearchRunRead
@@ -3112,10 +3474,8 @@ export interface components {
                 [key: string]: unknown;
             }[] | null;
             grounding_status: components["schemas"]["ResearchGroundingStatus"] | null;
-            /** Visualization */
-            visualization?: {
-                [key: string]: unknown;
-            } | null;
+            visualization?: components["schemas"]["Visualization"] | null;
+            visualization_outcome?: components["schemas"]["VisualizationOutcome"] | null;
             /** Equations */
             equations?: {
                 [key: string]: unknown;
@@ -3156,6 +3516,32 @@ export interface components {
          * @enum {string}
          */
         ResearchRunStatus: "pending" | "running" | "completed" | "failed" | "cancelled";
+        /** ResearchRunSummary */
+        ResearchRunSummary: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Query */
+            query: string;
+            status: components["schemas"]["ResearchRunStatus"];
+            grounding_status: components["schemas"]["ResearchGroundingStatus"] | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Completed At */
+            completed_at: string | null;
+            /** Duration Ms */
+            duration_ms: number | null;
+        };
         /**
          * ResearchStepRead
          * @description One node's execution record within a run.
@@ -3272,6 +3658,18 @@ export interface components {
          * @enum {string}
          */
         RunPlanStatus: "planned" | "executed" | "failed" | "cancelled";
+        /** Scope */
+        Scope: {
+            /** Label */
+            label?: string | null;
+            /**
+             * Partial
+             * @default false
+             */
+            partial: boolean;
+            /** Description */
+            description?: string | null;
+        };
         /**
          * SemanticSearchRequest
          * @description Request body for `POST /knowledge-base/search`.
@@ -3401,6 +3799,10 @@ export interface components {
             page?: number | null;
             /** Chunk Index */
             chunk_index?: number | null;
+            /** Chunk Id */
+            chunk_id?: string | null;
+            /** Quote */
+            quote?: string | null;
             /**
              * Evidence Scope
              * @default FULL_TEXT
@@ -3554,6 +3956,11 @@ export interface components {
                 [key: string]: string;
             }[];
         };
+        /** TextTitle */
+        TextTitle: {
+            /** Text */
+            text: string;
+        };
         /**
          * TokenPair
          * @description An access/refresh JWT pair returned on login or token refresh.
@@ -3642,6 +4049,32 @@ export interface components {
             /** Error Type */
             type: string;
         };
+        /** ValueProvenance */
+        ValueProvenance: {
+            /** Trace */
+            trace: number;
+            /**
+             * Field
+             * @enum {string}
+             */
+            field: "x" | "y" | "z" | "values";
+            /** Point */
+            point: number;
+            /** Column */
+            column?: number | null;
+            /** Inputs */
+            inputs: components["schemas"]["EvidenceInput"][];
+            /**
+             * Formula
+             * @default identity
+             * @enum {string}
+             */
+            formula: "identity" | "sum" | "difference" | "ratio" | "convert";
+            /** Unit */
+            unit: string;
+            /** Rounding Decimals */
+            rounding_decimals?: number | null;
+        };
         /**
          * VariableRole
          * @description What kind of quantity this is -- never conflated with mutability
@@ -3699,10 +4132,37 @@ export interface components {
              */
             reason: string;
         };
+        /** Visualization */
+        Visualization: {
+            kind: components["schemas"]["VisualizationKind"];
+            /**
+             * Title
+             * @default
+             */
+            title: string;
+            /** Data */
+            data?: (components["schemas"]["XYTrace"] | components["schemas"]["PieTrace"] | components["schemas"]["GridTrace"])[];
+            layout?: components["schemas"]["Layout"];
+            /** Mermaid */
+            mermaid?: string | null;
+            /**
+             * Origin
+             * @default unknown
+             * @enum {string}
+             */
+            origin: "measured" | "derived" | "illustrative" | "user_entered" | "unknown";
+            /** Provenance */
+            provenance?: components["schemas"]["ValueProvenance"][];
+            intent?: components["schemas"]["VisualizationIntent"];
+            scope?: components["schemas"]["Scope"] | null;
+        };
         /** VisualizationData */
         VisualizationData: {
-            /** Chart Type */
-            chart_type: string;
+            /**
+             * Chart Type
+             * @enum {string}
+             */
+            chart_type: "scatter" | "line" | "bar";
             /** X Label */
             x_label: string;
             /** Y Label */
@@ -3710,10 +4170,80 @@ export interface components {
             /** Series */
             series: components["schemas"]["VisualizationSeries"][];
             /**
+             * Origin
+             * @default unknown
+             * @enum {string}
+             */
+            origin: "expected_test_case_values" | "unknown";
+            /** Plan Id */
+            plan_id?: string | null;
+            /** Plan Version */
+            plan_version?: number | null;
+            /** Input Name */
+            input_name?: string | null;
+            /** Output Name */
+            output_name?: string | null;
+            /** Group By */
+            group_by?: string | null;
+            /** Total Test Cases */
+            total_test_cases?: number | null;
+            /** Plotted Test Cases */
+            plotted_test_cases?: number | null;
+            /** Excluded Missing Input */
+            excluded_missing_input?: number | null;
+            /** Partial */
+            partial?: boolean | null;
+            /** Scope Description */
+            scope_description?: string | null;
+            /**
              * Note
              * @description e.g. a trend disclaimer -- never a causal claim (Part H).
              */
             note?: string | null;
+        };
+        /** VisualizationIntent */
+        VisualizationIntent: {
+            /** Type */
+            type?: string | null;
+            /** Axis Semantics */
+            axis_semantics?: ("category" | "numeric" | "date" | "ordinal" | "trajectory") | null;
+            /** Metrics */
+            metrics?: string[];
+            /** Series */
+            series?: string[];
+            /** Interpretation */
+            interpretation?: string | null;
+            /** Domain */
+            domain?: (string | number)[] | null;
+        };
+        /**
+         * VisualizationKind
+         * @enum {string}
+         */
+        VisualizationKind: "chart2d" | "chart3d" | "diagram";
+        /** VisualizationOutcome */
+        VisualizationOutcome: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "produced" | "not_enough_data" | "unsupported" | "failed";
+            /** Reason */
+            reason: string;
+            /** Next Action */
+            next_action?: string | null;
+            requested?: components["schemas"]["VisualizationIntent"];
+            /**
+             * Verification
+             * @default unverified
+             * @enum {string}
+             */
+            verification: "verified" | "illustrative" | "user_entered" | "unverified";
+            /**
+             * Repair Attempts
+             * @default 0
+             */
+            repair_attempts: number;
         };
         /**
          * VisualizationSeries
@@ -3729,9 +4259,55 @@ export interface components {
             y: (number | null)[];
             /**
              * Kind
-             * @description 'scatter' | 'line' | 'bar'
+             * @enum {string}
              */
-            kind: string;
+            kind: "scatter" | "line" | "bar";
+            /** Test Case Ids */
+            test_case_ids?: string[];
+            /** Source References */
+            source_references?: (components["schemas"]["SourceReference"] | null)[];
+        };
+        /** WorkspaceSummary */
+        WorkspaceSummary: {
+            /** Projects */
+            projects: number;
+            /** Assets */
+            assets: number;
+            /** Documents */
+            documents: number;
+            /** Runs */
+            runs: number;
+            /** Grounded Answers */
+            grounded_answers: number;
+        };
+        /** XYTrace */
+        XYTrace: {
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+            /** Uid */
+            uid?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "bar" | "scatter" | "scatter3d";
+            /** X */
+            x: (number | string | null)[];
+            /** Y */
+            y: (number | string | null)[];
+            /** Z */
+            z?: (number | string | null)[] | null;
+            /** Mode */
+            mode?: ("lines" | "markers" | "lines+markers") | null;
+            /**
+             * Connectgaps
+             * @default false
+             * @constant
+             */
+            connectgaps: false;
         };
     };
     responses: never;
@@ -3966,6 +4542,69 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProjectRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    project_page_api_v1_projects_page_get: {
+        parameters: {
+            query?: {
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_ProjectRead_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    workspace_summary_api_v1_projects_summary_get: {
+        parameters: {
+            query?: {
+                project_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkspaceSummary"];
                 };
             };
             /** @description Validation Error */
@@ -4242,6 +4881,43 @@ export interface operations {
             };
         };
     };
+    asset_page_api_v1_assets_page_get: {
+        parameters: {
+            query?: {
+                project_id?: string | null;
+                cursor?: string | null;
+                limit?: number;
+                q?: string | null;
+                asset_type?: components["schemas"]["AssetType"] | null;
+                status?: components["schemas"]["AssetStatus"] | null;
+                tags?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_AssetRead_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_asset_api_v1_assets__asset_id__get: {
         parameters: {
             query?: never;
@@ -4489,6 +5165,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TaskRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    embedding_readiness_api_v1_knowledge_base_readiness_get: {
+        parameters: {
+            query: {
+                project_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmbeddingReadiness"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rebuild_project_embeddings_api_v1_knowledge_base_rebuild_post: {
+        parameters: {
+            query: {
+                project_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmbeddingReadiness"];
                 };
             };
             /** @description Validation Error */
@@ -4766,6 +5504,41 @@ export interface operations {
             };
         };
     };
+    page_research_runs_api_v1_research_runs_page_get: {
+        parameters: {
+            query?: {
+                project_id?: string | null;
+                status?: components["schemas"]["ResearchRunStatus"] | null;
+                grounding_status?: components["schemas"]["ResearchGroundingStatus"] | null;
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResearchRunPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_research_run_api_v1_research_runs__run_id__get: {
         parameters: {
             query?: never;
@@ -4995,6 +5768,39 @@ export interface operations {
             };
         };
     };
+    restore_latest_comparison_route_api_v1_research_documents__asset_id__cross_paper_analysis_get: {
+        parameters: {
+            query: {
+                project_id: string;
+            };
+            header?: never;
+            path: {
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrossPaperComparison"] | null;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     analyze_cross_paper_route_api_v1_research_documents__asset_id__cross_paper_analysis_post: {
         parameters: {
             query: {
@@ -5011,6 +5817,39 @@ export interface operations {
                 "application/json": components["schemas"]["CrossPaperAnalysisRequest"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrossPaperComparison"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_comparison_route_api_v1_research_comparisons__artifact_id__get: {
+        parameters: {
+            query: {
+                project_id: string;
+            };
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {

@@ -1,12 +1,20 @@
 import { request, requestBlob, requestForm } from "@/services/client";
 import type { components } from "@/types/api";
+import { collectPages, pageQuery, type Page } from "@/services/pagination";
 
 type AssetRead = components["schemas"]["AssetRead"];
 type ChunkLocationRead = components["schemas"]["ChunkLocationRead"];
 
+export function listAssetsPage(projectId?: string, cursor?: string | null, limit = 50) {
+  return request<Page<AssetRead>>(`/api/v1/assets/page?${pageQuery(cursor, limit, { project_id: projectId })}`);
+}
+
+export function getAsset(assetId: string) {
+  return request<AssetRead>(`/api/v1/assets/${assetId}`);
+}
+
 export function listAssets(projectId?: string) {
-  const query = projectId ? `?project_id=${projectId}` : "";
-  return request<AssetRead[]>(`/api/v1/assets${query}`);
+  return collectPages((cursor) => listAssetsPage(projectId, cursor, 200));
 }
 
 /** Matches `Body_upload_asset_api_v1_assets_upload_post` exactly:

@@ -111,7 +111,7 @@ describe("Landing", () => {
     expect(screen.getByRole("link", { name: /enter aikdap/i })).toBeEnabled();
   });
 
-  it("tells the whole pipeline story, in the order the pipeline runs", async () => {
+  it("labels distinct conceptual ingestion/query paths and optional background work", async () => {
     mockSystemDark(false);
     renderWithProviders(<Harness />, { route: "/" });
 
@@ -120,29 +120,23 @@ describe("Landing", () => {
     // visually.
     for (const heading of [
       /collecting information was never the hard part/i,
-      /one pipeline\. seven stages/i,
-      /every document is read before it is ever retrieved/i,
+      /document preparation and research follow different paths/i,
+      /optional document profiles add context in the background/i,
       /retrieval is a filter, not a search box/i,
       /an answer is only as good as the evidence/i,
-      /the pipeline outlives any single provider/i,
+      /configured fallback providers can keep research moving/i,
       /the workspace shows its working/i,
       /turn information/i,
     ]) {
       expect(await screen.findByRole("heading", { level: 2, name: heading })).toBeInTheDocument();
     }
 
-    // The real stages, named as the backend names them, in order.
-    const stages = await screen.findAllByRole("heading", { level: 3 });
-    const names = stages.map((node) => node.textContent);
-    expect(names.slice(0, 7)).toEqual([
-      "Collect",
-      "Understand",
-      "Embed",
-      "Retrieve",
-      "Rerank",
-      "Ground",
-      "Synthesize",
-    ]);
+    expect(screen.getByRole("region",{name:"Document ingestion path"})).toBeInTheDocument();
+    expect(screen.getByRole("region",{name:"Research query path"})).toBeInTheDocument();
+    expect(screen.getByText(/Simplified conceptual overview — not live progress/)).toBeInTheDocument();
+    expect(screen.getByText(/It is not a prerequisite for retrieval/)).toBeInTheDocument();
+    expect(screen.queryByText(/same sequence every time/)).not.toBeInTheDocument();
+    expect(screen.getByText(/one web fallback/)).toBeInTheDocument();
   });
 
   it("closes on a footer that offers a way in and invents nothing", async () => {
@@ -186,8 +180,9 @@ describe("Landing", () => {
     expect(retrieval).toHaveTextContent(/not a measurement/i);
     expect(retrieval).toHaveTextContent(/no run is being reported/i);
 
-    const providers = await screen.findByText(/the configured order of the gateway/i);
-    expect(providers).toHaveTextContent(/does not report\s+which providers are reachable/i);
+    const providers = await screen.findByText(/illustrative provider chain/i);
+    expect(providers).toHaveTextContent(/order depend on configuration/i);
+    expect(providers).toHaveTextContent(/does not report availability/i);
 
     /* And nothing on the page claims accuracy, speed or scale — the
      * numbers a marketing page reaches for and this one may not. */

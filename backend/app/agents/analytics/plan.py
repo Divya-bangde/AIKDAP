@@ -37,11 +37,19 @@ class Sort(BaseModel):
     descending: bool = True
 
 
+class ChartOrdering(BaseModel):
+    mode: Literal["trend", "ordinal", "trajectory"]
+    x_type: Literal["numeric", "date"] | None = None
+    domain: list[str | float] | None = Field(default=None, max_length=1000)
+
+
 class ChartSpec(BaseModel):
     type: Literal["bar", "line", "pie", "table", "kpi"]
     x: str | None = None
     y: list[str] = Field(default_factory=list)
     series: str | None = None
+    metric_units: dict[str, str] = Field(default_factory=dict)
+    ordering: ChartOrdering | None = None
 
 
 class AnalysisPlan(BaseModel):
@@ -69,6 +77,10 @@ def output_columns(plan: AnalysisPlan) -> list[str]:
 def validate_plan(plan: AnalysisPlan, profile: DatasetProfile) -> list[str]:
     """Every problem with `plan` against `profile`, as readable messages
     fit to send back to the LLM for one repair attempt."""
+    # DatasetProfile currently carries kinds, not trusted physical units. A
+    # generated plan cannot manufacture units that could merge incompatible
+    # metrics into one axis. Keep unknown until ingestion supplies a unit map.
+    plan.chart.metric_units = {}
     if plan.unanswerable_reason:
         return []
 

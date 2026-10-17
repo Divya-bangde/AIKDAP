@@ -1,0 +1,81 @@
+{
+  "note": "Inclusive trace-event durations; nested categories overlap and must not be summed. Same cold 4xCPU/10Mbps/40ms profile. Separate run from untraced runtime samples.",
+  "events": {
+    "ParseHTML": {
+      "count": 4,
+      "durationMs": 2.043
+    },
+    "HTMLDocumentParser::MaybeFetchQueuedPreloads": {
+      "count": 1,
+      "durationMs": 2.857
+    },
+    "V8.CompileCode": {
+      "count": 3521,
+      "durationMs": 2010.5859999999932
+    },
+    "V8.ParseProgram": {
+      "count": 36,
+      "durationMs": 844.1460000000001
+    },
+    "V8.Compile": {
+      "count": 24,
+      "durationMs": 1.8339999999999987
+    },
+    "V8.CompileIgnition": {
+      "count": 3984,
+      "durationMs": 183.17799999999943
+    },
+    "V8.CompileIgnitionFinalization": {
+      "count": 3649,
+      "durationMs": 54.642000000000245
+    },
+    "v8.parseOnBackground": {
+      "count": 5,
+      "durationMs": 1685.637
+    },
+    "v8.parseOnBackgroundParsing": {
+      "count": 145,
+      "durationMs": 1913.9229999999995
+    },
+    "BackgroundCompileTask::Run": {
+      "count": 5,
+      "durationMs": 1416.989
+    },
+    "V8.PreParse": {
+      "count": 63013,
+      "durationMs": 3286.491999999987
+    },
+    "v8.parseOnBackgroundWaiting": {
+      "count": 140,
+      "durationMs": 1549.0369999999991
+    },
+    "V8.CompileCodeBackground": {
+      "count": 5,
+      "durationMs": 3.21
+    },
+    "ParseAuthorStyleSheet": {
+      "count": 1,
+      "durationMs": 6.076
+    },
+    "v8.compileModule": {
+      "count": 5,
+      "durationMs": 0.8050000000000002
+    },
+    "V8.CompileStreamedModule": {
+      "count": 5,
+      "durationMs": 0.24400000000000005
+    },
+    "V8.ParseFunction": {
+      "count": 3539,
+      "durationMs": 5129.69800000001
+    },
+    "V8.CompileScript": {
+      "count": 17,
+      "durationMs": 0.43200000000000005
+    },
+    "V8.CompileEval": {
+      "count": 11,
+      "durationMs": 0.6839999999999999
+    }
+  }
+}

@@ -25,10 +25,19 @@ from functools import lru_cache
 from app.core.config import settings
 from app.core.llm import LLMGateway, get_llm_gateway, provider_of
 from app.modules.knowledge_base.enums import EmbeddingProviderName
+from app.modules.knowledge_base.spaces import EmbeddingSpace, validate_vectors
 
 
 class EmbeddingProvider(ABC):
     """Abstract interface for turning text into embedding vectors."""
+
+    @property
+    def space(self) -> EmbeddingSpace:
+        # Explicit identity for non-gateway adapters/test doubles. Never labels legacy data.
+        return EmbeddingSpace(self.name.value, type(self).__qualname__, "1", self.dimensions)
+
+    async def embed_query(self, texts: list[str]) -> list[list[float]]:
+        return await self.embed(texts)
 
     @property
     @abstractmethod
@@ -108,6 +117,11 @@ class GatewayEmbeddingProvider(EmbeddingProvider):
     def __init__(self, gateway: LLMGateway | None = None) -> None:
         self._gateway = gateway or get_llm_gateway()
         self._model = settings.embedding_model
+        self._dimensions = settings.embedding_dimension
+        self._space = EmbeddingSpace(
+            provider_of(self._model), self._model, settings.embedding_model_version,
+            self._dimensions, settings.embedding_document_task, settings.embedding_query_task,
+        )
         provider = provider_of(self._model)
         if provider not in _PROVIDER_LABELS:
             raise ValueError(
@@ -123,17 +137,29 @@ class GatewayEmbeddingProvider(EmbeddingProvider):
 
     @property
     def dimensions(self) -> int:
-        return settings.embedding_dimension
+        return self._dimensions
+
+    @property
+    def space(self) -> EmbeddingSpace:
+        return self._space
+
+    async def embed_query(self, texts: list[str]) -> list[list[float]]:
+        return await self._embed(texts, self.space.query_task)
 
     async def embed(self, texts: list[str]) -> list[list[float]]:
         """Embed a batch of texts. `LLMError` propagates unchanged so the
         caller can distinguish an unreachable embedding backend from a
         genuinely bad response — mirroring
         `QwenDocumentUnderstandingService`'s failure contract."""
+        return await self._embed(texts, self.space.document_task)
+
+    async def _embed(self, texts: list[str], task: str | None) -> list[list[float]]:
+        options = {"task": task} if task is not None else {}
         response = await self._gateway.embed(
             texts=texts,
             model=self._model,
             timeout=settings.embedding_timeout,
+            **options,
         )
         if response.dimension != self.dimensions:
             raise ValueError(
@@ -143,6 +169,7 @@ class GatewayEmbeddingProvider(EmbeddingProvider):
                 "the configuration and re-run the migration rather than "
                 "storing a mismatched vector."
             )
+        validate_vectors(response.vectors, len(texts), self.dimensions)
         return response.vectors
 
 

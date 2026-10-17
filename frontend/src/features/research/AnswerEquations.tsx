@@ -1,7 +1,7 @@
 import { FlaskConical } from "lucide-react";
-import { lazy, Suspense } from "react";
 
 import { MathTex } from "@/features/research/MathTex";
+import { LazyRenderer } from "./RendererBoundary";
 
 /** One symbol of an equation (`schemas.EquationVariable`), with the
  * `latex` the backend typeset from its name (`Omega_H` -> `\Omega_{H}`). */
@@ -58,10 +58,8 @@ export type SystemInteractiveEquation = AnswerEquation & {
 
 // mathjs and Plotly are large, and most answers carry no computable
 // equation: loaded only when an interactive card renders.
-const InteractiveEquationCard = lazy(() => import("@/features/research/InteractiveEquationCard"));
-const SystemEquationCard = lazy(() =>
-  import("@/features/research/InteractiveEquationCard").then((module) => ({ default: module.SystemEquationCard })),
-);
+const loadEquation = () => import("@/features/research/InteractiveEquationCard");
+const loadSystem = () => import("@/features/research/InteractiveEquationCard").then((module) => ({ default: module.SystemEquationCard }));
 
 function isInteractive(equation: AnswerEquation): equation is InteractiveEquation {
   return (
@@ -105,17 +103,13 @@ export function AnswerEquations({ equations }: { equations: AnswerEquation[] }) 
             {equation.label && <p className="text-xs font-medium text-muted-foreground">{equation.label}</p>}
             {isInteractive(equation) ? (
               // The card typesets the equation itself, as the current rearrangement.
-              <Suspense fallback={<p className="text-sm text-muted-foreground">Loading calculator…</p>}>
-                <InteractiveEquationCard equation={equation} />
-              </Suspense>
+              <LazyRenderer label="calculator" load={loadEquation} rendererProps={{ equation }} />
             ) : isSystemInteractive(equation) ? (
               <>
                 <div className="overflow-x-auto">
                   <MathTex tex={equation.latex} display />
                 </div>
-                <Suspense fallback={<p className="text-sm text-muted-foreground">Loading calculator…</p>}>
-                  <SystemEquationCard equation={equation} />
-                </Suspense>
+                <LazyRenderer label="calculator" load={loadSystem} rendererProps={{ equation }} />
               </>
             ) : (
               <>
@@ -138,6 +132,7 @@ export function AnswerEquations({ equations }: { equations: AnswerEquation[] }) 
                 )}
               </>
             )}
+            {(isInteractive(equation) || isSystemInteractive(equation)) && <details><summary className="cursor-pointer text-xs text-muted-foreground">Equation source and declared variables</summary><pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words text-xs">{JSON.stringify(equation, null, 2)}</pre></details>}
           </article>
         ))}
       </div>

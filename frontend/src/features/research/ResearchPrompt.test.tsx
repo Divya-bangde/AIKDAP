@@ -1,6 +1,6 @@
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ResearchPrompt } from "@/features/research/ResearchPrompt";
 import * as projectsService from "@/services/projects";
@@ -8,6 +8,10 @@ import * as researchService from "@/services/research";
 import { renderWithProviders } from "@/test/render";
 
 vi.mock("@/services/projects");
+
+beforeEach(() => {
+  vi.mocked(projectsService.getWorkspaceSummary).mockResolvedValue({ projects: 1, assets: 1, documents: 1, runs: 1, grounded_answers: 1 });
+});
 vi.mock("@/services/research");
 
 describe("ResearchPrompt submission", () => {
@@ -17,7 +21,7 @@ describe("ResearchPrompt submission", () => {
   });
 
   it("submits the query against the selected project via the real research API", async () => {
-    vi.mocked(projectsService.listProjects).mockResolvedValue([
+    vi.mocked(projectsService.listProjectsPage).mockResolvedValue({ items: [
       {
         id: "project-1",
         owner_id: "owner-1",
@@ -32,7 +36,7 @@ describe("ResearchPrompt submission", () => {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
-    ]);
+    ], next_cursor: null });
     vi.mocked(researchService.startResearchRun).mockResolvedValue({
       run_id: "run-42",
       status: "pending",
@@ -62,7 +66,7 @@ describe("ResearchPrompt submission", () => {
   });
 
   it("submits on Enter, while Shift+Enter inserts a new line", async () => {
-    vi.mocked(projectsService.listProjects).mockResolvedValue([
+    vi.mocked(projectsService.listProjectsPage).mockResolvedValue({ items: [
       {
         id: "project-1",
         owner_id: "owner-1",
@@ -77,7 +81,7 @@ describe("ResearchPrompt submission", () => {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
-    ]);
+    ], next_cursor: null });
     vi.mocked(researchService.startResearchRun).mockResolvedValue({
       run_id: "run-43",
       status: "pending",

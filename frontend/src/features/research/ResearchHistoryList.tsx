@@ -12,9 +12,7 @@ import { formatDuration, formatRelativeTime } from "@/lib/format";
 import { hoverLift, layoutSpring } from "@/lib/motion";
 import { availableStatuses, filterRuns } from "@/features/research/research-history";
 import { outcomeLabel, runOutcome } from "@/features/research/research-presentation";
-import type { components } from "@/types/api";
-
-type ResearchRunRead = components["schemas"]["ResearchRunRead"];
+import type { ResearchRunSummary as ResearchRunRead } from "@/services/research";
 
 /** Stable across a history row and the run view's own heading, so
  * Motion animates one element between the two routes instead of

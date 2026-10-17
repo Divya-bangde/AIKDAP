@@ -10,11 +10,12 @@ import { useAuthStore } from "@/store/auth-store";
 export function ProfilePersonaSelect({ persona }: { persona: Persona }) {
   const queryClient = useQueryClient();
   const setUser = useAuthStore((state) => state.setUser);
+  const sessionId = useAuthStore((state) => state.sessionId);
 
   const mutation = useMutation({
     mutationFn: (next: Persona) => authService.updateMe({ persona: next }),
     onSuccess: (updated) => {
-      queryClient.setQueryData(["auth", "me"], updated);
+      queryClient.setQueryData(["auth", "me", sessionId], updated);
       setUser(updated);
       queryClient.invalidateQueries({ queryKey: ["projects"] });
     },

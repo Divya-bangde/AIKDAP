@@ -8,6 +8,8 @@ import {
   type StepOwner,
 } from "@/services/steps";
 import type { components } from "@/types/api";
+import { sessionEpoch } from "@/lib/session-lifecycle";
+import { useAuthStore } from "@/store/auth-store";
 
 type ResearchStepRead = components["schemas"]["ResearchStepRead"];
 
@@ -47,7 +49,8 @@ export function useRunSteps(
   { active, seed }: { active: boolean; seed?: ResearchStepRead[] },
 ) {
   const queryClient = useQueryClient();
-  const queryKey = ["steps", owner.kind, owner.id];
+  const sessionId = useAuthStore((state) => state.sessionId);
+  const queryKey = ["steps", owner.kind, owner.id, sessionId];
   const [streamFailed, setStreamFailed] = useState(false);
   const seeded = seed !== undefined;
 
@@ -66,37 +69,43 @@ export function useRunSteps(
     );
     // `queryKey` is derived from `owner`; listing it would loop.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seed, owner.kind, owner.id, queryClient]);
+  }, [seed, owner.kind, owner.id, queryClient, sessionId]);
 
   useEffect(() => {
     if (!active) return;
     let cancelled = false;
+    const epoch = sessionEpoch();
+    const current = () => !cancelled && epoch === sessionEpoch();
     let source: EventSource | null = null;
+    setStreamFailed(false);
 
     createStepStreamToken(owner)
       .then(({ token }) => {
-        if (cancelled) return;
+        if (!current()) return;
         source = openStepStream(owner, token);
         if (!source) {
           setStreamFailed(true);
           return;
         }
         source.addEventListener("step", (event) => {
+          if (!current()) return;
           const step = JSON.parse((event as MessageEvent<string>).data) as ResearchStepRead;
           queryClient.setQueryData<ResearchStepRead[]>(queryKey, (old) => mergeStep(old ?? [], step));
         });
         source.addEventListener("end", () => {
+          if (!current()) return;
           source?.close();
           // A seeded owner refreshes its own detail on completion.
           if (!seeded) void queryClient.invalidateQueries({ queryKey });
         });
         source.onerror = () => {
+          if (!current()) return;
           source?.close();
           setStreamFailed(true);
         };
       })
       .catch(() => {
-        if (!cancelled) setStreamFailed(true);
+        if (current()) setStreamFailed(true);
       });
 
     return () => {
@@ -104,7 +113,7 @@ export function useRunSteps(
       source?.close();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, owner.kind, owner.id, queryClient]);
+  }, [active, owner.kind, owner.id, queryClient, sessionId]);
 
   return { steps: query.data ?? [], isLoading: query.isLoading, streaming: active && !streamFailed };
 }

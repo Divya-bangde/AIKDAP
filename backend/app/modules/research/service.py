@@ -19,6 +19,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.planner.graph import get_research_graph, workflow_node_order
@@ -34,7 +35,7 @@ from app.modules.research.enums import (
     ResearchRunStatus,
     ResearchStepStatus,
 )
-from app.modules.research.models import AgentMessage, ResearchRun, ResearchStep
+from app.modules.research.models import AgentMessage, CrossPaperArtifact, ResearchRun, ResearchStep
 from app.modules.research.source_mix import compute_run_source_mix
 from app.modules.research.step_events import (
     SessionFactory,
@@ -57,6 +58,8 @@ from app.modules.research.schemas import (
     ResearchRunCreate,
     CrossPaperAnalysisRequest,
     CrossPaperComparison,
+    ResearchRunPage,
+    ResearchRunSummary,
 )
 from app.modules.tasks.repository import TaskRepository
 
@@ -69,6 +72,10 @@ class ResearchRunNotFoundError(Exception):
 
 class ProjectAccessDeniedError(Exception):
     """Raised when the caller does not own the project a run belongs to."""
+
+
+class ResearchAssetNotFoundError(Exception):
+    """Asset is absent or inaccessible in the selected project."""
 
 
 class TaskAccessDeniedError(Exception):
@@ -190,51 +197,110 @@ class ResearchService:
     async def analyze_document(
         self, owner_id: uuid.UUID, asset_id: uuid.UUID, project_id: uuid.UUID, data: AnalyzeDocumentRequest
     ) -> ResearchDocumentUnderstanding:
-        """Analyze a research document and store the structured understanding."""
+        """Analyze an authorized document using a context/version-specific cache."""
         await self._ensure_project_owned(owner_id, project_id)
-        
-        from app.agents.planner.analysis import analyze_research_document
-        
-        understanding = await analyze_research_document(
-            asset_id=asset_id,
-            project_id=project_id,
-            request=data,
-            session=self._session,
+        from app.agents.planner.cross_paper_evidence import load_source, understand_source
+        from app.modules.assets.models import Asset
+
+        assets = await self._authorize_comparison_assets(owner_id, project_id, [asset_id])
+        asset = assets[0]
+        chunks = await load_source(self._session, asset)
+        understanding, _ = await understand_source(self._session, asset, chunks, data)
+        # Preserve the existing experiment-plan bridge without replacing unrelated metadata.
+        await self._session.execute(
+            update(Asset).where(Asset.id == asset.id).values(
+                asset_metadata=Asset.asset_metadata.op("||")({
+                    "research_understanding": understanding.model_dump(mode="json"),
+                })
+            ).execution_options(synchronize_session=False)
         )
-        
         await self._session.commit()
         return understanding
+
+    async def _authorize_comparison_assets(self, owner_id, project_id, asset_ids):
+        from app.modules.assets.models import Asset
+
+        if len(asset_ids) != len(set(asset_ids)):
+            raise ValueError("Primary and supporting assets must be distinct.")
+        assets = []
+        # Authorize the ENTIRE source set before reading any chunks or making a model call.
+        for asset_id in asset_ids:
+            asset = await self._session.get(Asset, asset_id)
+            if asset is None or asset.owner_id != owner_id or asset.project_id != project_id:
+                raise ResearchAssetNotFoundError(asset_id)
+            assets.append(asset)
+        return assets
 
     async def synthesize_cross_paper(
         self, owner_id: uuid.UUID, asset_id: uuid.UUID, project_id: uuid.UUID, data: CrossPaperAnalysisRequest
     ) -> CrossPaperComparison:
-        """Synthesize multiple research documents against a primary document."""
+        """Persist a comparison grounded in every selected paper's real passages."""
         await self._ensure_project_owned(owner_id, project_id)
-        
         from app.agents.planner.cross_paper import synthesize_cross_paper as run_reducer
-        
-        # 1. Reuse existing primary structured understanding (Phase 10)
-        primary = await self.analyze_document(
-            owner_id, asset_id, project_id, 
-            AnalyzeDocumentRequest(goal=data.goal, workspace_context=data.workspace_context)
-        )
+        from app.agents.planner.cross_paper_evidence import load_source, understand_source
 
-        # 2. Extract facts from supporting papers (Phase 11)
-        supporting = []
-        for s_id in data.supporting_asset_ids:
-            # Simulate loaded facts
-            supporting.append({"id": s_id, "title": f"Supporting Paper {s_id}", "methodology": "Alternative methodology"})
-            
-        # 3. Cross-Paper Reducer (Phase 12)
-        comparison = await run_reducer(primary, supporting, data.goal)
-        
-        # 4. Persistence in Asset.asset_metadata (Phase 18)
-        # Note: We simulate this by trusting the asset repository exists
-        # In a full implementation, we'd do:
-        # asset = await self._assets.get_by_id(asset_id)
-        # asset.asset_metadata["workspace_comparisons"] = comparison.model_dump()
-        # await self._session.commit()
-        
+        assets = await self._authorize_comparison_assets(
+            owner_id, project_id, [asset_id, *data.supporting_asset_ids]
+        )
+        request = AnalyzeDocumentRequest(goal=data.goal, workspace_context=data.workspace_context)
+        understandings, versions = [], []
+        for asset in assets:
+            chunks = await load_source(self._session, asset)
+            understanding, version = await understand_source(self._session, asset, chunks, request)
+            understandings.append(understanding)
+            versions.append(version)
+        comparison = await run_reducer(understandings[0], understandings[1:], data.goal)
+        from app.agents.planner.cross_paper_evidence import source_version
+
+        # Ingestion can replace chunks while a model call is in flight. Never persist
+        # a newly completed comparison whose citation targets have already changed.
+        for asset, version in zip(assets, versions):
+            await self._session.refresh(asset)
+            if asset.owner_id != owner_id or asset.project_id != project_id:
+                raise ResearchAssetNotFoundError(asset.id)
+            current_version = source_version(asset, await load_source(self._session, asset))
+            if current_version != version:
+                raise ValueError("Source content changed during analysis; run the comparison again.")
+        comparison.workspace_context = data.workspace_context
+        comparison.source_versions = versions
+        artifact = CrossPaperArtifact(
+            owner_id=owner_id, project_id=project_id, primary_asset_id=asset_id,
+            result=comparison.model_dump(mode="json"),
+        )
+        self._session.add(artifact)
+        await self._session.flush()
+        comparison.artifact_id = artifact.id
+        comparison.created_at = artifact.created_at
+        artifact.result = comparison.model_dump(mode="json")
+        await self._session.commit()
+        return comparison
+
+    async def restore_comparison(self, owner_id, project_id, *, asset_id=None, artifact_id=None):
+        await self._ensure_project_owned(owner_id, project_id)
+        if asset_id is not None:
+            await self._authorize_comparison_assets(owner_id, project_id, [asset_id])
+        statement = select(CrossPaperArtifact).where(
+            CrossPaperArtifact.owner_id == owner_id, CrossPaperArtifact.project_id == project_id,
+        )
+        if artifact_id is not None:
+            statement = statement.where(CrossPaperArtifact.id == artifact_id)
+        if asset_id is not None:
+            statement = statement.where(CrossPaperArtifact.primary_asset_id == asset_id)
+        artifact = await self._session.scalar(statement.order_by(
+            CrossPaperArtifact.created_at.desc(), CrossPaperArtifact.id.desc(),
+        ).limit(1))
+        if artifact is None:
+            return None
+        comparison = CrossPaperComparison.model_validate(artifact.result)
+        assets = await self._authorize_comparison_assets(
+            owner_id, project_id, [comparison.primary_paper_id, *comparison.supporting_paper_ids]
+        )
+        from app.agents.planner.cross_paper_evidence import load_source, source_version
+
+        current = []
+        for asset in assets:
+            current.append(source_version(asset, await load_source(self._session, asset)))
+        comparison.stale = current != comparison.source_versions
         return comparison
 
     async def create_unsourced_run(self, run: ResearchRun) -> ResearchRun:
@@ -404,6 +470,16 @@ class ResearchService:
             await self._ensure_project_owned(owner_id, project_id)
         return await self._runs.list_by_owner(
             owner_id, project_id=project_id, status=status, skip=skip, limit=limit
+        )
+
+    async def page_runs(self, owner_id, *, project_id=None, status=None, grounding_status=None, cursor=None, limit=50):
+        if project_id is not None:
+            await self._ensure_project_owned(owner_id, project_id)
+        runs, next_cursor = await self._runs.page_by_owner(
+            owner_id, project_id=project_id, status=status, grounding_status=grounding_status, cursor=cursor, limit=limit,
+        )
+        return ResearchRunPage(
+            items=[ResearchRunSummary.model_validate(run) for run in runs], next_cursor=next_cursor,
         )
 
     async def get_trace(
@@ -609,6 +685,7 @@ class ResearchExecutionService:
         run.final_answer = final_state.get("final_answer")
         run.citations = final_state.get("citations") or []
         run.visualization = final_state.get("visualization")
+        run.visualization_outcome = final_state.get("visualization_outcome")
         run.equations = final_state.get("equations") or None
         run.suggested_papers = final_state.get("suggested_papers") or None
         # Read back as an enum so an unexpected value fails here rather

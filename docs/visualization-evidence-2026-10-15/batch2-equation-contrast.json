@@ -1,0 +1,67 @@
+{
+  "note": "Reference/current base primary token contrasts checked in batch2-contrast.json; effective trace opacity now1, so no lower-alpha compositing. Comparison family opacity1/dashes regression-tested.",
+  "observations": [
+    {
+      "theme": "light",
+      "traces": [
+        {
+          "name": "E",
+          "opacity": 1,
+          "color": "rgb(80, 72, 229)",
+          "dash": "dot"
+        },
+        {
+          "name": "current",
+          "opacity": 1
+        },
+        {
+          "name": "starting values",
+          "opacity": 1,
+          "color": "rgb(80, 72, 229)",
+          "dash": "dot"
+        }
+      ],
+      "strokes": [
+        {
+          "stroke": "rgb(80, 72, 229)",
+          "opacity": "1"
+        },
+        {
+          "stroke": "rgb(80, 72, 229)",
+          "opacity": "1"
+        }
+      ]
+    },
+    {
+      "theme": "dark",
+      "traces": [
+        {
+          "name": "E",
+          "opacity": 1,
+          "color": "rgb(123, 117, 240)",
+          "dash": "dot"
+        },
+        {
+          "name": "current",
+          "opacity": 1
+        },
+        {
+          "name": "starting values",
+          "opacity": 1,
+          "color": "rgb(123, 117, 240)",
+          "dash": "dot"
+        }
+      ],
+      "strokes": [
+        {
+          "stroke": "rgb(123, 117, 240)",
+          "opacity": "1"
+        },
+        {
+          "stroke": "rgb(123, 117, 240)",
+          "opacity": "1"
+        }
+      ]
+    }
+  ]
+}

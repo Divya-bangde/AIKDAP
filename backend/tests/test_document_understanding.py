@@ -22,24 +22,31 @@ def mock_analyze_research_document(monkeypatch):
         sufficiency=SufficiencyStatus.SUFFICIENT,
         sufficiency_reason="It has enough data."
     )
-    monkeypatch.setattr("app.agents.planner.analysis.analyze_research_document", mock)
+    monkeypatch.setattr("app.agents.planner.cross_paper_evidence.analyze_research_document", mock)
     return mock
 
 @pytest.mark.asyncio
 async def test_analyze_document_service_success(
     session: Any,
     project: Any, 
-    mock_analyze_research_document: AsyncMock
+    mock_analyze_research_document: AsyncMock,
+    make_report_asset,
 ):
-    # Mock asset ID
-    asset_id = uuid.uuid4()
+    from app.modules.knowledge_base.models import KnowledgeChunk
+
+    asset = await make_report_asset(project)
+    asset_id = asset.id
+    session.add(KnowledgeChunk(
+        asset_id=asset_id, project_id=project.id, chunk_index=0, content="A real extracted passage.",
+    ))
+    await session.commit()
     goal = ResearchGoal(type="understand", description="Just testing the endpoint")
     req = AnalyzeDocumentRequest(goal=goal)
 
     service = ResearchService(session)
     result = await service.analyze_document(project.owner_id, asset_id, project.id, req)
     
-    assert result.title == "Fake Research Paper"
+    assert result.title == asset.title
     assert result.sufficiency == SufficiencyStatus.SUFFICIENT
     mock_analyze_research_document.assert_awaited_once()
 

@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { usePagedResearch } from "@/hooks/usePagedLists";
+import { LoadMore } from "@/components/common/LoadMore";
 import { useParams, useSearchParams } from "react-router-dom";
 
 import { RowListSkeleton } from "@/components/common/Skeletons";
@@ -6,7 +7,6 @@ import { PageTransition } from "@/components/motion/PageTransition";
 import { ResearchHistoryList } from "@/features/research/ResearchHistoryList";
 import { ResearchPrompt } from "@/features/research/ResearchPrompt";
 import { ResearchRunView } from "@/features/research/ResearchRunView";
-import * as researchService from "@/services/research";
 
 export function Research() {
   const { runId } = useParams<{ runId?: string }>();
@@ -29,10 +29,7 @@ export function Research() {
  * pre-filtered to grounded runs. Shares the Dashboard's query key, so
  * arriving from the tile needs no second fetch. */
 function ResearchHistory({ groundedOnly }: { groundedOnly: boolean }) {
-  const runsQuery = useQuery({
-    queryKey: ["research", "runs", "all"],
-    queryFn: () => researchService.listResearchRuns(),
-  });
+  const runsQuery = usePagedResearch(undefined, groundedOnly ? "grounded" : undefined);
 
   return (
     <PageTransition>
@@ -49,17 +46,18 @@ function ResearchHistory({ groundedOnly }: { groundedOnly: boolean }) {
         </div>
         {runsQuery.isLoading ? (
           <RowListSkeleton label="Loading research history" />
-        ) : runsQuery.isError ? (
+        ) : runsQuery.isError && !runsQuery.isFetchNextPageError ? (
           <p className="text-sm text-muted-foreground">
             Research history is unavailable.
           </p>
         ) : (
           <ResearchHistoryList
             key={String(groundedOnly)}
-            runs={runsQuery.data ?? []}
+            runs={runsQuery.items}
             initialStatus={groundedOnly ? "grounded" : null}
           />
         )}
+        <LoadMore query={runsQuery} label="research runs" />
       </div>
     </PageTransition>
   );

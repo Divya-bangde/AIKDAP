@@ -16,8 +16,10 @@ without touching shared infrastructure other tests depend on.
 """
 
 import time
+import os
 
 import pytest
+from pydantic import SecretStr
 
 from app.core.config import settings
 from app.core.llm.errors import (
@@ -33,6 +35,13 @@ from app.core.llm.provider_health import (
 
 GEMINI = "gemini/gemini-flash-latest"
 GROQ = "groq/openai/gpt-oss-120b"
+pytestmark = pytest.mark.integration
+
+
+@pytest.fixture(autouse=True)
+def require_disposable_redis():
+    if not os.environ.get("TEST_REDIS_URL"):
+        pytest.skip("requires disposable Redis via TEST_REDIS_URL")
 
 
 class BrokenRedisClient:
@@ -57,7 +66,13 @@ class BrokenRedisClient:
 def redis_registry():
     """A real `RedisProviderHealthRegistry` against the real Redis,
     cleaned up before and after so tests do not see each other's keys."""
+    if not os.environ.get("TEST_REDIS_URL"):
+        pytest.skip("requires disposable Redis via TEST_REDIS_URL")
     registry = RedisProviderHealthRegistry(redis_url=settings.celery_broker_url)
+    try:
+        registry._get_client().ping()
+    except Exception:
+        pytest.fail("Disposable Redis unavailable (bounded client timeout)", pytrace=False)
     registry.reset()
     yield registry
     registry.reset()
@@ -134,6 +149,7 @@ def test_the_key_actually_expires_and_the_provider_becomes_eligible_again(
     """Phase 25/37, end to end: shrink the cooldown, let real time pass
     it, and confirm both the read-time decision AND the physical Redis
     key reflect it."""
+    monkeypatch.setattr(settings, "gemini_api_key", SecretStr("test-cooldown-key"))
     monkeypatch.setattr(settings, "llm_quota_cooldown_seconds", 0.05)
     redis_registry.record_failure(GEMINI, error=LLMQuotaExhaustedError("spent"))
     assert redis_registry.is_blocked(GEMINI) is True
@@ -282,9 +298,11 @@ def test_keyed_by_model_not_provider_over_redis(redis_registry):
 # ---------------------------------------------------------------------------
 
 
-def test_get_provider_health_registry_returns_a_redis_backed_instance():
+def test_get_provider_health_registry_returns_a_redis_backed_instance(monkeypatch):
+    from app.core.llm import provider_health
     from app.core.llm.provider_health import get_provider_health_registry
 
+    monkeypatch.setattr(provider_health, "_registry", None)
     registry = get_provider_health_registry()
     assert isinstance(registry, RedisProviderHealthRegistry)
 
@@ -306,11 +324,12 @@ def test_get_provider_health_registry_returns_a_redis_backed_instance():
 
 
 @pytest.mark.asyncio
-async def test_a_failure_recorded_through_the_real_gateway_path_is_visible_to_a_fresh_registry():
+async def test_a_failure_recorded_through_the_real_gateway_path_is_visible_to_a_fresh_registry(monkeypatch):
     from unittest.mock import AsyncMock, patch
 
     from app.core.llm.gateway import LLMGateway
 
+    monkeypatch.setattr(settings, "gemini_api_key", SecretStr("test-gateway-key"))
     writer_health = RedisProviderHealthRegistry(redis_url=settings.celery_broker_url)
     writer_health.reset()
     gateway = LLMGateway(provider_health=writer_health)

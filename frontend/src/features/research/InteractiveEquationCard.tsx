@@ -6,15 +6,21 @@ import {
   isSymbolNode,
   parse,
   type EvalFunction,
-} from "mathjs";
-import { lazy, Suspense, useMemo, useRef, useState } from "react";
+} from "mathjs/number";
+import { Suspense, useMemo, useRef, useState } from "react";
 
 import type { InteractiveEquation, SystemInteractiveEquation } from "@/features/research/AnswerEquations";
 
 type Range = { min: number; max: number };
 import { MathTex } from "@/features/research/MathTex";
+import { ChartFrame, type ChartContext } from "@/features/research/ChartFrame";
+import { useThemeValue } from "@/lib/theme-colors";
+import { LazyRenderer } from "./RendererBoundary";
 
-const PlotlyVisualization = lazy(() => import("@/features/research/PlotlyVisualization"));
+const loadPlotlyRenderer = () => import("@/features/research/PlotlyVisualization");
+function EquationChart({ data, layout, ...context }: ChartContext & { data: Record<string, unknown>[]; layout: Record<string, unknown> }) {
+  return <ChartFrame {...context} data={data} layout={layout}>{(visibleData) => <LazyRenderer label="chart" load={loadPlotlyRenderer} rendererProps={{ data: visibleData, layout }} />}</ChartFrame>;
+}
 
 /** Same set the backend lets a solution call (`planner.equations._ALLOWED_FUNCTIONS`). */
 const FUNCTIONS = new Set(["sqrt", "exp", "log", "sin", "cos", "tan", "asin", "acos", "atan", "sinh", "cosh", "tanh"]);
@@ -139,11 +145,15 @@ function Unit({ unit }: { unit: string }) {
 /** Slider for one input; log-scaled when its range spans orders of magnitude. */
 function ValueSlider({
   symbol,
+  name,
+  unit,
   range,
   value,
   onChange,
 }: {
   symbol: string;
+  name: string;
+  unit: string;
   range: Range;
   value: number;
   onChange: (value: number) => void;
@@ -151,14 +161,18 @@ function ValueSlider({
   const log = isLog(range);
   const [lo, hi] = log ? [Math.log10(range.min), Math.log10(range.max)] : [range.min, range.max];
   const position = log ? Math.log10(Math.max(value, range.min)) : value;
+  const unitNames: Record<string, [string, string]> = { kg: ["kilogram", "kilograms"], g: ["gram", "grams"], m: ["metre", "metres"], s: ["second", "seconds"], J: ["joule", "joules"], "m/s": ["metres per second", "metres per second"] };
+  const spokenUnit = unitNames[unit]?.[Math.abs(value) === 1 ? 0 : 1] ?? unit;
   return (
     <input
       type="range"
-      aria-label={`${symbol} slider`}
+      aria-label={`${name || symbol} (${symbol})`}
+      aria-valuetext={`${formatValue(value)}${spokenUnit ? ` ${spokenUnit}` : ""}; ${log ? "logarithmic" : "linear"} scale`}
       min={lo}
       max={hi}
       step={(hi - lo) / SLIDER_STEPS}
       value={position}
+      disabled={lo === hi}
       onChange={(event) => {
         const raw = log ? 10 ** event.target.valueAsNumber : event.target.valueAsNumber;
         // Slider steps are binary fractions: round away the float noise.
@@ -196,7 +210,7 @@ export default function InteractiveEquationCard({ equation }: { equation: Intera
     // `symbols` is derived from `variables`, which is part of `equation`.
   }, [equation]);
   const targets = Object.keys(compiled);
-  const accent = useMemo(accentColor, []);
+  const accent = useThemeValue(accentColor);
 
   const [target, setTarget] = useState(() =>
     equation.output && compiled[equation.output] ? equation.output : targets[0],
@@ -207,6 +221,7 @@ export default function InteractiveEquationCard({ equation }: { equation: Intera
   const [xChoice, setXChoice] = useState<string | null>(null);
   const [compareWith, setCompareWith] = useState<string | null>(null);
   const [fitVersion, setFitVersion] = useState(0);
+  const [inputErrors, setInputErrors] = useState<Record<string, string>>({});
 
   const fn = target ? compiled[target] : undefined;
   const result = fn ? evaluateAt(fn, values) : NaN;
@@ -235,7 +250,7 @@ export default function InteractiveEquationCard({ equation }: { equation: Intera
     return { xs, ys };
   }, [fn, x, xLog, values, variables]);
 
-  // A faint dashed trace frozen at the values current when this
+  // A dotted reference trace frozen at the values current when this
   // (target, plot-against) pair was first shown, drawn behind the live
   // curve: a later slider change is then visible as the live curve
   // pulling away from its own starting shape, not just moving.
@@ -305,7 +320,12 @@ export default function InteractiveEquationCard({ equation }: { equation: Intera
   }
 
   function setValue(symbol: string, value: number) {
-    if (Number.isFinite(value)) setValues((current) => ({ ...current, [symbol]: value }));
+    if (!Number.isFinite(value) || (isLog(variables[symbol]) && value <= 0)) {
+      setInputErrors((current) => ({ ...current, [symbol]: isLog(variables[symbol]) ? "Enter a finite positive value for this logarithmic control." : "Enter a finite number." }));
+      return;
+    }
+    setInputErrors((current) => ({ ...current, [symbol]: "" }));
+    setValues((current) => ({ ...current, [symbol]: value }));
   }
 
   const axisTitle = (symbol: string) => {
@@ -385,16 +405,19 @@ export default function InteractiveEquationCard({ equation }: { equation: Intera
                       <MathTex tex={valueTex(values[symbol])} /> <Unit unit={variable.unit} />
                     </p>
                   ) : (
-                    <div className="flex items-center gap-2">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
                       <ValueSlider
                         symbol={symbol}
+                        name={variable.name}
+                        unit={variable.unit}
                         range={rangeOf(symbol)}
                         value={values[symbol]}
                         onChange={(value) => setValue(symbol, value)}
                       />
                       <input
                         type="number"
-                        aria-label={`${symbol} value`}
+                        aria-label={`${variable.name || symbol} (${symbol}) value`}
+                        aria-invalid={!!inputErrors[symbol]}
                         step="any"
                         value={values[symbol]}
                         onChange={(event) => setValue(symbol, event.target.valueAsNumber)}
@@ -405,6 +428,8 @@ export default function InteractiveEquationCard({ equation }: { equation: Intera
                       </span>
                     </div>
                   )}
+                  {!constant && <p className="text-xs text-muted-foreground" aria-live="polite">{isLog(rangeOf(symbol)) ? "Logarithmic scale (equal distances represent ratios). Positive values required." : "Linear scale (equal distances represent equal changes)."}</p>}
+                  {inputErrors[symbol] && <p role="alert" className="text-xs text-destructive">{inputErrors[symbol]}</p>}
                 </div>
               );
             })}
@@ -465,7 +490,12 @@ export default function InteractiveEquationCard({ equation }: { equation: Intera
             </div>
           </div>
           <Suspense fallback={<p className="text-sm text-muted-foreground">Loading plot…</p>}>
-            <PlotlyVisualization
+            <EquationChart
+              title={`${output.name || target} versus ${variables[x].name || x}`}
+              finding={`Current result: ${formatValue(result)} ${output.unit}`}
+              origin={anyIllustrative ? "illustrative deterministic equation evaluation" : "derived deterministic equation evaluation"}
+              scope={["Curves are computed samples, not measured observations.", "Axes widen to preserve the current/reference curves; Fit starts a new baseline."]}
+              metadata={{ expression: solutions[target].expression, variables, input_values: values, target, plot_against: x }}
               data={[
                 {
                   type: "scatter",
@@ -495,7 +525,7 @@ export default function InteractiveEquationCard({ equation }: { equation: Intera
                         y: referenceCurve.ys,
                         name: "starting values",
                         showlegend: false,
-                        opacity: 0.35,
+                      opacity: 1,
                         line: { color: accent, width: 1.5, dash: "dot" },
                         hoverinfo: "skip",
                       },
@@ -508,13 +538,14 @@ export default function InteractiveEquationCard({ equation }: { equation: Intera
                       x: family.xs,
                       y: family.ys,
                       name: `${variables[activeCompare].name || activeCompare} = ${formatValue(family.value)}${variables[activeCompare].unit ? ` ${variables[activeCompare].unit}` : ""}`,
-                      opacity: 0.25 + (0.55 * index) / Math.max(1, COMPARE_CURVES - 1),
-                      line: { color: accent, width: 1.5 },
+                      opacity: 1,
+                      line: { color: accent, width: 1.5, dash: ["dash", "longdash", "dashdot", "longdashdot", "dot"][index % COMPARE_CURVES] },
                       hovertemplate: "%{x:.4g}, %{y:.4g}<extra></extra>",
                     }))
                   : []),
               ]}
               layout={{
+                uirevision: `${target}|${x}|${fitVersion}`,
                 showlegend: !!(compareCurves && activeCompare),
                 // dtick 1 on a log axis: label powers of ten only, not every 2 and 5.
                 // automargin: wide tick labels (7×10³⁰) push the title out instead of under them.
@@ -551,7 +582,7 @@ export default function InteractiveEquationCard({ equation }: { equation: Intera
 export function SystemEquationCard({ equation }: { equation: SystemInteractiveEquation }) {
   const { variables, systems } = equation;
   const symbols = Object.keys(variables);
-  const accent = useMemo(accentColor, []);
+  const accent = useThemeValue(accentColor);
 
   const compiledSystems = useMemo(() => {
     const built: { unknowns: string[]; remaining: string[]; compiled: Record<string, EvalFunction> }[] = [];
@@ -585,6 +616,7 @@ export function SystemEquationCard({ equation }: { equation: SystemInteractiveEq
   const [xChoice, setXChoice] = useState<string | null>(null);
   const [yChoice, setYChoice] = useState<string | null>(null);
   const [fitVersion, setFitVersion] = useState(0);
+  const [inputErrors, setInputErrors] = useState<Record<string, string>>({});
 
   const rangeOf = (symbol: string): Range => ({
     min: Math.min(variables[symbol].min, values[symbol]),
@@ -627,7 +659,12 @@ export function SystemEquationCard({ equation }: { equation: SystemInteractiveEq
   }
 
   function setValue(symbol: string, value: number) {
-    if (Number.isFinite(value)) setValues((current) => ({ ...current, [symbol]: value }));
+    if (!Number.isFinite(value) || (isLog(variables[symbol]) && value <= 0)) {
+      setInputErrors((current) => ({ ...current, [symbol]: isLog(variables[symbol]) ? "Enter a finite positive value for this logarithmic control." : "Enter a finite number." }));
+      return;
+    }
+    setInputErrors((current) => ({ ...current, [symbol]: "" }));
+    setValues((current) => ({ ...current, [symbol]: value }));
   }
 
   const axisTitle = (symbol: string) => {
@@ -699,16 +736,19 @@ export function SystemEquationCard({ equation }: { equation: SystemInteractiveEq
                       <MathTex tex={valueTex(values[symbol])} /> <Unit unit={variable.unit} />
                     </p>
                   ) : (
-                    <div className="flex items-center gap-2">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
                       <ValueSlider
                         symbol={symbol}
+                        name={variable.name}
+                        unit={variable.unit}
                         range={rangeOf(symbol)}
                         value={values[symbol]}
                         onChange={(value) => setValue(symbol, value)}
                       />
                       <input
                         type="number"
-                        aria-label={`${symbol} value`}
+                        aria-label={`${variable.name || symbol} (${symbol}) value`}
+                        aria-invalid={!!inputErrors[symbol]}
                         step="any"
                         value={values[symbol]}
                         onChange={(event) => setValue(symbol, event.target.valueAsNumber)}
@@ -719,6 +759,8 @@ export function SystemEquationCard({ equation }: { equation: SystemInteractiveEq
                       </span>
                     </div>
                   )}
+                  {!constant && <p className="text-xs text-muted-foreground" aria-live="polite">{isLog(rangeOf(symbol)) ? "Logarithmic scale (equal distances represent ratios). Positive values required." : "Linear scale (equal distances represent equal changes)."}</p>}
+                  {inputErrors[symbol] && <p role="alert" className="text-xs text-destructive">{inputErrors[symbol]}</p>}
                 </div>
               );
             })}
@@ -781,7 +823,12 @@ export function SystemEquationCard({ equation }: { equation: SystemInteractiveEq
             </div>
           </div>
           <Suspense fallback={<p className="text-sm text-muted-foreground">Loading plot…</p>}>
-            <PlotlyVisualization
+            <EquationChart
+              title={`${variables[y].name || y} versus ${variables[x].name || x}`}
+              finding={`Current result: ${formatValue(result)} ${variables[y].unit}`}
+              origin={active.remaining.some((symbol) => variables[symbol].illustrative) ? "illustrative deterministic equation evaluation" : "derived deterministic equation evaluation"}
+              scope={["Curves are computed samples, not measured observations.", "Axes widen to preserve the plotted range; Fit starts a new baseline."]}
+              metadata={{ variables, input_values: values, unknowns: active.unknowns, plot_against: x, output: y }}
               data={[
                 {
                   type: "scatter",
@@ -804,6 +851,7 @@ export function SystemEquationCard({ equation }: { equation: SystemInteractiveEq
                 },
               ]}
               layout={{
+                uirevision: `${active.unknowns.join(",")}|${x}|${y}|${fitVersion}`,
                 showlegend: false,
                 xaxis: {
                   title: { text: axisTitle(x) },

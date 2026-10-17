@@ -1,4 +1,5 @@
-import { act, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { WorkflowTimeline } from "@/features/workflow-timeline/WorkflowTimeline";
@@ -6,6 +7,8 @@ import { decisionLine, modelLabel } from "@/features/research/step-metrics";
 import { mergeStep } from "@/hooks/useRunSteps";
 import { renderWithProviders } from "@/test/render";
 import type { components } from "@/types/api";
+import { bindSessionCache } from "@/lib/session-lifecycle";
+import { useAuthStore } from "@/store/auth-store";
 
 type Step = components["schemas"]["ResearchStepRead"];
 
@@ -82,6 +85,39 @@ describe("step helpers", () => {
 });
 
 describe("WorkflowTimeline", () => {
+  it("ignores an A stream's queued callbacks after logout and B login", async () => {
+    const stream = new FakeStream();
+    steps.openStepStream.mockReturnValue(stream);
+    useAuthStore.getState().setSession({ accessToken: "A", refreshToken: "A-refresh" });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const unbind = bindSessionCache(client);
+    const view = render(<QueryClientProvider client={client}>
+      <WorkflowTimeline owner={{ kind: "run", id: "r1" }} active seed={[step()]} />
+    </QueryClientProvider>);
+    await waitFor(() => expect(stream.listeners.has("step")).toBe(true));
+    const lateStep = stream.listeners.get("step")!;
+    const lateEnd = stream.listeners.get("end")!;
+    const lateError = stream.onerror!;
+    // Unmount mirrors the session-keyed authenticated route boundary.
+    view.unmount();
+    act(() => {
+      useAuthStore.getState().clear();
+      useAuthStore.getState().setSession({ accessToken: "B", refreshToken: "B-refresh" });
+    });
+    const bKey = ["steps", "run", "r1", useAuthStore.getState().sessionId];
+    client.setQueryData(bKey, [step({ id: "B-step" })]);
+    const invalidate = vi.spyOn(client, "invalidateQueries");
+    act(() => {
+      lateStep({ data: JSON.stringify(step({ id: "A-late-step" })) } as MessageEvent<string>);
+      lateEnd({ data: "{}" } as MessageEvent<string>);
+      lateError();
+    });
+    expect(client.getQueryData(bKey)).toEqual([step({ id: "B-step" })]);
+    expect(client.getQueryCache().getAll()).toHaveLength(1);
+    expect(invalidate).not.toHaveBeenCalled();
+    unbind();
+    useAuthStore.getState().clear();
+  });
   it("merges live stream events into the timeline and closes on end", async () => {
     const stream = new FakeStream();
     steps.openStepStream.mockReturnValue(stream);

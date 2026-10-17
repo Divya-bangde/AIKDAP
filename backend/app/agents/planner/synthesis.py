@@ -45,6 +45,7 @@ from typing import get_args
 from pydantic import ValidationError
 
 from app.agents.planner.equations import build_equations
+from app.agents.planner.visualization import accept_visualization
 from app.agents.planner.prompts import (
     GROUNDED_SYNTHESIS_SYSTEM_PROMPT,
     UNSOURCED_SYNTHESIS_SYSTEM_PROMPT,
@@ -154,6 +155,7 @@ class SynthesisResult:
     #: A validated chart/diagram spec (`schemas.Visualization`, dumped),
     #: only when the question asked for one and the answer is grounded.
     visualization: dict | None = None
+    visualization_outcome: dict | None = None
     #: Validated equations (see `planner.equations.build_equations`),
     #: only when the question involved any and the answer is grounded.
     equations: list[dict] = field(default_factory=list)
@@ -257,6 +259,7 @@ class ExtractiveSynthesizer(Synthesizer):
                 "and process relevant assets, then re-run this research.\n"
             )
             return SynthesisResult(
+                visualization_outcome=accept_visualization(raw=None, query=query, supplied=[], full_text={})[1],
                 answer=f"{answer}{_warning_section(warnings)}",
                 citations=[],
                 grounding_status=ResearchGroundingStatus.INSUFFICIENT_EVIDENCE,
@@ -312,6 +315,7 @@ class ExtractiveSynthesizer(Synthesizer):
             )
 
         return SynthesisResult(
+            visualization_outcome=accept_visualization(raw=None, query=query, supplied=[], full_text={})[1],
             answer="\n".join(lines),
             citations=list(citations),
             # Simulated evidence supports nothing: an answer built only
@@ -392,6 +396,7 @@ class GroundedSynthesizer(Synthesizer):
                 withheld_simulated=withheld_simulated,
             )
             return SynthesisResult(
+                visualization_outcome=accept_visualization(raw=None, query=query, supplied=[], full_text={})[1],
                 answer=_insufficient_answer(
                     objective=objective,
                     query=query,
@@ -449,6 +454,16 @@ class GroundedSynthesizer(Synthesizer):
             topic_relation,
             visualization,
         ) = _parse_response(response.content)
+        # Reparse only the visual envelope: parser remains backward compatible,
+        # while malformed/missing visuals get their own completion status.
+        raw_payload = json.loads(_JSON_FENCE.sub(r"\1", response.content.strip()))
+        visualization, visualization_outcome = accept_visualization(
+            raw=raw_payload.get("visualization"), query=query, supplied=supplied,
+            full_text=full_evidence_text or {},
+        )
+        if visualization is not None:
+            used = {i["citation_id"] for p in visualization.get("provenance", []) for i in p["inputs"]}
+            claimed_ids = list(dict.fromkeys([*claimed_ids, *used]))
         accepted, rejected = _validate_citation_ids(claimed_ids, supplied)
         status = _grounding_status(
             claimed_status=claimed_status, accepted=accepted, rejected=rejected
@@ -509,7 +524,8 @@ class GroundedSynthesizer(Synthesizer):
             grounding_status=status,
             # A chart drawn from evidence judged insufficient would present
             # exactly the unsupported figures grounding exists to withhold.
-            visualization=visualization if status is ResearchGroundingStatus.GROUNDED else None,
+            visualization=visualization,
+            visualization_outcome=visualization_outcome,
             # Same reason: equations are presented as what the evidence says.
             equations=equations if status is ResearchGroundingStatus.GROUNDED else [],
             topic_relation=topic_relation,
@@ -620,6 +636,7 @@ class UnsourcedSynthesizer:
         )
 
         return SynthesisResult(
+            visualization_outcome=accept_visualization(raw=None, query=query, supplied=[], full_text={})[1],
             answer=(
                 answer if brief else _compose_unsourced_answer(answer=answer, would_need=would_need)
             ),

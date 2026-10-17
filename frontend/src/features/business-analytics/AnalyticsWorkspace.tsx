@@ -5,16 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { AnalysisCard } from "@/features/business-analytics/AnalysisCard";
 import { isSource } from "@/features/assets/asset-state";
+import { usePagedAssets } from "@/hooks/usePagedLists";
+import { LoadMore } from "@/components/common/LoadMore";
+import { ErrorState } from "@/components/common/ErrorState";
 import { DatasetProfile } from "@/features/business-analytics/DatasetProfile";
 import { KaggleImportDialog } from "@/features/business-analytics/KaggleImportDialog";
 import { messageFor } from "@/lib/api-error";
 import * as analyticsService from "@/services/analytics";
-import * as assetsService from "@/services/assets";
 import type { components } from "@/types/api";
 
 type AssetRead = components["schemas"]["AssetRead"];
 
-const SETTLED = new Set(["completed", "failed", "unsupported"]);
 
 /** Tabular data the user brought in. A generated `dataset` asset is an
  * experiment plan (JSON), which the analytics backend rejects. */
@@ -27,16 +28,9 @@ export function AnalyticsWorkspace({ projectId }: { projectId: string }) {
   const [question, setQuestion] = useState("");
   const [kaggleOpen, setKaggleOpen] = useState(false);
 
-  const assetsQuery = useQuery({
-    queryKey: ["assets", projectId],
-    queryFn: () => assetsService.listAssets(projectId),
-    refetchInterval: (query) => {
-      const datasets = (query.state.data ?? []).filter(isUserDataset);
-      return datasets.some((asset) => !SETTLED.has(asset.processing_status)) ? 3000 : false;
-    },
-  });
+  const assetsQuery = usePagedAssets(projectId);
 
-  const datasets = (assetsQuery.data ?? []).filter(isUserDataset);
+  const datasets = assetsQuery.items.filter(isUserDataset);
   const completedDatasets = datasets.filter((asset) => asset.processing_status === "completed");
   const failedDatasets = datasets.filter((asset) => asset.processing_status === "failed");
   const selectedId = datasetId ?? completedDatasets[0]?.id ?? null;
@@ -62,7 +56,9 @@ export function AnalyticsWorkspace({ projectId }: { projectId: string }) {
 
   return (
     <div className="flex flex-col gap-6">
-      {datasets.length === 0 ? (
+      {assetsQuery.isLoading && <p role="status">Loading datasets…</p>}
+      {assetsQuery.isError && !assetsQuery.isFetchNextPageError && <ErrorState error={assetsQuery.error} />}
+      {assetsQuery.isSuccess && datasets.length === 0 ? (
         <div className="rounded-card bg-card p-6 text-center shadow-subtle">
           <p className="text-sm text-muted-foreground">
             Upload a CSV or Excel file in Documents, or import one from Kaggle.
@@ -71,7 +67,7 @@ export function AnalyticsWorkspace({ projectId }: { projectId: string }) {
             Import from Kaggle
           </Button>
         </div>
-      ) : (
+      ) : datasets.length > 0 ? (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <label className="flex items-center gap-2 text-sm">
             <span className="font-medium">Dataset</span>
@@ -93,7 +89,8 @@ export function AnalyticsWorkspace({ projectId }: { projectId: string }) {
             Import from Kaggle
           </Button>
         </div>
-      )}
+      ) : null}
+      <LoadMore query={assetsQuery} label="datasets" />
 
       {failedDatasets.length > 0 && (
         <ul className="flex flex-col gap-1" aria-label="Failed datasets">
@@ -109,7 +106,7 @@ export function AnalyticsWorkspace({ projectId }: { projectId: string }) {
         open={kaggleOpen}
         onOpenChange={setKaggleOpen}
         projectId={projectId}
-        onImported={() => queryClient.invalidateQueries({ queryKey: ["assets", projectId] })}
+        onImported={() => queryClient.invalidateQueries({ queryKey: ["assets"] })}
       />
 
       {selectedId && (

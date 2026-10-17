@@ -364,9 +364,13 @@ async def _generate_embeddings(asset_id: uuid.UUID) -> dict[str, str]:
         if asset is None:
             raise ValueError(f"Asset {asset_id} not found.")
 
-        chunks = await KnowledgeChunkRepository(session).list_by_project(
-            asset.project_id, asset_id=asset_id
-        )
+        # This worker must cover the entire asset, not the browse API's first 100 chunks.
+        from sqlalchemy import select
+        from app.modules.knowledge_base.models import KnowledgeChunk
+        chunks = list((await session.execute(select(KnowledgeChunk).where(
+            KnowledgeChunk.asset_id == asset_id,
+            KnowledgeChunk.project_id == asset.project_id,
+        ).order_by(KnowledgeChunk.chunk_index))).scalars())
         if not chunks:
             return {"status": "no_chunks", "chunk_count": "0"}
 
@@ -377,6 +381,9 @@ async def _generate_embeddings(asset_id: uuid.UUID) -> dict[str, str]:
 
         try:
             vectors = await provider.embed([chunk.content for chunk in chunks])
+            from app.modules.knowledge_base.spaces import validate_vectors
+
+            validate_vectors(vectors, len(chunks), provider.dimensions)
         except Exception as exc:
             for chunk in chunks:
                 chunk.embedding_status = EmbeddingStatus.FAILED
@@ -390,10 +397,16 @@ async def _generate_embeddings(asset_id: uuid.UUID) -> dict[str, str]:
             )
             return {"status": "failed", "chunk_count": str(len(chunks))}
 
+        from app.modules.knowledge_base.rebuild import activate_initial_space, lock_project
+
+        await lock_project(session, asset.project_id)
         for chunk, vector in zip(chunks, vectors, strict=True):
             chunk.embedding = vector
             chunk.embedding_status = EmbeddingStatus.COMPLETED
             chunk.embedding_provider = provider.name
+            chunk.embedding_space_id = provider.space.id
+            chunk.embedding_space = provider.space.as_dict()
+        await activate_initial_space(session, asset.project_id, provider.space.id)
         await session.commit()
         return {"status": "completed", "chunk_count": str(len(chunks)), "provider": provider.name.value}
 

@@ -29,12 +29,12 @@ into it, since Celery's default `prefork` pool doesn't support native
 | `workers.process_uploaded_asset` | **Live** | The one actually enqueued, by `AssetService.upload` and `POST /assets/{id}/process`. Runs extract -> chunk -> (Sprint 9B) local Qwen document understanding, inline. |
 | `workers.extract_document_text` | Standalone, not yet wired to any caller | Extraction only, in isolation — for future composition (e.g. a Celery `chain()`). |
 | `workers.generate_ai_metadata` | **Live**, standalone | Sprint 9B. Runs local Qwen document understanding (via Ollama) for one asset in isolation, sharing `QwenDocumentUnderstandingService` with the inline pipeline call above — not a duplicate implementation. Requires extraction to have already produced text. |
-| `workers.generate_embeddings` | Placeholder | Logs and returns `not_implemented`. `NullEmbeddingProvider` is the only provider; chunks stay `PENDING`. |
+| `workers.generate_embeddings` | Live, standalone | Embeds all existing asset chunks, validates vectors and records the full configured space identity. |
 | `workers.update_processing_status` | Standalone, not yet wired to any caller | Generic status-update utility, usable outside the main pipeline. |
 | `workers.execute_research_run` | **Live** | Sprint 7. Enqueued by `ResearchService.start_run` (`POST /research/run`). Executes the LangGraph research workflow and writes the run's step/message trace. |
 | `workers.retry_failed_tasks` | Real, manual-invoke only | Queries assets stuck at `processing_status=FAILED` and re-enqueues them. Not on a beat schedule. |
 | `workers.cleanup_temp_files` | Placeholder | No "temp file" concept exists yet in the storage layer. |
-| `workers.rebuild_embeddings` | Placeholder | Meaningless until a real embedding provider exists. |
+| `workers.rebuild_embeddings` | Live, resumable | Takes a rebuild UUID created by `POST /knowledge-base/rebuild?project_id=…`; stages validated batches, retries unfinished work, and atomically activates a complete project space. |
 
 ## Running the worker
 

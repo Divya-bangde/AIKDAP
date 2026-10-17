@@ -27,6 +27,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
+from pydantic import SecretStr
 
 from app.agents.planner.nodes import build_citation
 from app.agents.planner.synthesis import GroundedSynthesizer
@@ -223,6 +224,7 @@ def litellm_call(monkeypatch) -> AsyncMock:
     """Replace LiteLLM's entry point, keeping the real gateway in path."""
     mock = AsyncMock(return_value=model_reply("Answer [c1].", ["c1"]))
     monkeypatch.setattr(gateway_module, "acompletion", mock)
+    monkeypatch.setattr(settings, "gemini_api_key", SecretStr("offline-gemini-fixture"))
     return mock
 
 

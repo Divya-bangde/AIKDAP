@@ -737,7 +737,9 @@ async def test_t19_daemon_unreachable_preserves_state_no_false_write(session, pr
 
 
 @pytest.mark.requires_docker_image("alpine:3.19")
-def test_t20_real_front_door_crash_and_reconcile_recovers_14(docker_client):
+def test_t20_real_front_door_crash_and_reconcile_recovers_14(
+    docker_client, subprocess_test_environment
+):
     async def _setup():
         async with async_session_factory() as setup_session:
             proj = await _make_owner_and_project(setup_session, name="T20 Front Door Project")
@@ -819,6 +821,7 @@ def test_t20_real_front_door_crash_and_reconcile_recovers_14(docker_client):
         capture_output=True,
         text=True,
         timeout=30,
+        env=subprocess_test_environment,
         cwd=os.path.dirname(os.path.dirname(__file__)) or ".",
     )
     assert result.returncode == 0, result.stderr[-3000:]

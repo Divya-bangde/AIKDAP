@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { Loader2, Search, Sparkles } from "lucide-react";
 import { type FormEvent, useState } from "react";
@@ -11,7 +11,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { messageFor } from "@/lib/api-error";
 import { fadeUp } from "@/lib/motion";
 import { submitOnEnter } from "@/lib/utils";
-import * as projectsService from "@/services/projects";
+import { usePagedProjects } from "@/hooks/usePagedLists";
+import { LoadMore } from "@/components/common/LoadMore";
+import { ErrorState } from "@/components/common/ErrorState";
 import * as researchService from "@/services/research";
 
 export function ResearchPrompt() {
@@ -21,10 +23,7 @@ export function ResearchPrompt() {
   const [projectId, setProjectId] = useState(searchParams.get("project") ?? "");
   const [query, setQuery] = useState("");
 
-  const projectsQuery = useQuery({
-    queryKey: ["projects"],
-    queryFn: projectsService.listProjects,
-  });
+  const projectsQuery = usePagedProjects();
 
   const submitMutation = useMutation({
     mutationFn: researchService.startResearchRun,
@@ -72,12 +71,14 @@ export function ResearchPrompt() {
                 <option value="" disabled>
                   {projectsQuery.isLoading ? "Loading projects…" : "Select a project"}
                 </option>
-                {projectsQuery.data?.map((project) => (
+                {projectsQuery.items.map((project) => (
                   <option key={project.id} value={project.id}>
                     {project.name}
                   </option>
                 ))}
               </select>
+              {projectsQuery.isError && !projectsQuery.isFetchNextPageError && <ErrorState error={projectsQuery.error} />}
+              <LoadMore query={projectsQuery} label="projects" />
             </div>
 
             <div className="flex flex-col gap-2">

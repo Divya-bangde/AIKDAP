@@ -195,6 +195,9 @@ class KnowledgeBaseService:
         if (chunk_texts is None) == (chunks is None):
             raise ValueError("Pass exactly one of chunk_texts or chunks.")
 
+        from app.modules.knowledge_base.rebuild import lock_project
+
+        await lock_project(self._session, project_id)
         await self._repository.delete_by_asset(asset_id)
 
         if chunk_texts is not None:
@@ -251,12 +254,13 @@ class KnowledgeBaseService:
         if asset_id is not None:
             await self._ensure_asset_owned(owner_id, asset_id)
 
-        embedded = await self._embeddings.embed([query])
+        embedded = await self._embeddings.embed_query([query])
         query_vector = embedded[0]
 
         return await self._repository.search_similar(
             owner_id,
             query_vector=query_vector,
+            space_id=self._embeddings.space.id,
             project_id=project_id,
             asset_id=asset_id,
             top_k=top_k,

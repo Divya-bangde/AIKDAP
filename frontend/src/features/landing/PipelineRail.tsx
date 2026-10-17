@@ -24,9 +24,8 @@ export interface PipelineStage {
  * readable regardless of the line's state — if the animation never ran
  * at all, nothing would be lost but the effect.
  *
- * The stages are the real processing stages of the platform, named as
- * the backend names them. This is a description of the architecture,
- * not a readout of anything happening now.
+ * Labels describe a simplified architecture path. Optional work and fallbacks
+ * are explained by the surrounding section; this is not live progress.
  */
 export function PipelineRail({ stages }: { stages: PipelineStage[] }) {
   const containerRef = useRef<HTMLOListElement>(null);
@@ -77,7 +76,7 @@ export function PipelineRail({ stages }: { stages: PipelineStage[] }) {
           </span>
 
           <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-            <h3 className="font-display text-headline text-foreground">{stage.name}</h3>
+            <h4 className="font-display text-headline text-foreground">{stage.name}</h4>
             {/* Solid `text-muted-foreground`, not a faded one: at 60%
              * alpha axe measured this at 3.64:1 against the entry
              * page's background, under WCAG AA's 4.5:1. It stays

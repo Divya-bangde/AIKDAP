@@ -1,0 +1,302 @@
+[
+  {
+    "theme": "light",
+    "surfaces": {
+      "card": [
+        255,
+        255,
+        255
+      ],
+      "sunken": [
+        242,
+        244,
+        247
+      ],
+      "background": [
+        242,
+        243,
+        245
+      ],
+      "researchComposite": [
+        249.8,
+        250.60000000000002,
+        251.8
+      ]
+    },
+    "marks": {
+      "--chart-1": [
+        33,
+        101,
+        181
+      ],
+      "--chart-2": [
+        183,
+        70,
+        24
+      ],
+      "--chart-3": [
+        8,
+        125,
+        84
+      ],
+      "--chart-4": [
+        150,
+        102,
+        0
+      ],
+      "--chart-5": [
+        170,
+        53,
+        99
+      ],
+      "--chart-6": [
+        0,
+        107,
+        21
+      ],
+      "--chart-7": [
+        74,
+        58,
+        167
+      ],
+      "--chart-8": [
+        188,
+        51,
+        52
+      ],
+      "graph-uploaded": [
+        80,
+        72,
+        229
+      ],
+      "graph-suggested": [
+        31,
+        122,
+        80
+      ],
+      "graph-external-and-edge": [
+        97,
+        104,
+        117
+      ]
+    },
+    "ratios": {
+      "--chart-1": {
+        "card": 5.844,
+        "sunken": 5.304,
+        "background": 5.264,
+        "researchComposite": 5.624
+      },
+      "--chart-2": {
+        "card": 5.381,
+        "sunken": 4.883,
+        "background": 4.846,
+        "researchComposite": 5.178
+      },
+      "--chart-3": {
+        "card": 5.157,
+        "sunken": 4.681,
+        "background": 4.645,
+        "researchComposite": 4.963
+      },
+      "--chart-4": {
+        "card": 5.003,
+        "sunken": 4.541,
+        "background": 4.506,
+        "researchComposite": 4.815
+      },
+      "--chart-5": {
+        "card": 6.179,
+        "sunken": 5.608,
+        "background": 5.565,
+        "researchComposite": 5.946
+      },
+      "--chart-6": {
+        "card": 6.744,
+        "sunken": 6.121,
+        "background": 6.074,
+        "researchComposite": 6.49
+      },
+      "--chart-7": {
+        "card": 8.556,
+        "sunken": 7.765,
+        "background": 7.706,
+        "researchComposite": 8.234
+      },
+      "--chart-8": {
+        "card": 5.736,
+        "sunken": 5.205,
+        "background": 5.166,
+        "researchComposite": 5.52
+      },
+      "graph-uploaded": {
+        "card": 6.177,
+        "sunken": 5.606,
+        "background": 5.564,
+        "researchComposite": 5.945
+      },
+      "graph-suggested": {
+        "card": 5.306,
+        "sunken": 4.815,
+        "background": 4.779,
+        "researchComposite": 5.106
+      },
+      "graph-external-and-edge": {
+        "card": 5.607,
+        "sunken": 5.089,
+        "background": 5.05,
+        "researchComposite": 5.396
+      }
+    }
+  },
+  {
+    "theme": "dark",
+    "surfaces": {
+      "card": [
+        12,
+        17,
+        29
+      ],
+      "sunken": [
+        9,
+        13,
+        24
+      ],
+      "background": [
+        7,
+        10,
+        19
+      ],
+      "researchComposite": [
+        10.799999999999999,
+        15.399999999999999,
+        27
+      ]
+    },
+    "marks": {
+      "--chart-1": [
+        57,
+        135,
+        229
+      ],
+      "--chart-2": [
+        217,
+        89,
+        38
+      ],
+      "--chart-3": [
+        25,
+        158,
+        112
+      ],
+      "--chart-4": [
+        201,
+        133,
+        0
+      ],
+      "--chart-5": [
+        213,
+        81,
+        129
+      ],
+      "--chart-6": [
+        0,
+        131,
+        0
+      ],
+      "--chart-7": [
+        144,
+        133,
+        233
+      ],
+      "--chart-8": [
+        230,
+        103,
+        103
+      ],
+      "graph-uploaded": [
+        123,
+        117,
+        240
+      ],
+      "graph-suggested": [
+        59,
+        186,
+        127
+      ],
+      "graph-external-and-edge": [
+        162,
+        170,
+        185
+      ]
+    },
+    "ratios": {
+      "--chart-1": {
+        "card": 5.182,
+        "sunken": 5.332,
+        "background": 5.435,
+        "researchComposite": 5.244
+      },
+      "--chart-2": {
+        "card": 4.856,
+        "sunken": 4.996,
+        "background": 5.092,
+        "researchComposite": 4.914
+      },
+      "--chart-3": {
+        "card": 5.537,
+        "sunken": 5.697,
+        "background": 5.807,
+        "researchComposite": 5.603
+      },
+      "--chart-4": {
+        "card": 6.141,
+        "sunken": 6.318,
+        "background": 6.44,
+        "researchComposite": 6.215
+      },
+      "--chart-5": {
+        "card": 4.78,
+        "sunken": 4.918,
+        "background": 5.013,
+        "researchComposite": 4.838
+      },
+      "--chart-6": {
+        "card": 3.813,
+        "sunken": 3.923,
+        "background": 3.999,
+        "researchComposite": 3.859
+      },
+      "--chart-7": {
+        "card": 6.032,
+        "sunken": 6.206,
+        "background": 6.326,
+        "researchComposite": 6.105
+      },
+      "--chart-8": {
+        "card": 5.838,
+        "sunken": 6.006,
+        "background": 6.122,
+        "researchComposite": 5.907
+      },
+      "graph-uploaded": {
+        "card": 5.069,
+        "sunken": 5.215,
+        "background": 5.316,
+        "researchComposite": 5.13
+      },
+      "graph-suggested": {
+        "card": 7.648,
+        "sunken": 7.868,
+        "background": 8.02,
+        "researchComposite": 7.739
+      },
+      "graph-external-and-edge": {
+        "card": 8.07,
+        "sunken": 8.303,
+        "background": 8.463,
+        "researchComposite": 8.167
+      }
+    }
+  }
+]

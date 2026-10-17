@@ -12,6 +12,14 @@ import uuid
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.responses import Response
+from sqlalchemy import func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import with_expression
+
+from app.core.pagination import Page, cursor_scope, read_page
+from app.database.session import get_db
+from app.modules.assets.models import Asset
+from app.modules.projects.models import Project
 
 from app.modules.assets.enums import AssetStatus, AssetType
 from app.modules.assets.schemas import AssetRead, AssetUpdate
@@ -179,6 +187,55 @@ async def list_assets(
     except ProjectAccessDeniedError as exc:
         raise _NOT_FOUND from exc
     return [AssetRead.from_model(asset) for asset in assets]
+
+
+@router.get("/page", response_model=Page[AssetRead])
+async def asset_page(
+    project_id: uuid.UUID | None = Query(default=None),
+    cursor: str | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=200),
+    q: str | None = Query(default=None, min_length=1, max_length=255),
+    asset_type: AssetType | None = Query(default=None),
+    status_filter: AssetStatus | None = Query(default=None, alias="status"),
+    tags: str | None = Query(default=None),
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> Page[AssetRead]:
+    if project_id is not None:
+        owned = await session.scalar(select(Project.id).where(
+            Project.id == project_id, Project.owner_id == current_user.id))
+        if owned is None:
+            raise _NOT_FOUND
+    statement = select(Asset).join(Project, Project.id == Asset.project_id).where(
+        Asset.owner_id == current_user.id, Project.owner_id == current_user.id).options(
+            with_expression(Asset.asset_metadata, func.jsonb_build_object("kind", Asset.asset_metadata["kind"])),
+            with_expression(Asset.ai_profile, func.jsonb_strip_nulls(func.jsonb_build_object(
+                "status", Asset.ai_profile["status"], "embedding_status", Asset.ai_profile["embedding_status"],
+                "confidence", Asset.ai_profile["confidence"],
+            ))),
+        )
+    if project_id is not None:
+        statement = statement.where(Asset.project_id == project_id)
+    if q:
+        statement = statement.where(or_(Asset.title.ilike(f"%{q}%"), Asset.description.ilike(f"%{q}%")))
+    if asset_type is not None:
+        statement = statement.where(Asset.asset_type == asset_type)
+    if status_filter is not None:
+        statement = statement.where(Asset.status == status_filter)
+    parsed_tags = _parse_tags(tags)
+    if parsed_tags:
+        statement = statement.where(Asset.tags.overlap(parsed_tags))
+    rows, next_cursor = await read_page(
+        session, statement, Asset, cursor=cursor, limit=limit,
+        scope=cursor_scope("assets", current_user.id, project_id, q, asset_type, status_filter, parsed_tags),
+    )
+    items = []
+    for row in rows:
+        item = AssetRead.from_model(row)
+        item.metadata = {key: value for key, value in item.metadata.items() if key == "kind"}
+        # Detail endpoint retains extracted understanding; lists carry only status.
+        items.append(item)
+    return Page(items=items, next_cursor=next_cursor)
 
 
 @router.get("/{asset_id}", response_model=AssetRead)

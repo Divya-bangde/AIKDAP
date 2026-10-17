@@ -10,7 +10,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { UploadDropzone } from "@/features/assets/UploadDropzone";
 import { isSource } from "@/features/assets/asset-state";
 import { AnswerBody } from "@/features/research/AnswerBody";
-import * as assetsService from "@/services/assets";
+import { usePagedAssets } from "@/hooks/usePagedLists";
+import { LoadMore } from "@/components/common/LoadMore";
+import { ErrorState } from "@/components/common/ErrorState";
 import { analyzeResearchDocument, createUnsourcedAnswer } from "@/services/research";
 import type { components } from "@/types/api";
 
@@ -56,11 +58,8 @@ export function EvidenceGapPanel({
     mutationFn: () => createUnsourcedAnswer(runId),
   });
 
-  const assetsQuery = useQuery({
-    queryKey: ["assets", projectId],
-    queryFn: () => assetsService.listAssets(projectId),
-  });
-  const asset = assetsQuery.data?.find((item) => isSource(item) && item.asset_type !== "dataset");
+  const assetsQuery = usePagedAssets(projectId);
+  const asset = assetsQuery.items.find((item) => isSource(item) && item.asset_type !== "dataset");
 
   const analysisQuery = useQuery({
     queryKey: ["document-analysis", asset?.id, query],
@@ -87,6 +86,8 @@ export function EvidenceGapPanel({
         <CardTitle>What's missing</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
+        {assetsQuery.isError && !assetsQuery.isFetchNextPageError && <ErrorState error={assetsQuery.error} />}
+        {!asset && <LoadMore query={assetsQuery} label="source documents" />}
         {analysisQuery.data && (
           <p className="text-sm leading-relaxed text-foreground">
             {analysisQuery.data.sufficiency_reason}

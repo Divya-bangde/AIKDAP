@@ -603,6 +603,17 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
     embedding_model: str = "ollama/bge-m3"
     embedding_dimension: int = Field(default=1024, gt=0)
+    # Pin this to a provider revision/model digest and bump on model replacement.
+    embedding_model_version: str = Field(default="1", min_length=1)
+    embedding_document_task: str | None = None
+    embedding_query_task: str | None = None
+
+    @field_validator("embedding_document_task", "embedding_query_task", mode="before")
+    @classmethod
+    def empty_embedding_task_is_unconfigured(cls, value):
+        if isinstance(value, str):
+            return value.strip() or None
+        return value
     # ------------------------------------------------------------------
     # Two-stage retrieval reranking — BGE-Reranker-v2-m3 (Sprint 9D)
     #

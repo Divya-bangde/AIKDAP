@@ -38,11 +38,13 @@ from __future__ import annotations
 
 import hashlib
 import uuid
+from pydantic import ValidationError
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.planner.experiment import (
     EquationParseError,
+    _numeric_sort_key,
     SweepTooLargeError,
     analyze_mutability,
     build_variables_from_equation,
@@ -85,6 +87,7 @@ from app.modules.research.experiment_schemas import (
     VisualizationSeries,
 )
 from app.modules.research.schemas import ResearchVariable, SourceReference
+from app.modules.research.experiment_visualization import preflight_test_cases
 from execution_launcher.models import ExecutionCapability, ExecutionOperation, ResourceClass
 
 _EXPERIMENT_PLAN_TAG = "experiment-plan"
@@ -511,37 +514,55 @@ class ExperimentPlanService:
             raise ExperimentPlanValidationError("Compare by must be a different input than the x-axis.")
         asset = await self._get_owned_asset(owner_id, plan_id)
         plan = self._plan_from_asset(asset)
+        try:
+            preflight_test_cases(plan.test_cases, input_name, output_name, group_by)
+        except ValueError as exc:
+            raise ExperimentPlanValidationError(str(exc)) from exc
 
         if group_by:
-            named_pairs = [
-                (f"{group_by} = {value}", prepare_input_output_series(cases, input_name, output_name))
-                for value, cases in group_test_cases(plan.test_cases, group_by)
-            ]
-            # A group whose cases lack the x-axis input has nothing to plot.
-            named_pairs = [(name, pairs) for name, pairs in named_pairs if pairs]
+            groups = [(f"{group_by} = {value}", cases) for value, cases in group_test_cases(
+                (case for case in plan.test_cases if input_name in case.inputs), group_by
+            )]
         else:
-            named_pairs = [
-                (
-                    f"{output_name} vs {input_name}",
-                    prepare_input_output_series(plan.test_cases, input_name, output_name),
-                )
-            ]
+            groups = [(f"{output_name} vs {input_name}", plan.test_cases)]
+        named_pairs = [(name, prepare_input_output_series(cases, input_name, output_name)) for name, cases in groups]
+        ordered_cases = {
+            name: sorted((case for case in cases if input_name in case.inputs), key=lambda case: _numeric_sort_key(case.inputs[input_name]))
+            for name, cases in groups
+        }
 
-        kind = choose_series_kind([pairs for _, pairs in named_pairs])
-        series = [
-            VisualizationSeries(name=name, x=[p[0] for p in pairs], y=[p[1] for p in pairs], kind=kind)
-            for name, pairs in named_pairs
-        ]
-        # One trend note per chart: with several series it would have to
-        # describe each group separately, which the legend already shows.
-        note = describe_trend(named_pairs[0][1], input_name, output_name) if len(named_pairs) == 1 else None
-        return VisualizationData(
-            chart_type=kind,
-            x_label=input_name,
-            y_label=output_name,
-            series=series,
-            note=note,
-        )
+        try:
+            kind = choose_series_kind([pairs for _, pairs in named_pairs])
+            series = [
+                VisualizationSeries(name=name, x=[p[0] for p in pairs], y=[p[1] for p in pairs], kind=kind,
+                    test_case_ids=[case.id for case in ordered_cases[name]],
+                    source_references=[case.source_reference for case in ordered_cases[name]])
+                for name, pairs in named_pairs
+            ]
+            # One trend note per chart: with several series it would have to
+            # describe each group separately, which the legend already shows.
+            note = describe_trend(named_pairs[0][1], input_name, output_name) if len(named_pairs) == 1 else None
+            return VisualizationData(
+                chart_type=kind,
+                x_label=input_name,
+                y_label=output_name,
+                series=series,
+                note=note,
+                origin="expected_test_case_values",
+                plan_id=plan_id,
+                plan_version=getattr(plan, "version", None),
+                input_name=input_name,
+                output_name=output_name,
+                group_by=group_by,
+                total_test_cases=len(plan.test_cases),
+                plotted_test_cases=sum(len(pairs) for _, pairs in named_pairs),
+                excluded_missing_input=sum(input_name not in case.inputs for case in plan.test_cases),
+                partial=any(input_name not in case.inputs for case in plan.test_cases),
+                scope_description="Expected test-case values only; these are not observed execution results. Cases missing the selected input are excluded; missing or nonnumeric expected outputs remain null gaps. No display truncation is applied.",
+            )
+
+        except ValidationError as exc:
+            raise ExperimentPlanValidationError("Experiment visualization cannot be rendered safely: " + str(exc)[:1000]) from exc
 
     # ------------------------------------------------------------------
     # Execution front door (Sprint 16 Phase 7B.23)

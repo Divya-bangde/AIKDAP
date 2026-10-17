@@ -770,6 +770,7 @@ def test_a_configuration_error_does_not_block_the_provider():
 
 def test_quota_exhaustion_blocks_until_the_cooldown_expires(monkeypatch):
     """Bounded, and self-healing without operator action."""
+    monkeypatch.setattr(settings, "gemini_api_key", SecretStr("test-cooldown-key"))
     monkeypatch.setattr(settings, "llm_quota_cooldown_seconds", 3600.0)
     registry = ProviderHealthRegistry()
     registry.record_failure(GEMINI, error=LLMQuotaExhaustedError("spent"))

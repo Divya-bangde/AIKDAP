@@ -27,11 +27,17 @@ describe("reports service", () => {
     const originalRevokeObjectURL = URL.revokeObjectURL;
     URL.createObjectURL = vi.fn(() => "blob:mock");
     URL.revokeObjectURL = vi.fn();
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+      expect(this.href).toBe("blob:mock");
+      expect(this.download).toBe("Project Synopsis.pdf");
+    });
 
     await reportsService.downloadReport("a1", "pdf", "Project Synopsis.pdf");
 
     expect(client.requestBlob).toHaveBeenCalledWith("/api/v1/reports/a1/download?format=pdf");
     expect(URL.createObjectURL).toHaveBeenCalledWith(blob);
+    expect(click).toHaveBeenCalledOnce();
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:mock");
 
     URL.createObjectURL = originalCreateObjectURL;
     URL.revokeObjectURL = originalRevokeObjectURL;

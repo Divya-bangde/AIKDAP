@@ -52,7 +52,7 @@ class AssetRepository:
                 or_(Asset.title.ilike(like_pattern), Asset.description.ilike(like_pattern))
             )
 
-        stmt = stmt.order_by(Asset.created_at.desc()).offset(skip).limit(limit)
+        stmt = stmt.order_by(Asset.created_at.desc(), Asset.id.desc()).offset(skip).limit(limit)
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 

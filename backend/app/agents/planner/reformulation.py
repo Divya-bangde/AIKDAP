@@ -96,15 +96,20 @@ def is_reformulation_safe(
 
     # Entities can be derived from context
     safe, reason = check_hallucination(structured.entities, "entity", allow_from_context=True)
-    if not safe: return safe, reason
+    if not safe:
+        return safe, reason
     safe, reason = check_hallucination(structured.dates, "date")
-    if not safe: return safe, reason
+    if not safe:
+        return safe, reason
     safe, reason = check_hallucination(structured.regions, "region")
-    if not safe: return safe, reason
+    if not safe:
+        return safe, reason
     safe, reason = check_hallucination(structured.products, "product")
-    if not safe: return safe, reason
+    if not safe:
+        return safe, reason
     safe, reason = check_hallucination(structured.numbers, "number")
-    if not safe: return safe, reason
+    if not safe:
+        return safe, reason
 
     # 3. Negation preservation
     negation_terms = ["not", "n't", "no", "never", "without", "exclude", "excluding"]

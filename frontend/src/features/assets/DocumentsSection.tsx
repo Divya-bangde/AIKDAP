@@ -1,5 +1,8 @@
 import { FileText } from "lucide-react";
-import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { LoadMore } from "@/components/common/LoadMore";
+import { usePagedAssets } from "@/hooks/usePagedLists";
+import { CrossPaperAnalysisPanel } from "@/features/research/CrossPaperAnalysisPanel";
 
 import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorState } from "@/components/common/ErrorState";
@@ -8,29 +11,27 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AiProfilePanel } from "@/features/assets/AiProfilePanel";
 import { DocumentCard } from "@/features/assets/DocumentCard";
 import { UploadDropzone } from "@/features/assets/UploadDropzone";
-import { allSettled, isSource } from "@/features/assets/asset-state";
+import { isSettled, isSource } from "@/features/assets/asset-state";
 import { usePolling } from "@/hooks/usePolling";
 import * as assetsService from "@/services/assets";
 
 /** A project's documents, or — with no `projectId` — every document the
  * user owns across all projects (upload needs a project, so it is hidden). */
 export function DocumentsSection({ projectId }: { projectId?: string }) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-
-  // Polls only while at least one asset is still mid-pipeline —
-  // extraction, Qwen understanding, or BGE-M3 embedding (Phase 38:
-  // "avoid unnecessary API calls").
-  const assetsQuery = usePolling({
-    queryKey: ["assets", projectId ?? "all"],
-    queryFn: () => assetsService.listAssets(projectId),
-    isTerminal: allSettled,
+  const [searchParams, setSearchParams] = useSearchParams();
+  const assetsQuery = usePagedAssets(projectId);
+  const assets = assetsQuery.items.filter(isSource);
+  const selectedId = searchParams.get("primary") ?? assets[0]?.id;
+  const selectedQuery = usePolling({
+    queryKey: ["assets", "detail", selectedId],
+    queryFn: () => assetsService.getAsset(selectedId!),
+    isTerminal: isSettled,
+    enabled: Boolean(selectedId),
   });
-
-  // Generated outputs live in the Assets tab, not among the sources.
-  const assets = (assetsQuery.data ?? []).filter(isSource);
-  // Default to the newest document so the AI panel has something to
-  // show the moment processing finishes, rather than requiring a click.
-  const selectedAsset = assets.find((asset) => asset.id === selectedId) ?? assets[0];
+  const selectedAsset = selectedQuery.data;
+  function select(id: string) {
+    setSearchParams((params) => { const next = new URLSearchParams(params); next.set("primary", id); return next; }, { replace: true });
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -43,7 +44,7 @@ export function DocumentsSection({ projectId }: { projectId?: string }) {
         </div>
       )}
 
-      {assetsQuery.isError && <ErrorState error={assetsQuery.error} />}
+      {assetsQuery.isError && !assetsQuery.isFetchNextPageError && <ErrorState error={assetsQuery.error} />}
 
       {assetsQuery.isSuccess && assets.length === 0 && (
         <EmptyState
@@ -57,7 +58,7 @@ export function DocumentsSection({ projectId }: { projectId?: string }) {
         />
       )}
 
-      {assetsQuery.isSuccess && assets.length > 0 && (
+      {assets.length > 0 && (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
           <Stagger className="flex flex-col gap-2">
             {assets.map((asset) => (
@@ -65,12 +66,14 @@ export function DocumentsSection({ projectId }: { projectId?: string }) {
                 <DocumentCard
                   asset={asset}
                   isSelected={asset.id === selectedAsset?.id}
-                  onSelect={() => setSelectedId(asset.id)}
+                  onSelect={() => select(asset.id)}
                 />
               </StaggerItem>
             ))}
           </Stagger>
           <div>
+            {selectedQuery.isError && <ErrorState error={selectedQuery.error} />}
+            {selectedQuery.isLoading && <Skeleton className="h-40" />}
             {selectedAsset ? (
               <AiProfilePanel asset={selectedAsset} />
             ) : (
@@ -81,6 +84,8 @@ export function DocumentsSection({ projectId }: { projectId?: string }) {
           </div>
         </div>
       )}
+      <LoadMore query={assetsQuery} label="documents" />
+      {selectedAsset && selectedAsset.asset_type === "document" && (!projectId || selectedAsset.project_id === projectId) && <CrossPaperAnalysisPanel key={selectedAsset.id} primaryAssetId={selectedAsset.id} projectId={selectedAsset.project_id} papers={assets} />}
     </div>
   );
 }

@@ -1,0 +1,248 @@
+{
+  "errors": [],
+  "traces": [
+    {
+      "name": "Research plot",
+      "type": "scatter",
+      "types": [
+        "scatter"
+      ],
+      "visible": [
+        true
+      ],
+      "svgPaths": 19,
+      "webgl": false,
+      "canvases": [],
+      "x": [
+        [
+          1,
+          2,
+          3
+        ]
+      ],
+      "y": [
+        [
+          10,
+          20,
+          15
+        ]
+      ],
+      "z": [
+        null
+      ],
+      "status": []
+    },
+    {
+      "name": "Yearly bars",
+      "type": "bar",
+      "types": [
+        "bar"
+      ],
+      "visible": [
+        true
+      ],
+      "svgPaths": 14,
+      "webgl": false,
+      "canvases": [],
+      "x": [
+        [
+          2024,
+          2025
+        ]
+      ],
+      "y": [
+        [
+          42,
+          45
+        ]
+      ],
+      "z": [
+        null
+      ],
+      "status": []
+    },
+    {
+      "name": "Truncated pie",
+      "type": "pie",
+      "types": [
+        "pie"
+      ],
+      "visible": [
+        true
+      ],
+      "svgPaths": 5,
+      "webgl": false,
+      "canvases": [],
+      "x": [
+        null
+      ],
+      "y": [
+        null
+      ],
+      "z": [
+        null
+      ],
+      "status": []
+    },
+    {
+      "name": "Heatmap",
+      "type": "heatmap",
+      "types": [
+        "heatmap"
+      ],
+      "visible": [
+        true
+      ],
+      "svgPaths": 28,
+      "webgl": false,
+      "canvases": [],
+      "x": [
+        [
+          -1,
+          1
+        ]
+      ],
+      "y": [
+        [
+          1,
+          2
+        ]
+      ],
+      "z": [
+        [
+          [
+            0,
+            1
+          ],
+          [
+            2,
+            3
+          ]
+        ]
+      ],
+      "status": []
+    },
+    {
+      "name": "Contour",
+      "type": "contour",
+      "types": [
+        "contour"
+      ],
+      "visible": [
+        true
+      ],
+      "svgPaths": 39,
+      "webgl": false,
+      "canvases": [],
+      "x": [
+        [
+          -1,
+          1
+        ]
+      ],
+      "y": [
+        [
+          1,
+          2
+        ]
+      ],
+      "z": [
+        [
+          [
+            0,
+            1
+          ],
+          [
+            2,
+            3
+          ]
+        ]
+      ],
+      "status": []
+    },
+    {
+      "name": "3D surface",
+      "type": "surface",
+      "types": [
+        "surface"
+      ],
+      "visible": [
+        true
+      ],
+      "svgPaths": 0,
+      "webgl": true,
+      "canvases": [
+        {
+          "width": 1762,
+          "height": 568
+        }
+      ],
+      "x": [
+        [
+          1,
+          2
+        ]
+      ],
+      "y": [
+        [
+          1,
+          2
+        ]
+      ],
+      "z": [
+        [
+          [
+            1,
+            2
+          ],
+          [
+            3,
+            4
+          ]
+        ]
+      ],
+      "status": []
+    },
+    {
+      "name": "Scatter3D",
+      "type": "scatter3d",
+      "types": [
+        "scatter3d"
+      ],
+      "visible": [
+        true
+      ],
+      "svgPaths": 0,
+      "webgl": true,
+      "canvases": [
+        {
+          "width": 1916,
+          "height": 568
+        }
+      ],
+      "x": [
+        [
+          1,
+          2,
+          3
+        ]
+      ],
+      "y": [
+        [
+          1,
+          2,
+          3
+        ]
+      ],
+      "z": [
+        [
+          3,
+          2,
+          1
+        ]
+      ],
+      "status": []
+    }
+  ],
+  "passed": true
+}

@@ -965,7 +965,7 @@ async def synthesis_node(state: ResearchState, config: RunnableConfig) -> dict[s
     # partial results as if every source had been consulted.
     warnings = degraded_warnings(state)
     full_evidence_text = await _resolve_full_evidence_text(
-        dependencies.chunk_repository, incoming
+        dependencies.chunk_repository, incoming, project_id=state.get("project_id")
     )
     parent = state.get("parent") or {}
     conversation = (
@@ -1014,6 +1014,7 @@ async def synthesis_node(state: ResearchState, config: RunnableConfig) -> dict[s
     citations = result.citations
     grounding_status = result.grounding_status
     visualization = result.visualization
+    visualization_outcome = result.visualization_outcome
     equations = result.equations
     if general is not None:
         # Never presented as grounded: no citations, no claims, no chart,
@@ -1026,6 +1027,8 @@ async def synthesis_node(state: ResearchState, config: RunnableConfig) -> dict[s
         citations = []
         grounding_status = ResearchGroundingStatus.UNSOURCED
         visualization = None
+        if visualization_outcome is not None:
+            visualization_outcome = {**visualization_outcome, "status": "not_enough_data", "verification": "unverified", "reason": "The answer uses general knowledge; no independently verified visualization was produced."}
         equations = []
     elif insufficient and not web_fallback and result.model is not None:
         # The run ends declining to answer. A model's prose there is not
@@ -1124,6 +1127,7 @@ async def synthesis_node(state: ResearchState, config: RunnableConfig) -> dict[s
         "citations": citations_for_storage,
         "grounding_status": grounding_status.value,
         "visualization": visualization,
+        "visualization_outcome": visualization_outcome,
         "equations": equations,
         "web_fallback": web_fallback,
         "paper_suggestion_eligible": dependencies.paper_provider is not None,
@@ -1337,7 +1341,7 @@ def _dependencies(config: RunnableConfig) -> GraphDependencies:
 
 
 async def _resolve_full_evidence_text(
-    chunk_repository: KnowledgeChunkRepository | None, citations: list[Citation]
+    chunk_repository: KnowledgeChunkRepository | None, citations: list[Citation], *, project_id: str | None = None
 ) -> dict[str, str]:
     """Full, untruncated chunk content for every citation with a `chunk_id`.
 
@@ -1369,7 +1373,8 @@ async def _resolve_full_evidence_text(
         except ValueError:
             continue
         chunk = await chunk_repository.get_by_id(parsed_id)
-        if chunk is not None:
+        if (chunk is not None and str(getattr(chunk, "asset_id", "")) == citation.get("asset_id")
+                and project_id is not None and str(getattr(chunk, "project_id", "")) == str(project_id)):
             full_text[chunk_id] = chunk.content
     return full_text
 

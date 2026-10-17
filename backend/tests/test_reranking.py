@@ -638,6 +638,8 @@ async def test_rerank_false_returns_retrieval_order_labelled_disabled(session, p
 
 async def _seed_chunks(session, owning_project: Project, contents: list[str]) -> list[KnowledgeChunk]:
     """Create one asset with one embedded chunk per content string."""
+    space = FakeEmbeddingProvider(_unit_vector(0)).space
+    owning_project.active_embedding_space_id = space.id
     asset = Asset(
         project_id=owning_project.id,
         owner_id=owning_project.owner_id,
@@ -671,6 +673,8 @@ async def _seed_chunks(session, owning_project: Project, contents: list[str]) ->
             embedding_status=EmbeddingStatus.COMPLETED,
             embedding_provider=EmbeddingProviderName.LOCAL,
             embedding=_unit_vector(index),
+            embedding_space_id=space.id,
+            embedding_space=space.as_dict(),
         )
         session.add(chunk)
         chunks.append(chunk)

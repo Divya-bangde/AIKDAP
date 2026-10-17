@@ -722,6 +722,7 @@ class LLMGateway:
         texts: list[str],
         model: str,
         timeout: float | None = None,
+        task: str | None = None,
     ) -> LLMEmbeddingResponse:
         """Embed a batch of texts. No system/user prompt shape here —
         embeddings are a distinct LiteLLM operation (`aembedding`, not
@@ -743,6 +744,8 @@ class LLMGateway:
             "model": model,
             "timeout": timeout or self._timeout,
         }
+        if task is not None:
+            request["task"] = task
 
         # Same credential resolution `complete()` performs. Embeddings
         # only ever ran against Ollama, which needs no key, so this path

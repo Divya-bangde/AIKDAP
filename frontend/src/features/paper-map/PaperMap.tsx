@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { useGraphColors } from "@/features/paper-map/graph-colors";
+import { RenderGuard } from "@/features/research/RendererBoundary";
 import { messageFor } from "@/lib/api-error";
 import * as papersService from "@/services/papers";
 import type { components } from "@/types/api";
@@ -38,9 +39,7 @@ export function paperUrl(node: Pick<PaperNode, "id" | "doi">): string {
 
 /** Why there is no graph to draw, in the reader's terms. */
 function emptyReason(matchedCount: number, showExternal: boolean): string {
-  if (matchedCount < 2) {
-    return "Fewer than two of this project's PDFs are matched in OpenAlex, so there are no citations to connect. Papers with a DOI on their first pages match most reliably.";
-  }
+  if (matchedCount === 0) return "No papers have an OpenAlex match yet. Unmatched papers are listed below; their citations are unknown.";
   return showExternal
     ? "Your papers don't cite each other, or shared outside papers, often enough to draw a map yet."
     : "Your matched papers don't cite each other yet. Try showing frequently cited outside papers.";
@@ -52,6 +51,10 @@ function emptyReason(matchedCount: number, showExternal: boolean): string {
 export default function PaperMap({ projectId }: { projectId: string }) {
   const [showExternal, setShowExternal] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [paused, setPaused] = useState(false);
+  const selectionOpener = useRef<HTMLElement | null>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
   // Outside papers queued for import -> when; polled until they join.
   const [adding, setAdding] = useState<Record<string, number>>({});
   const colors = useGraphColors();
@@ -93,6 +96,14 @@ export default function PaperMap({ projectId }: { projectId: string }) {
   const graphRef = useRef<ForceGraphMethods<GraphNode> | undefined>(undefined);
   const fittedRef = useRef(false);
   const [width, setWidth] = useState(0);
+  const selectPaper = (id: string, opener?: HTMLElement) => {
+    selectionOpener.current = opener ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+    setSelectedId(id);
+  };
+  useEffect(() => {
+    if (paused) graphRef.current?.pauseAnimation();
+    else graphRef.current?.resumeAnimation();
+  }, [paused, width]);
   useEffect(() => {
     const element = containerRef.current;
     if (!element) return;
@@ -117,6 +128,9 @@ export default function PaperMap({ projectId }: { projectId: string }) {
   }
 
   const matchedCount = graph.nodes.filter((node) => node.in_project).length;
+  const connectedIds = new Set(graph.links.flatMap((link) => [String(link.source), String(link.target)]));
+  const isolatedCount = graph.nodes.filter((node) => !connectedIds.has(node.id)).length;
+  const listedNodes = graph.nodes.filter((node) => `${node.title} ${node.year ?? ""}`.toLowerCase().includes(search.toLowerCase()));
   // Derived from the latest data, so an added paper flips to in-project
   // while its panel is open.
   const selected = graph.nodes.find((node) => node.id === selectedId) ?? null;
@@ -152,10 +166,19 @@ export default function PaperMap({ projectId }: { projectId: string }) {
         </p>
       )}
 
-      {graph.links.length < 2 ? (
+      <p className="text-xs text-muted-foreground">Arrows point from the citing paper to the cited paper. Node size reflects global citation count, not relevance to your question. The searchable paper list provides the same details and source actions as canvas selection.</p>
+      {graph.links.length > 0 && <div role="group" aria-label="Paper map view controls" className="flex flex-wrap gap-2">
+        <button type="button" className="rounded border border-border px-3 py-2 text-xs" onClick={() => graphRef.current?.zoomToFit(300, 40)}>Fit paper map</button>
+        <button type="button" className="rounded border border-border px-3 py-2 text-xs" onClick={() => { graphRef.current?.centerAt(0, 0, 300); graphRef.current?.zoomToFit(300, 40); }}>Reset paper map view</button>
+        <button type="button" className="rounded border border-border px-3 py-2 text-xs" onClick={() => { const current = graphRef.current?.zoom(); if (typeof current === "number") graphRef.current?.zoom(Math.min(12, current * 1.3), 200); }}>Zoom in paper map</button>
+        <button type="button" className="rounded border border-border px-3 py-2 text-xs" onClick={() => { const current = graphRef.current?.zoom(); if (typeof current === "number") graphRef.current?.zoom(Math.max(0.1, current / 1.3), 200); }}>Zoom out paper map</button>
+        <button type="button" aria-pressed={paused} className="rounded border border-border px-3 py-2 text-xs" onClick={() => setPaused((value) => !value)}>{paused ? "Resume paper map animation" : "Pause paper map animation"}</button>
+      </div>}
+
+      {graph.links.length === 0 ? (
         <EmptyState
           icon={Network}
-          title="Not enough citations to map yet"
+          title={graph.nodes.length === 0 ? "No papers on the map" : "No citation relationships found"}
           description={emptyReason(matchedCount, showExternal)}
         />
       ) : (
@@ -166,7 +189,7 @@ export default function PaperMap({ projectId }: { projectId: string }) {
           aria-label={`Citation map of ${graph.nodes.length} papers with ${graph.links.length} citations. Select a paper to see its details.`}
         >
           {width > 0 && (
-            <ForceGraph2D<PaperNode>
+            <RenderGuard label="paper map"><ForceGraph2D<PaperNode>
               ref={graphRef}
               graphData={graphData}
               width={width}
@@ -194,11 +217,34 @@ export default function PaperMap({ projectId }: { projectId: string }) {
                 fittedRef.current = true;
                 graphRef.current?.zoomToFit(400, 40);
               }}
-              onNodeClick={(node) => setSelectedId(String(node.id))}
-            />
+              onNodeClick={(node) => selectPaper(String(node.id))}
+            /></RenderGuard>
           )}
         </div>
       )}
+
+      {graph.links.length > 0 && <p className="text-xs text-muted-foreground">{graph.links.length} citation relationship{graph.links.length === 1 ? "" : "s"}. Arrows point from the citing paper to the cited paper.</p>}
+      {isolatedCount > 0 && <p className="text-xs text-muted-foreground">{isolatedCount} isolated paper{isolatedCount === 1 ? " has" : "s have"} no citation relationship in the displayed graph; citations outside this scope may exist.</p>}
+      {graph.links.length === 1 && <section aria-label="Citation relationship" className="rounded-lg border border-border p-3 text-sm">
+        <p className="mb-2 font-medium">One citation relationship</p>
+        {graph.links.map((link) => <div key={`${link.source}:${link.target}`} className="flex flex-wrap items-center gap-2">
+          <button type="button" className="text-left underline" onClick={(event) => selectPaper(String(link.source), event.currentTarget)}>{graph.nodes.find((node) => node.id === link.source)?.title ?? String(link.source)}</button>
+          <span>cites</span>
+          <button type="button" className="text-left underline" onClick={(event) => selectPaper(String(link.target), event.currentTarget)}>{graph.nodes.find((node) => node.id === link.target)?.title ?? String(link.target)}</button>
+        </div>)}
+      </section>}
+
+      {graph.nodes.length > 0 && <section aria-label="Accessible paper list" className="min-w-0 rounded-card border border-border p-4">
+        <h3 className="text-sm font-medium">Papers on this map</h3>
+        <label className="mt-3 flex flex-col gap-1 text-xs">Search papers by title or year<input ref={searchRef} type="search" value={search} onChange={(event) => setSearch(event.target.value)} className="w-full rounded border border-border bg-background px-3 py-2 text-sm" /></label>
+        <p className="my-2 text-xs text-muted-foreground" role="status">{listedNodes.length} of {graph.nodes.length} papers shown. Search filters this list; the map keeps its full scope.</p>
+        <ul className="flex max-h-96 flex-col gap-2 overflow-y-auto" aria-label="Papers on this map">{listedNodes.map((node) => <li key={node.id} className="rounded border border-border p-3 text-xs">
+          <button type="button" onClick={(event) => selectPaper(node.id, event.currentTarget)} className="max-w-full break-words text-left text-sm font-medium underline">Inspect paper: {node.title}</button>
+          <p className="mt-1 text-muted-foreground">{KIND_LABELS[node.kind]} · {node.year ?? "Year unknown"} · {node.cited_by_count ?? "Unknown"} global citations</p>
+          <p className="mt-1 break-words text-muted-foreground">{connectedIds.has(node.id) ? `Cites ${graph.links.filter((link) => link.source === node.id).length}; cited by ${graph.links.filter((link) => link.target === node.id).length} in this map.` : "Isolated in this map; citations outside the displayed scope may exist."}</p>
+        </li>)}</ul>
+        {!listedNodes.length && <p className="text-sm">No papers match this search. Clear the search to inspect every paper.</p>}
+      </section>}
 
       {graph.unmatched.length > 0 && (
         <section className="rounded-card bg-card p-5 shadow-subtle">
@@ -219,12 +265,12 @@ export default function PaperMap({ projectId }: { projectId: string }) {
       )}
 
       <Sheet open={selected !== null} onOpenChange={(open) => !open && setSelectedId(null)}>
-        <SheetContent className="max-w-md">
+        <SheetContent className="max-w-md overflow-y-auto" onCloseAutoFocus={(event) => { event.preventDefault(); const opener = selectionOpener.current; (opener?.isConnected ? opener : searchRef.current)?.focus(); }}>
           {selected && (
             <div className="flex flex-col gap-4 p-6 pr-12">
               <div>
                 <p className="text-label uppercase text-muted-foreground">{KIND_LABELS[selected.kind]}</p>
-                <SheetTitle className="mt-1 text-section">{selected.title}</SheetTitle>
+                <SheetTitle className="mt-1 break-words text-section">{selected.title}</SheetTitle>
                 <SheetDescription className="sr-only">Details for this paper.</SheetDescription>
               </div>
               <dl className="grid grid-cols-2 gap-4 text-sm">

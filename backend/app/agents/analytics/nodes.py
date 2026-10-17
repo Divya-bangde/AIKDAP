@@ -101,6 +101,12 @@ async def execute_node(state: AnalyticsState, config: RunnableConfig) -> dict[st
     if plan.unanswerable_reason:
         return {"result": None, "step": {"summary": "Skipped: the question is not answerable from this dataset."}}
     result = execute_plan(state["frame"], plan)
+    result["scope"] = {
+        "partial": bool(state["profile"]["truncated"] or result["total_rows"] > len(result["rows"])),
+        "dataset_truncated": bool(state["profile"]["truncated"]),
+        "label": "Share of displayed categories" if plan.chart.type == "pie" else "Computed results",
+        "description": "Dataset row cap applied before computation." if state["profile"]["truncated"] else "Result rows omitted from display." if result["total_rows"] > len(result["rows"]) else "All computed result rows are displayed.",
+    }
     return {
         "result": result,
         "step": {

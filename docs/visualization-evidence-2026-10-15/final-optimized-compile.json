@@ -1,0 +1,81 @@
+{
+  "note": "Inclusive trace-event durations; nested categories overlap and must not be summed. Same cold 4xCPU/10Mbps/40ms profile. Separate run from untraced runtime samples.",
+  "events": {
+    "ParseHTML": {
+      "count": 4,
+      "durationMs": 1.779
+    },
+    "HTMLDocumentParser::MaybeFetchQueuedPreloads": {
+      "count": 1,
+      "durationMs": 5.326
+    },
+    "V8.CompileCode": {
+      "count": 2478,
+      "durationMs": 329.9099999999992
+    },
+    "V8.ParseProgram": {
+      "count": 35,
+      "durationMs": 20.444000000000003
+    },
+    "V8.Compile": {
+      "count": 24,
+      "durationMs": 2.3419999999999987
+    },
+    "V8.CompileIgnition": {
+      "count": 2503,
+      "durationMs": 93.02800000000018
+    },
+    "V8.CompileIgnitionFinalization": {
+      "count": 2147,
+      "durationMs": 17.866999999999972
+    },
+    "v8.parseOnBackground": {
+      "count": 8,
+      "durationMs": 931.4850000000001
+    },
+    "v8.parseOnBackgroundParsing": {
+      "count": 85,
+      "durationMs": 1172.2759999999996
+    },
+    "BackgroundCompileTask::Run": {
+      "count": 8,
+      "durationMs": 634.0340000000001
+    },
+    "V8.PreParse": {
+      "count": 3248,
+      "durationMs": 40.99600000000021
+    },
+    "v8.parseOnBackgroundWaiting": {
+      "count": 77,
+      "durationMs": 872.5520000000004
+    },
+    "V8.CompileCodeBackground": {
+      "count": 8,
+      "durationMs": 2.915
+    },
+    "ParseAuthorStyleSheet": {
+      "count": 2,
+      "durationMs": 5.8500000000000005
+    },
+    "v8.compileModule": {
+      "count": 8,
+      "durationMs": 0.7560000000000001
+    },
+    "V8.CompileStreamedModule": {
+      "count": 8,
+      "durationMs": 0.28800000000000003
+    },
+    "V8.ParseFunction": {
+      "count": 2459,
+      "durationMs": 147.9109999999999
+    },
+    "V8.CompileScript": {
+      "count": 15,
+      "durationMs": 0.22200000000000003
+    },
+    "V8.CompileEval": {
+      "count": 11,
+      "durationMs": 0.7420000000000001
+    }
+  }
+}

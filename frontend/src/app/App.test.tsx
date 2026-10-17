@@ -14,6 +14,10 @@ import { renderWithProviders } from "@/test/render";
 vi.mock("@/services/auth");
 vi.mock("@/services/assets");
 vi.mock("@/services/projects");
+
+beforeEach(() => {
+  vi.mocked(projectsService.getWorkspaceSummary).mockResolvedValue({ projects: 1, assets: 1, documents: 1, runs: 1, grounded_answers: 1 });
+});
 vi.mock("@/services/research");
 
 function mockSystemDark(prefersDark: boolean) {
@@ -36,9 +40,9 @@ describe("App routing at /", () => {
     useThemeStore.setState({ preference: null, override: null });
     document.documentElement.classList.remove("dark");
 
-    vi.mocked(projectsService.listProjects).mockResolvedValue([]);
+    vi.mocked(projectsService.listProjectsPage).mockResolvedValue({ items: [], next_cursor: null });
     vi.mocked(assetsService.listAssets).mockResolvedValue([]);
-    vi.mocked(researchService.listResearchRuns).mockResolvedValue([]);
+    vi.mocked(researchService.listResearchRunsPage).mockResolvedValue({ items: [], next_cursor: null });
     vi.mocked(authService.currentUser).mockResolvedValue({
       id: "u1",
       email: "researcher@example.com",

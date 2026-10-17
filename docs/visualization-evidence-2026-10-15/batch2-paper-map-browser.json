@@ -1,0 +1,10 @@
+{
+  "origin": "synthetic local query cache; no import action invoked",
+  "environment": "Chromium 153.0.8010.12 real canvas + production HTML controls",
+  "viewport": "1440x900",
+  "importFocus": "Add to project",
+  "focusRestored": "Inspect paper: Outside synthetic paper: keyboard import control (verification never invokes this action)",
+  "sourceLink": "https://doi.org/10.0000/synthetic",
+  "pausePressed": true,
+  "errors": []
+}

@@ -9,8 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AnswerBody } from "@/features/research/AnswerBody";
 import { AnswerEquations, type AnswerEquation } from "@/features/research/AnswerEquations";
 import {
-  AnswerVisualization,
+  ResearchVisualization,
   type VisualizationSpec,
+  type VisualizationOutcome,
 } from "@/features/research/AnswerVisualization";
 import { CitationList } from "@/features/research/CitationList";
 import { EvidenceDrawer } from "@/features/research/EvidenceDrawer";
@@ -57,6 +58,7 @@ export function ResearchResult({ run, followUp }: { run: ResearchRunDetail; foll
       setSelected({ citation, index });
     }
   };
+  const visualization = <ResearchVisualization spec={run.visualization as unknown as VisualizationSpec | null} outcome={(run as ResearchRunDetail & { visualization_outcome?: VisualizationOutcome | null }).visualization_outcome} metadata={{ run_id: run.id, project_id: run.project_id, question: run.query, visualization_outcome: run.visualization_outcome }} evidence={citations.flatMap((citation, index) => citation.id ? [{ id: citation.id, title: citation.title ?? citation.reference ?? citation.id, url: citation.url, reference: citation.reference, asset_id: citation.asset_id, chunk_id: citation.chunk_id, onOpen: () => openEvidence(citation, index) }] : [])} />;
 
   const evidencePanels = (
     <>
@@ -113,6 +115,8 @@ export function ResearchResult({ run, followUp }: { run: ResearchRunDetail; foll
 
           {followUp}
 
+          {visualization}
+
           {/* Sprint 16 Phase 8.11 Part C: the exact wall the reader
            * just hit -- what's missing, and an upload action right
            * there, instead of leaving "insufficient evidence" as a
@@ -164,6 +168,7 @@ export function ResearchResult({ run, followUp }: { run: ResearchRunDetail; foll
           </CardHeader>
           <CardContent className="flex flex-col gap-5">
             <GeneralKnowledgeAnswer answer={run.final_answer ?? ""} />
+            {visualization}
             <SourceMixBar mix={run.source_mix} />
           </CardContent>
         </Card>
@@ -192,6 +197,7 @@ export function ResearchResult({ run, followUp }: { run: ResearchRunDetail; foll
           </CardHeader>
 
           <CardContent className="flex flex-col gap-5">
+            {visualization}
             {run.final_answer ? (
               /* A single reveal of the complete answer the backend
                * already returned. Deliberately NOT word-by-word: the
@@ -208,10 +214,6 @@ export function ResearchResult({ run, followUp }: { run: ResearchRunDetail; foll
 
             {/* Present only when the question asked for a chart or diagram
              * and the answer is grounded -- the backend enforces both. */}
-            {run.visualization && (
-              <AnswerVisualization spec={run.visualization as unknown as VisualizationSpec} />
-            )}
-
             {/* Present only when the question involved equations and the
              * answer is grounded -- the backend enforces both. */}
             {run.equations && run.equations.length > 0 && (

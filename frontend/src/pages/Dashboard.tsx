@@ -11,45 +11,27 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
+import { ErrorState } from "@/components/common/ErrorState";
+import { RowListSkeleton } from "@/components/common/Skeletons";
 import { EmptyState } from "@/components/common/EmptyState";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { PageTransition, Stagger, StaggerItem } from "@/components/motion/PageTransition";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SummaryCard } from "@/features/command-center/SummaryCard";
-import { isGroundedAnswer, runOutcome } from "@/features/research/research-presentation";
+import { runOutcome } from "@/features/research/research-presentation";
 import { formatDuration, formatRelativeTime } from "@/lib/format";
 import { hoverLift } from "@/lib/motion";
-import { isSource } from "@/features/assets/asset-state";
-import * as assetsService from "@/services/assets";
 import * as projectsService from "@/services/projects";
 import * as researchService from "@/services/research";
 
 export function Dashboard() {
-  const projectsQuery = useQuery({ queryKey: ["projects"], queryFn: projectsService.listProjects });
-  const assetsQuery = useQuery({
-    queryKey: ["assets", "all"],
-    queryFn: () => assetsService.listAssets(),
-  });
-  const runsQuery = useQuery({
-    queryKey: ["research", "runs", "all"],
-    queryFn: () => researchService.listResearchRuns(),
-  });
-
-  const recentProjects = projectsQuery.data?.slice(0, 4) ?? [];
-  const recentRuns = runsQuery.data?.slice(0, 5) ?? [];
-
-  // Real project name per run, looked up rather than re-fetched — the
-  // dashboard already holds the full project list.
-  const projectNameById = new Map(
-    (projectsQuery.data ?? []).map((project) => [project.id, project.name]),
-  );
-
-  // Counted from the real `grounding_status` the backend stores on each
-  // run — not inferred from `status`, which only says the run finished.
-  // `isGroundedAnswer` is the shared rule (Sprint 9K.10); the count it
-  // produces is identical to what this line computed inline before.
-  const groundedRuns = runsQuery.data?.filter(isGroundedAnswer).length;
+  const summaryQuery = useQuery({ queryKey: ["projects", "summary"], queryFn: () => projectsService.getWorkspaceSummary() });
+  const projectsQuery = useQuery({ queryKey: ["projects", "recent"], queryFn: () => projectsService.listProjectsPage(null, 4) });
+  const runsQuery = useQuery({ queryKey: ["research", "runs", "recent"], queryFn: () => researchService.listResearchRunsPage(undefined, null, 5) });
+  const recentProjects = projectsQuery.data?.items ?? [];
+  const recentRuns = runsQuery.data?.items ?? [];
+  const projectNameById = new Map(recentProjects.map((project) => [project.id, project.name]));
 
   return (
     <PageTransition>
@@ -89,9 +71,9 @@ export function Dashboard() {
             icon={FolderKanban}
             label="Projects"
             to="/projects"
-            value={projectsQuery.data?.length}
-            isLoading={projectsQuery.isLoading}
-            isError={projectsQuery.isError}
+            value={summaryQuery.data?.projects}
+            isLoading={summaryQuery.isLoading}
+            isError={summaryQuery.isError}
           />
         </StaggerItem>
         <StaggerItem className="h-full">
@@ -99,9 +81,9 @@ export function Dashboard() {
             icon={FileText}
             label="Documents"
             to="/documents"
-            value={assetsQuery.data?.filter(isSource).length}
-            isLoading={assetsQuery.isLoading}
-            isError={assetsQuery.isError}
+            value={summaryQuery.data?.documents}
+            isLoading={summaryQuery.isLoading}
+            isError={summaryQuery.isError}
             tone="ai"
           />
         </StaggerItem>
@@ -110,9 +92,9 @@ export function Dashboard() {
             icon={Search}
             label="Research Runs"
             to="/research?history=all"
-            value={runsQuery.data?.length}
-            isLoading={runsQuery.isLoading}
-            isError={runsQuery.isError}
+            value={summaryQuery.data?.runs}
+            isLoading={summaryQuery.isLoading}
+            isError={summaryQuery.isError}
           />
         </StaggerItem>
         <StaggerItem className="h-full">
@@ -120,9 +102,9 @@ export function Dashboard() {
             icon={Quote}
             label="Grounded Answers"
             to="/research?history=grounded"
-            value={groundedRuns}
-            isLoading={runsQuery.isLoading}
-            isError={runsQuery.isError}
+            value={summaryQuery.data?.grounded_answers}
+            isLoading={summaryQuery.isLoading}
+            isError={summaryQuery.isError}
             tone="success"
             detail="Backed by cited evidence"
           />
@@ -142,7 +124,7 @@ export function Dashboard() {
             </Link>
           </CardHeader>
           <CardContent>
-            {recentProjects.length === 0 ? (
+            {projectsQuery.isLoading ? <RowListSkeleton label="Loading recent projects" /> : projectsQuery.isError ? <ErrorState error={projectsQuery.error} /> : recentProjects.length === 0 ? (
               <EmptyState icon={FolderKanban} title="No research projects yet." />
             ) : (
               <Stagger className="flex flex-col gap-1">
@@ -186,7 +168,7 @@ export function Dashboard() {
             </Link>
           </CardHeader>
           <CardContent>
-            {recentRuns.length === 0 ? (
+            {runsQuery.isLoading ? <RowListSkeleton label="Loading recent research" /> : runsQuery.isError ? <ErrorState error={runsQuery.error} /> : recentRuns.length === 0 ? (
               <EmptyState icon={Search} title="Ask your first research question." />
             ) : (
               <Stagger className="flex flex-col gap-1">

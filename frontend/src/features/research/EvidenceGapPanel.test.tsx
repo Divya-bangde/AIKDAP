@@ -51,7 +51,7 @@ describe("EvidenceGapPanel", () => {
   });
 
   it("renders only the real gaps analysis.py returned, with the reason and classification badges", async () => {
-    vi.mocked(assetsService.listAssets).mockResolvedValue([makeAsset()]);
+    vi.mocked(assetsService.listAssetsPage).mockResolvedValue({ items: [makeAsset()], next_cursor: null });
     const analysis: ResearchDocumentUnderstanding = {
       title: "paper",
       objectives: [],
@@ -99,7 +99,7 @@ describe("EvidenceGapPanel", () => {
   });
 
   it("shows the honest empty state, not invented gap text, when analysis found nothing specific", async () => {
-    vi.mocked(assetsService.listAssets).mockResolvedValue([makeAsset()]);
+    vi.mocked(assetsService.listAssetsPage).mockResolvedValue({ items: [makeAsset()], next_cursor: null });
     vi.mocked(researchService.analyzeResearchDocument).mockResolvedValue({
       title: "paper",
       objectives: [],
@@ -126,21 +126,21 @@ describe("EvidenceGapPanel", () => {
   });
 
   it("still offers the upload action when the project has no asset to analyze", async () => {
-    vi.mocked(assetsService.listAssets).mockResolvedValue([]);
+    vi.mocked(assetsService.listAssetsPage).mockResolvedValue({ items: [], next_cursor: null });
 
     renderWithProviders(<EvidenceGapPanel projectId="project-1" query="q" runId="run-1" />);
 
-    await waitFor(() => expect(assetsService.listAssets).toHaveBeenCalledWith("project-1"));
+    await waitFor(() => expect(assetsService.listAssetsPage).toHaveBeenCalledWith("project-1", null));
     expect(researchService.analyzeResearchDocument).not.toHaveBeenCalled();
     expect(await screen.findByText(/drag/i)).toBeInTheDocument();
   });
 
   it("analyzes the newest source paper, skipping newer generated reports and datasets", async () => {
-    vi.mocked(assetsService.listAssets).mockResolvedValue([
+    vi.mocked(assetsService.listAssetsPage).mockResolvedValue({ items: [
       { ...makeAsset(), id: "report-1", asset_type: "report", source: "generated" },
       { ...makeAsset(), id: "dataset-1", asset_type: "dataset" },
       makeAsset(),
-    ]);
+    ], next_cursor: null });
 
     renderWithProviders(<EvidenceGapPanel projectId="project-1" query="q" runId="run-1" />);
 
@@ -156,7 +156,7 @@ describe("EvidenceGapPanel", () => {
   // tests -- they exercise the unsourced control, not the gap list.
   describe("answering from general knowledge (Sprint 16 Phase 8.13)", () => {
     function renderPanel() {
-      vi.mocked(assetsService.listAssets).mockResolvedValue([]);
+      vi.mocked(assetsService.listAssetsPage).mockResolvedValue({ items: [], next_cursor: null });
       return renderWithProviders(
         <EvidenceGapPanel projectId="project-1" query="What is X?" runId="run-1" />,
       );

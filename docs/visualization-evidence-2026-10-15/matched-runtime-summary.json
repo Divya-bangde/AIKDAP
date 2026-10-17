@@ -1,0 +1,93 @@
+{
+  "initialPlotlyMs": {
+    "before": {
+      "median": 8322,
+      "min": 8216,
+      "max": 8556
+    },
+    "after": {
+      "median": 1709,
+      "min": 1700,
+      "max": 1848
+    },
+    "reductionPercent": 79.46407113674597
+  },
+  "equationAdditionalLoadMs": {
+    "before": {
+      "median": 1952,
+      "min": 1869,
+      "max": 2062
+    },
+    "after": {
+      "median": 1038,
+      "min": 1018,
+      "max": 1068
+    },
+    "reductionPercent": 46.82377049180327
+  },
+  "equationKeyboardMs": {
+    "before": {
+      "median": 288,
+      "min": 212,
+      "max": 380
+    },
+    "after": {
+      "median": 139,
+      "min": 132,
+      "max": 173
+    },
+    "reductionPercent": 51.736111111111114
+  },
+  "mermaidColdMs": {
+    "before": {
+      "median": 647,
+      "min": 541,
+      "max": 1785
+    },
+    "after": {
+      "median": 602,
+      "min": 579,
+      "max": 645
+    },
+    "reductionPercent": 6.955177743431218
+  },
+  "initialScriptMs": {
+    "before": {
+      "median": 6016.706,
+      "min": 5871.847,
+      "max": 6136.764999999999
+    },
+    "after": {
+      "median": 313.18800000000005,
+      "min": 301.98,
+      "max": 367.631
+    },
+    "reductionPercent": 94.79469330893016
+  },
+  "totalScriptMs": {
+    "before": {
+      "median": 7268.064,
+      "min": 7237.9800000000005,
+      "max": 7462.384
+    },
+    "after": {
+      "median": 974.896,
+      "min": 896.86,
+      "max": 1005.7080000000001
+    },
+    "reductionPercent": 86.58657931465656
+  },
+  "totalTaskMs": {
+    "before": {
+      "median": 9301.365,
+      "min": 9087.182999999999,
+      "max": 9503.526000000002
+    },
+    "after": {
+      "median": 2034.498,
+      "min": 1963.5810000000001,
+      "max": 2161.789
+    },
+    "reductionPercent": 78.12688782775432
+  }
+}

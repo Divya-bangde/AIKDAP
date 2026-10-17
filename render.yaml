@@ -176,12 +176,15 @@ envVarGroups:
 
       # ---- Embeddings: Jina, 1024-dim like BGE-M3 -------------------
       # Same width as the local model, so the pgvector column and
-      # EMBEDDING_DIMENSION are unchanged and no migration is needed.
+      # EMBEDDING_DIMENSION are unchanged. Apply migrations 026/027;
+      # existing vectors remain unverified until a validated rebuild.
       # The vectors themselves are NOT interchangeable: anything
       # embedded by bge-m3 must be re-embedded before search means
       # anything.
       - key: EMBEDDING_MODEL
         value: jina_ai/jina-embeddings-v3
+      - key: EMBEDDING_MODEL_VERSION
+        value: "1"
       - key: EMBEDDING_DIMENSION
         value: "1024"
       - key: JINA_API_KEY

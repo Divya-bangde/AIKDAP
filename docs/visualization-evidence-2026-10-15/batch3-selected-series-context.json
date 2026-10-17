@@ -1,0 +1,475 @@
+{
+  "title": "Synthetic many-series selection",
+  "finding": "Series 1: 3 values, displayed range 0 to 2; Series 3: 3 values, displayed range 2 to 4; Series 4: 3 values, displayed range 3 to 5; Series 5: 3 values, displayed range 4 to 6; 7 additional series available in the values table.",
+  "origin": "illustrative",
+  "scope": [
+    "Scope and time window were not supplied.",
+    "Series selection: showing 11 of 12 received traces."
+  ],
+  "context": [],
+  "sources": [],
+  "metadata": {
+    "provenance": [],
+    "intent": null,
+    "received_provenance": []
+  },
+  "layout": {
+    "xaxis": {
+      "title": {
+        "text": "Sample"
+      }
+    },
+    "yaxis": {
+      "title": {
+        "text": "Illustrative value"
+      }
+    }
+  },
+  "plotted_trace_mapping": [
+    {
+      "exported_trace": 0,
+      "received_trace": 0,
+      "uid": "fixture-series-0",
+      "name": "Series 1"
+    },
+    {
+      "exported_trace": 1,
+      "received_trace": 2,
+      "uid": "fixture-series-2",
+      "name": "Series 3"
+    },
+    {
+      "exported_trace": 2,
+      "received_trace": 3,
+      "uid": "fixture-series-3",
+      "name": "Series 4"
+    },
+    {
+      "exported_trace": 3,
+      "received_trace": 4,
+      "uid": "fixture-series-4",
+      "name": "Series 5"
+    },
+    {
+      "exported_trace": 4,
+      "received_trace": 5,
+      "uid": "fixture-series-5",
+      "name": "Series 6"
+    },
+    {
+      "exported_trace": 5,
+      "received_trace": 6,
+      "uid": "fixture-series-6",
+      "name": "Series 7"
+    },
+    {
+      "exported_trace": 6,
+      "received_trace": 7,
+      "uid": "fixture-series-7",
+      "name": "Series 8"
+    },
+    {
+      "exported_trace": 7,
+      "received_trace": 8,
+      "uid": "fixture-series-8",
+      "name": "Series 9"
+    },
+    {
+      "exported_trace": 8,
+      "received_trace": 9,
+      "uid": "fixture-series-9",
+      "name": "Series 10"
+    },
+    {
+      "exported_trace": 9,
+      "received_trace": 10,
+      "uid": "fixture-series-10",
+      "name": "Series 11"
+    },
+    {
+      "exported_trace": 10,
+      "received_trace": 11,
+      "uid": "fixture-series-11",
+      "name": "Series 12"
+    }
+  ],
+  "plotted_traces": [
+    {
+      "type": "scatter",
+      "mode": "lines+markers",
+      "uid": "fixture-series-0",
+      "name": "Series 1",
+      "x": [
+        1,
+        2,
+        3
+      ],
+      "y": [
+        0,
+        2,
+        1
+      ]
+    },
+    {
+      "type": "scatter",
+      "mode": "lines+markers",
+      "uid": "fixture-series-2",
+      "name": "Series 3",
+      "x": [
+        1,
+        2,
+        3
+      ],
+      "y": [
+        2,
+        4,
+        3
+      ]
+    },
+    {
+      "type": "scatter",
+      "mode": "lines+markers",
+      "uid": "fixture-series-3",
+      "name": "Series 4",
+      "x": [
+        1,
+        2,
+        3
+      ],
+      "y": [
+        3,
+        5,
+        4
+      ]
+    },
+    {
+      "type": "scatter",
+      "mode": "lines+markers",
+      "uid": "fixture-series-4",
+      "name": "Series 5",
+      "x": [
+        1,
+        2,
+        3
+      ],
+      "y": [
+        4,
+        6,
+        5
+      ]
+    },
+    {
+      "type": "scatter",
+      "mode": "lines+markers",
+      "uid": "fixture-series-5",
+      "name": "Series 6",
+      "x": [
+        1,
+        2,
+        3
+      ],
+      "y": [
+        5,
+        7,
+        6
+      ]
+    },
+    {
+      "type": "scatter",
+      "mode": "lines+markers",
+      "uid": "fixture-series-6",
+      "name": "Series 7",
+      "x": [
+        1,
+        2,
+        3
+      ],
+      "y": [
+        6,
+        8,
+        7
+      ]
+    },
+    {
+      "type": "scatter",
+      "mode": "lines+markers",
+      "uid": "fixture-series-7",
+      "name": "Series 8",
+      "x": [
+        1,
+        2,
+        3
+      ],
+      "y": [
+        7,
+        9,
+        8
+      ]
+    },
+    {
+      "type": "scatter",
+      "mode": "lines+markers",
+      "uid": "fixture-series-8",
+      "name": "Series 9",
+      "x": [
+        1,
+        2,
+        3
+      ],
+      "y": [
+        8,
+        10,
+        9
+      ]
+    },
+    {
+      "type": "scatter",
+      "mode": "lines+markers",
+      "uid": "fixture-series-9",
+      "name": "Series 10",
+      "x": [
+        1,
+        2,
+        3
+      ],
+      "y": [
+        9,
+        11,
+        10
+      ]
+    },
+    {
+      "type": "scatter",
+      "mode": "lines+markers",
+      "uid": "fixture-series-10",
+      "name": "Series 11",
+      "x": [
+        1,
+        2,
+        3
+      ],
+      "y": [
+        10,
+        12,
+        11
+      ]
+    },
+    {
+      "type": "scatter",
+      "mode": "lines+markers",
+      "uid": "fixture-series-11",
+      "name": "Series 12",
+      "x": [
+        1,
+        2,
+        3
+      ],
+      "y": [
+        11,
+        13,
+        12
+      ]
+    }
+  ],
+  "plotted_values": [
+    {
+      "trace": "Series 1",
+      "point": 0,
+      "x": 1,
+      "y": 0
+    },
+    {
+      "trace": "Series 1",
+      "point": 1,
+      "x": 2,
+      "y": 2
+    },
+    {
+      "trace": "Series 1",
+      "point": 2,
+      "x": 3,
+      "y": 1
+    },
+    {
+      "trace": "Series 3",
+      "point": 0,
+      "x": 1,
+      "y": 2
+    },
+    {
+      "trace": "Series 3",
+      "point": 1,
+      "x": 2,
+      "y": 4
+    },
+    {
+      "trace": "Series 3",
+      "point": 2,
+      "x": 3,
+      "y": 3
+    },
+    {
+      "trace": "Series 4",
+      "point": 0,
+      "x": 1,
+      "y": 3
+    },
+    {
+      "trace": "Series 4",
+      "point": 1,
+      "x": 2,
+      "y": 5
+    },
+    {
+      "trace": "Series 4",
+      "point": 2,
+      "x": 3,
+      "y": 4
+    },
+    {
+      "trace": "Series 5",
+      "point": 0,
+      "x": 1,
+      "y": 4
+    },
+    {
+      "trace": "Series 5",
+      "point": 1,
+      "x": 2,
+      "y": 6
+    },
+    {
+      "trace": "Series 5",
+      "point": 2,
+      "x": 3,
+      "y": 5
+    },
+    {
+      "trace": "Series 6",
+      "point": 0,
+      "x": 1,
+      "y": 5
+    },
+    {
+      "trace": "Series 6",
+      "point": 1,
+      "x": 2,
+      "y": 7
+    },
+    {
+      "trace": "Series 6",
+      "point": 2,
+      "x": 3,
+      "y": 6
+    },
+    {
+      "trace": "Series 7",
+      "point": 0,
+      "x": 1,
+      "y": 6
+    },
+    {
+      "trace": "Series 7",
+      "point": 1,
+      "x": 2,
+      "y": 8
+    },
+    {
+      "trace": "Series 7",
+      "point": 2,
+      "x": 3,
+      "y": 7
+    },
+    {
+      "trace": "Series 8",
+      "point": 0,
+      "x": 1,
+      "y": 7
+    },
+    {
+      "trace": "Series 8",
+      "point": 1,
+      "x": 2,
+      "y": 9
+    },
+    {
+      "trace": "Series 8",
+      "point": 2,
+      "x": 3,
+      "y": 8
+    },
+    {
+      "trace": "Series 9",
+      "point": 0,
+      "x": 1,
+      "y": 8
+    },
+    {
+      "trace": "Series 9",
+      "point": 1,
+      "x": 2,
+      "y": 10
+    },
+    {
+      "trace": "Series 9",
+      "point": 2,
+      "x": 3,
+      "y": 9
+    },
+    {
+      "trace": "Series 10",
+      "point": 0,
+      "x": 1,
+      "y": 9
+    },
+    {
+      "trace": "Series 10",
+      "point": 1,
+      "x": 2,
+      "y": 11
+    },
+    {
+      "trace": "Series 10",
+      "point": 2,
+      "x": 3,
+      "y": 10
+    },
+    {
+      "trace": "Series 11",
+      "point": 0,
+      "x": 1,
+      "y": 10
+    },
+    {
+      "trace": "Series 11",
+      "point": 1,
+      "x": 2,
+      "y": 12
+    },
+    {
+      "trace": "Series 11",
+      "point": 2,
+      "x": 3,
+      "y": 11
+    },
+    {
+      "trace": "Series 12",
+      "point": 0,
+      "x": 1,
+      "y": 11
+    },
+    {
+      "trace": "Series 12",
+      "point": 1,
+      "x": 2,
+      "y": 13
+    },
+    {
+      "trace": "Series 12",
+      "point": 2,
+      "x": 3,
+      "y": 12
+    }
+  ],
+  "relationship_source": null
+}

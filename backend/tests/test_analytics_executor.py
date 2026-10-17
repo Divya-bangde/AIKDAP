@@ -82,3 +82,27 @@ def test_limit_keeps_total_rows():
 def test_rows_are_json_safe():
     result = run(group_by=["date"], metrics=[{"column": "units", "agg": "max", "alias": "u"}])
     assert all(isinstance(row["date"], str) and isinstance(row["u"], int) for row in result["rows"])
+
+
+@pytest.mark.parametrize("value",[9007199254740991,9007199254740993,-9007199254740993])
+def test_output_integer_precision_preserved_for_browser_and_exact_table(value):
+    frame=pd.DataFrame({"value":[value]})
+    plan=AnalysisPlan.model_validate({"metrics":[{"column":"value","agg":"max","alias":"metric"}]})
+    result=execute_plan(frame,plan)
+    if abs(value)>9007199254740991:
+        assert result["rows"]==[{"metric":str(value)}]
+        assert result["numeric_encoding"]=={"metric":"exact_integer_string"}
+        assert "precision" in result["chart_withheld_reason"]
+    else:
+        assert result["rows"]==[{"metric":value}]
+        assert "numeric_encoding" not in result
+
+
+def test_small_computed_float_keeps_native_precision_without_pandas_rounding():
+    import json
+    value=0.12345678901234566
+    frame=pd.DataFrame({"value":[value]})
+    plan=AnalysisPlan.model_validate({"metrics":[{"column":"value","agg":"max","alias":"metric"}]})
+    result=execute_plan(frame,plan)
+    assert result["rows"][0]["metric"]==value
+    assert json.loads(json.dumps(result))["rows"][0]["metric"]==value

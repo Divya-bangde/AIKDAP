@@ -15,7 +15,9 @@ import uuid
 from typing import Any
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import ForeignKey, Integer, String, Text
+from datetime import datetime
+
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column
@@ -80,6 +82,38 @@ class KnowledgeChunk(BaseModel):
     embedding: Mapped[list[float] | None] = mapped_column(
         Vector(settings.embedding_dimension), nullable=True
     )
+    embedding_space_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    embedding_space: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+
+class EmbeddingRebuild(BaseModel):
+    """Durable checkpoint and renewable worker claim for one project/space."""
+
+    __tablename__ = "embedding_rebuilds"
+    __table_args__ = (UniqueConstraint("project_id", "space_id"),)
+    project_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"), index=True)
+    space_id: Mapped[str] = mapped_column(String(64))
+    space: Mapped[dict] = mapped_column(JSONB)
+    status: Mapped[str] = mapped_column(String(24), default="queued")
+    total: Mapped[int] = mapped_column(Integer, default=0)
+    completed: Mapped[int] = mapped_column(Integer, default=0)
+    failed: Mapped[int] = mapped_column(Integer, default=0)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    claim_token: Mapped[uuid.UUID | None] = mapped_column(nullable=True)
+    lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class EmbeddingRebuildItem(BaseModel):
+    """Validated staging vectors; never eligible for retrieval before activation."""
+
+    __tablename__ = "embedding_rebuild_items"
+    __table_args__ = (UniqueConstraint("rebuild_id", "chunk_id"),)
+    rebuild_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("embedding_rebuilds.id", ondelete="CASCADE"), index=True)
+    chunk_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("knowledge_chunks.id", ondelete="CASCADE"), index=True)
+    content_hash: Mapped[str] = mapped_column(String(64))
+    vector: Mapped[list[float] | None] = mapped_column(Vector(settings.embedding_dimension), nullable=True)
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 class ChunkPosition(BaseModel):

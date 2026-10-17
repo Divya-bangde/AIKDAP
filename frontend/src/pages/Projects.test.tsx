@@ -1,6 +1,6 @@
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Projects } from "@/pages/Projects";
 import * as projectsService from "@/services/projects";
@@ -8,6 +8,10 @@ import { renderWithProviders } from "@/test/render";
 import type { components } from "@/types/api";
 
 vi.mock("@/services/projects");
+
+beforeEach(() => {
+  vi.mocked(projectsService.getWorkspaceSummary).mockResolvedValue({ projects: 1, assets: 1, documents: 1, runs: 1, grounded_answers: 1 });
+});
 
 type ProjectRead = components["schemas"]["ProjectRead"];
 
@@ -33,7 +37,7 @@ describe("Projects page", () => {
   afterEach(() => vi.restoreAllMocks());
 
   it("shows the empty state when there are no projects", async () => {
-    vi.mocked(projectsService.listProjects).mockResolvedValue([]);
+    vi.mocked(projectsService.listProjectsPage).mockResolvedValue({ items: [], next_cursor: null });
 
     renderWithProviders(<Projects />);
 
@@ -41,7 +45,7 @@ describe("Projects page", () => {
   });
 
   it("lists real projects returned by the API", async () => {
-    vi.mocked(projectsService.listProjects).mockResolvedValue([makeProject()]);
+    vi.mocked(projectsService.listProjectsPage).mockResolvedValue({ items: [makeProject()], next_cursor: null });
 
     renderWithProviders(<Projects />);
 
@@ -50,7 +54,7 @@ describe("Projects page", () => {
   });
 
   it("creates a project using the exact backend schema and refreshes the list", async () => {
-    vi.mocked(projectsService.listProjects).mockResolvedValue([]);
+    vi.mocked(projectsService.listProjectsPage).mockResolvedValue({ items: [], next_cursor: null });
     vi.mocked(projectsService.createProject).mockResolvedValue(makeProject());
     const user = userEvent.setup();
 

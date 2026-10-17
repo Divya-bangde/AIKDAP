@@ -178,73 +178,10 @@ class SynthesisClaim(BaseModel):
     attributed_to_primary: bool = True
 
 
-class VisualizationKind(str, Enum):
-    """What kind of visual a synthesis answer carries."""
-
-    CHART2D = "chart2d"
-    CHART3D = "chart3d"
-    DIAGRAM = "diagram"
-
-
-class Visualization(BaseModel):
-    """A chart or diagram the synthesis model produced because the
-    question asked for one.
-
-    Charts carry Plotly traces (`data`) and `layout`, rendered by the
-    frontend as-is; diagrams carry Mermaid source. Validated so a stored
-    spec always has something to draw -- a spec that doesn't is dropped by
-    `synthesis._parse_response`, never stored half-formed.
-    """
-
-    kind: VisualizationKind
-    title: str = ""
-    data: list[dict[str, Any]] = Field(default_factory=list)
-    layout: dict[str, Any] = Field(default_factory=dict)
-    mermaid: str | None = None
-
-    @model_validator(mode="before")
-    @classmethod
-    def _points_to_trace(cls, data: Any) -> Any:
-        # Small models often write `data` as points ([{"x": 2018, "y": 5}, ...])
-        # instead of traces. Plotly draws nothing from that, so it becomes
-        # the one trace it describes.
-        if isinstance(data, dict):
-            trace = _trace_from_points(data.get("kind"), data.get("data"))
-            if trace is not None:
-                return {**data, "data": [trace]}
-        return data
-
-    @model_validator(mode="after")
-    def _has_content_for_kind(self) -> Self:
-        if self.kind is VisualizationKind.DIAGRAM:
-            if not (self.mermaid and self.mermaid.strip()):
-                raise ValueError("a diagram needs Mermaid source")
-        elif not any(isinstance(value, list) and value for trace in self.data for value in trace.values()):
-            raise ValueError("a chart needs at least one Plotly trace with data to draw")
-        return self
-
-
-def _trace_from_points(kind: Any, points: Any) -> dict[str, Any] | None:
-    """The single Plotly trace a list of `{x, y[, z]}` points describes, or
-    None when `points` is not such a list (3D needs `z` on every point)."""
-    axes = ("x", "y", "z") if kind == VisualizationKind.CHART3D else ("x", "y")
-    if not (
-        isinstance(points, list)
-        and points
-        and all(
-            isinstance(point, dict)
-            and set(point) == set(axes)
-            and not any(isinstance(value, (list, dict)) for value in point.values())
-            for point in points
-        )
-    ):
-        return None
-    trace: dict[str, Any] = {axis: [point[axis] for point in points] for axis in axes}
-    if kind == VisualizationKind.CHART3D:
-        return {"type": "scatter3d", "mode": "markers", **trace}
-    if any(isinstance(x, str) for x in trace["x"]):
-        return {"type": "bar", **trace}
-    return {"type": "scatter", "mode": "lines+markers", **trace}
+# Canonical bounded rendering contract; kept re-exported for existing imports.
+from app.modules.research.visualization_contract import (
+    Visualization, VisualizationKind, VisualizationOutcome,
+)
 
 
 class EquationVariable(BaseModel):
@@ -403,19 +340,31 @@ class ResearchRunRead(BaseModel):
     #: answer to an unanswerable question.
     grounding_status: ResearchGroundingStatus | None
     #: A validated `Visualization` spec, when the question asked for one.
-    visualization: dict[str, Any] | None = None
+    visualization: Visualization | None = None
+    visualization_outcome: VisualizationOutcome | None = None
 
-    @field_validator("visualization", mode="before")
+    @model_validator(mode="before")
     @classmethod
     def _drawable_visualization(cls, value: Any) -> Any:
-        # Specs stored before `Visualization` converted point lists are
-        # repaired here on read, or hidden when nothing in them is drawable.
-        if value is None:
-            return None
-        try:
-            return Visualization.model_validate(value).model_dump(mode="json")
-        except ValidationError:
-            return None
+        # Normalize legacy ORM rows before the typed field parses: an invalid
+        # historical graphic must never make its otherwise usable answer fail.
+        data = dict(value) if isinstance(value, dict) else {
+            name: getattr(value, name) for name in cls.model_fields if hasattr(value, name)
+        }
+        raw = data.get("visualization")
+        if raw is not None and data.get("visualization_outcome") is None:
+            data["visualization"] = None
+            data["visualization_outcome"] = VisualizationOutcome(
+                status="failed", reason="Legacy visualization has no independent value verification metadata.",
+                next_action="Re-run research with point-level evidence to verify this visualization.",
+            )
+        elif raw is not None:
+            try:
+                data["visualization"] = Visualization.model_validate(raw)
+            except ValidationError:
+                data["visualization"] = None
+                data["visualization_outcome"] = VisualizationOutcome(status="failed", reason="Stored visualization does not satisfy the bounded chart contract.")
+        return data
     #: Validated `Equation`s the answer relies on, each with its
     #: backend-sampled `curve` (or null), when the question involved any.
     equations: list[dict[str, Any]] | None = None
@@ -633,6 +582,8 @@ class ResearchGoal(BaseModel):
     description: str
 
 class ResearchDocumentUnderstanding(BaseModel):
+    asset_id: uuid.UUID | None = None
+    source_passages: list["DocumentPassage"] = Field(default_factory=list)
     title: str
     abstract: str | None = None
     domain: str | None = None
@@ -664,7 +615,7 @@ class AnalyzeDocumentRequest(BaseModel):
     workspace_context: ResearchWorkspaceContext | None = None
 
 class CrossPaperAnalysisRequest(BaseModel):
-    supporting_asset_ids: list[uuid.UUID]
+    supporting_asset_ids: list[uuid.UUID] = Field(min_length=1, max_length=10)
     goal: ResearchGoal
     workspace_context: ResearchWorkspaceContext | None = None
 
@@ -698,6 +649,8 @@ class SourceReference(BaseModel):
     paper_title: str
     page: int | None = None
     chunk_index: int | None = None
+    chunk_id: uuid.UUID | None = None
+    quote: str | None = None
     evidence_scope: str = "FULL_TEXT"  # e.g., "FULL_TEXT", "ABSTRACT_ONLY"
 
 class ComparisonItem(BaseModel):
@@ -717,6 +670,7 @@ class GapResolution(BaseModel):
     explanation: str
     evidence: str
     unresolved_portion: str | None = None
+    source_references: list[SourceReference] = Field(default_factory=list)
 
 class ResearchHypothesis(BaseModel):
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
@@ -733,4 +687,52 @@ class CrossPaperComparison(BaseModel):
     gap_resolutions: list[GapResolution]
     hypotheses: list[ResearchHypothesis]
     source_provenance: str = "Cross-Paper Reducer"
+    artifact_id: uuid.UUID | None = None
+    created_at: datetime | None = None
+    goal: ResearchGoal | None = None
+    workspace_context: ResearchWorkspaceContext | None = None
+    source_versions: list["ComparisonSourceVersion"] = Field(default_factory=list)
+    status: Literal["completed", "insufficient_evidence"] = "completed"
+    insufficiency_reason: str | None = None
+    stale: bool = False
+
+
+class DocumentPassage(BaseModel):
+    asset_id: uuid.UUID
+    chunk_id: uuid.UUID
+    chunk_index: int
+    page: int | None = None
+    content: str
+
+
+class ComparisonSourceVersion(BaseModel):
+    asset_id: uuid.UUID
+    checksum: str
+    asset_version: int
+    chunk_fingerprint: str
+    extractor_version: str
+    model_identity: str
+    prompt_version: str
+
+
+class ResearchRunSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    project_id: uuid.UUID
+    query: str
+    status: ResearchRunStatus
+    grounding_status: ResearchGroundingStatus | None
+    created_at: datetime
+    completed_at: datetime | None
+    duration_ms: int | None
+
+
+class ResearchRunPage(BaseModel):
+    items: list[ResearchRunSummary]
+    next_cursor: str | None
+
+
+ResearchDocumentUnderstanding.model_rebuild()
+CrossPaperComparison.model_rebuild()
 

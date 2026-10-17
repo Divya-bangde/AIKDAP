@@ -1,0 +1,117 @@
+ M .env.example
+ M backend/app/agents/analytics/executor.py
+ M backend/app/agents/planner/analysis.py
+ M backend/app/agents/planner/cross_paper.py
+ M backend/app/agents/planner/reformulation.py
+ M backend/app/core/config/settings.py
+ M backend/app/core/llm/gateway.py
+ M backend/app/modules/assets/processing/pipeline.py
+ M backend/app/modules/assets/repository.py
+ M backend/app/modules/assets/router.py
+ M backend/app/modules/knowledge_base/embeddings.py
+ M backend/app/modules/knowledge_base/models.py
+ M backend/app/modules/knowledge_base/repository.py
+ M backend/app/modules/knowledge_base/router.py
+ M backend/app/modules/knowledge_base/schemas.py
+ M backend/app/modules/knowledge_base/service.py
+ M backend/app/modules/projects/models.py
+ M backend/app/modules/projects/repository.py
+ M backend/app/modules/projects/router.py
+ M backend/app/modules/projects/schemas.py
+ M backend/app/modules/research/models.py
+ M backend/app/modules/research/repository.py
+ M backend/app/modules/research/router.py
+ M backend/app/modules/research/schemas.py
+ M backend/app/modules/research/service.py
+ M backend/app/workers/README.md
+ M backend/app/workers/scheduler.py
+ M backend/app/workers/tasks.py
+ M backend/pytest.ini
+ M backend/tests/conftest.py
+ M backend/tests/test_claim_wiring.py
+ M backend/tests/test_cross_paper.py
+ M backend/tests/test_cross_paper_real.py
+ M backend/tests/test_document_understanding.py
+ M backend/tests/test_execution_docker_reconciliation.py
+ M backend/tests/test_execution_real_docker_lifecycle.py
+ M backend/tests/test_grounded_synthesis.py
+ M backend/tests/test_llm_resilience.py
+ M backend/tests/test_paper_suggestion.py
+ M backend/tests/test_redis_provider_health.py
+ M backend/tests/test_relevance_gate.py
+ M backend/tests/test_report_dependencies.py
+ M backend/tests/test_reranking.py
+ M backend/tests/test_semantic_search.py
+ M backend/tests/test_unsourced_synthesis.py
+ M frontend/src/app/App.test.tsx
+ M frontend/src/app/App.tsx
+ M frontend/src/features/assets/AssetsLibrary.test.tsx
+ M frontend/src/features/assets/AssetsLibrary.tsx
+ M frontend/src/features/assets/DocumentsSection.tsx
+ M frontend/src/features/auth/ProfilePersonaSelect.tsx
+ M frontend/src/features/business-analytics/AnalyticsWorkspace.tsx
+ M frontend/src/features/projects/ProjectHeader.test.tsx
+ M frontend/src/features/projects/ProjectHeader.tsx
+ M frontend/src/features/research/CrossPaperAnalysisPanel.tsx
+ M frontend/src/features/research/EvidenceGapPanel.test.tsx
+ M frontend/src/features/research/EvidenceGapPanel.tsx
+ M frontend/src/features/research/ResearchHistoryList.tsx
+ M frontend/src/features/research/ResearchPrompt.test.tsx
+ M frontend/src/features/research/ResearchPrompt.tsx
+ M frontend/src/features/research/outcome-consistency.test.tsx
+ M frontend/src/features/research/research-history.ts
+ M frontend/src/features/workflow-timeline/WorkflowTimeline.test.tsx
+ M frontend/src/hooks/useAuth.ts
+ M frontend/src/hooks/useRunSteps.ts
+ M frontend/src/main.tsx
+ M frontend/src/pages/Dashboard.test.tsx
+ M frontend/src/pages/Dashboard.tsx
+ M frontend/src/pages/ProjectDetail.tsx
+ M frontend/src/pages/Projects.test.tsx
+ M frontend/src/pages/Projects.tsx
+ M frontend/src/pages/Research.tsx
+ M frontend/src/services/assets.ts
+ M frontend/src/services/client.ts
+ M frontend/src/services/projects.ts
+ M frontend/src/services/reports.test.ts
+ M frontend/src/services/research.ts
+ M frontend/src/store/auth-store.ts
+ M frontend/src/test/setup.ts
+ M frontend/src/types/api.d.ts
+ M render.yaml
+?? AIKDAP-improvement-prompt.md
+?? AIKDAP-visualization-improvement-prompt.md
+?? backend/alembic/versions/026_cross_paper_artifacts.py
+?? backend/alembic/versions/027_embedding_spaces.py
+?? backend/app/agents/planner/cross_paper_evidence.py
+?? backend/app/core/pagination.py
+?? backend/app/modules/knowledge_base/rebuild.py
+?? backend/app/modules/knowledge_base/spaces.py
+?? backend/scripts/check.py
+?? backend/scripts/verify_embedding_worker.py
+?? backend/scripts/verify_phase1_migrations.py
+?? backend/tests/test_cross_paper_persistence.py
+?? backend/tests/test_embedding_spaces.py
+?? backend/tests/test_phase1_embeddings.py
+?? backend/tests/test_phase1_pagination.py
+?? backend/tests/test_test_environment.py
+?? docs/PROJECT_REVIEW_2026-10-13.md
+?? docs/VISUALIZATION_AUDIT_2026-10-15.md
+?? docs/improvement-evidence-2026-10-13/
+?? docs/improvement-progress.md
+?? docs/phase1-reginald-review.md
+?? docs/review-evidence-2026-10-13/
+?? docs/visualization-evidence-2026-10-14/
+?? docs/visualization-evidence-2026-10-15/
+?? frontend/src/components/common/LoadMore.tsx
+?? frontend/src/features/assets/KnowledgeReadiness.test.tsx
+?? frontend/src/features/assets/KnowledgeReadiness.tsx
+?? frontend/src/features/research/CrossPaperAnalysisPanel.test.tsx
+?? frontend/src/hooks/usePagedLists.ts
+?? frontend/src/lib/session-lifecycle.ts
+?? frontend/src/pages/phase1-pagination.test.tsx
+?? frontend/src/services/knowledge.ts
+?? frontend/src/services/pagination.ts
+?? frontend/src/services/session-invalidation.test.tsx
+?? frontend/src/viz-audit-entry.tsx
+?? frontend/visualization-audit.html

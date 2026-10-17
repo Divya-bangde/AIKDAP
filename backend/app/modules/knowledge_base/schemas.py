@@ -8,12 +8,43 @@ schema in this module — it's a query, not a chunk mutation.
 
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.modules.assets.enums import EmbeddingStatus
 from app.modules.knowledge_base.enums import EmbeddingProviderName
+
+
+class EmbeddingSpaceRead(BaseModel):
+    id: str
+    provider: str
+    model: str
+    version: str
+    dimensions: int
+    document_task: str | None = None
+    query_task: str | None = None
+
+
+class EmbeddingRebuildRead(BaseModel):
+    id: uuid.UUID
+    status: Literal["queued", "running", "completed", "failed"]
+    total: int
+    completed: int
+    failed: int
+    error: str | None = None
+
+
+class EmbeddingReadiness(BaseModel):
+    project_id: uuid.UUID
+    configured_space: EmbeddingSpaceRead
+    active_space_id: str | None
+    total_chunks: int
+    searchable_chunks: int
+    legacy_chunks: int
+    ready: bool
+    compatible: bool
+    rebuild: EmbeddingRebuildRead | None
 
 
 class KnowledgeChunkRead(BaseModel):
@@ -42,6 +73,7 @@ class KnowledgeChunkRead(BaseModel):
     section: str | None = None
     embedding_status: EmbeddingStatus
     embedding_provider: EmbeddingProviderName | None
+    embedding_space_id: str | None = None
     created_at: datetime
     updated_at: datetime
 

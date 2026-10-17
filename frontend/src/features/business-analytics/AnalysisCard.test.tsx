@@ -4,6 +4,10 @@ import { describe, expect, it, vi } from "vitest";
 import { AnalysisCard } from "@/features/business-analytics/AnalysisCard";
 import { renderWithProviders } from "@/test/render";
 import type { AnalysisRead } from "@/services/analytics";
+import userEvent from "@testing-library/user-event";
+import { downloadFile } from "@/lib/export";
+
+vi.mock("@/lib/export", async (original) => ({ ...await original<typeof import("@/lib/export")>(), downloadFile: vi.fn() }));
 
 vi.mock("@/features/research/PlotlyVisualization", () => ({
   default: () => <div data-testid="plot" />,
@@ -42,6 +46,20 @@ function makeAnalysis(overrides: Partial<AnalysisRead> = {}): AnalysisRead {
 }
 
 describe("AnalysisCard", () => {
+  it("exports all received trend rows separately from the reduced display with transformation metadata", async () => {
+    const rows = Array.from({ length: 1200 }, (_, year) => ({ year, total: year === 753 ? 9999 : year }));
+    const analysis = makeAnalysis({ result: { columns: ["year", "total"], rows, total_rows: rows.length } });
+    analysis.plan = { ...(analysis.plan ?? {}), chart: { type: "line", x: "year", y: ["total"], series: null, ordering: { mode: "trend", x_type: "numeric" } } };
+    renderWithProviders(<AnalysisCard analysis={analysis} />);
+    expect(screen.getAllByText(/contiguous-bucket min\/max/).length).toBeGreaterThan(0);
+    await userEvent.click(screen.getByRole("button", { name: "Download full received result (JSON)" }));
+    const call = vi.mocked(downloadFile).mock.calls.find(([filename]) => filename.endsWith("-full-received-result.json"))!;
+    const exported = JSON.parse(call[1]);
+    expect(exported.result.rows).toHaveLength(1200);
+    expect(exported.result.rows[753].total).toBe(9999);
+    expect(exported.display_reductions[0].displayed_points).toBeLessThanOrEqual(1000);
+    expect(exported.display_reductions[0].original_points).toBe(1200);
+  });
   it("renders a plot and narrative for a completed bar analysis", async () => {
     renderWithProviders(<AnalysisCard analysis={makeAnalysis()} />);
 

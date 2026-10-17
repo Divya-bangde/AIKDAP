@@ -1,0 +1,388 @@
+{
+  "units": "bytes; decimal kB=bytes/1000; gzip via Node default settings",
+  "dist": "C:\\Users\\Divya Bangde\\OneDrive\\Desktop\\My projects\\AIKDAP\\docs\\visualization-evidence-2026-10-15\\final-performance-dist",
+  "groups": {
+    "plotly2D": [
+      {
+        "file": "plotly-2d-B-YMMjus.css",
+        "rawBytes": 69940,
+        "gzipBytes": 10057
+      },
+      {
+        "file": "plotly-2d-B3Kqwxmc.js",
+        "rawBytes": 1236430,
+        "gzipBytes": 434273
+      }
+    ],
+    "plotly3D": [
+      {
+        "file": "plotly-3d-DFTWy9ty.js",
+        "rawBytes": 570331,
+        "gzipBytes": 171591
+      }
+    ],
+    "plotlyWrapper": [
+      {
+        "file": "PlotlyVisualization-DDqkAWtw.js",
+        "rawBytes": 7931,
+        "gzipBytes": 3346
+      }
+    ],
+    "equation": [
+      {
+        "file": "InteractiveEquationCard-Bjxb-hQ0.js",
+        "rawBytes": 395479,
+        "gzipBytes": 116361
+      }
+    ],
+    "mermaid": [
+      {
+        "file": "MermaidDiagram-BHtTAPZ_.js",
+        "rawBytes": 661395,
+        "gzipBytes": 160451
+      }
+    ]
+  },
+  "allAssets": [
+    {
+      "file": "abnfDiagram-VCTEODGH-6Q_f2NTv.js",
+      "rawBytes": 1916,
+      "gzipBytes": 948
+    },
+    {
+      "file": "arc-Y6BX-cTa.js",
+      "rawBytes": 3442,
+      "gzipBytes": 1486
+    },
+    {
+      "file": "architectureDiagram-5GKGNRK7-DPoSy1c7.js",
+      "rawBytes": 152130,
+      "gzipBytes": 43284
+    },
+    {
+      "file": "blockDiagram-I7D4REHJ-CzTLh4ou.js",
+      "rawBytes": 43267,
+      "gzipBytes": 13971
+    },
+    {
+      "file": "c4Diagram-7LVT6UL2-C_XuYeS2.js",
+      "rawBytes": 65668,
+      "gzipBytes": 18877
+    },
+    {
+      "file": "channel-B-A856Qq.js",
+      "rawBytes": 117,
+      "gzipBytes": 130
+    },
+    {
+      "file": "chunk-2Q5K7J3B-irQvNLMV.js",
+      "rawBytes": 195,
+      "gzipBytes": 165
+    },
+    {
+      "file": "chunk-5VM5RSS4-iGX7aTyM.js",
+      "rawBytes": 368,
+      "gzipBytes": 275
+    },
+    {
+      "file": "chunk-F27PBJKO-DyGyjymo.js",
+      "rawBytes": 1938,
+      "gzipBytes": 865
+    },
+    {
+      "file": "chunk-IMKFNOWR-SjWxdbB8.js",
+      "rawBytes": 38634,
+      "gzipBytes": 12684
+    },
+    {
+      "file": "chunk-JWPE2WC7-BC23Ub_c.js",
+      "rawBytes": 299,
+      "gzipBytes": 204
+    },
+    {
+      "file": "chunk-POPQ4Y6H-DIgfsIiD.js",
+      "rawBytes": 534,
+      "gzipBytes": 379
+    },
+    {
+      "file": "chunk-SVP7TREG-huDT7OYJ.js",
+      "rawBytes": 15757,
+      "gzipBytes": 4425
+    },
+    {
+      "file": "chunk-TICWLB2K-DGcYIoPg.js",
+      "rawBytes": 49355,
+      "gzipBytes": 15802
+    },
+    {
+      "file": "chunk-XXDRQBXY-CbfHzuUL.js",
+      "rawBytes": 290,
+      "gzipBytes": 243
+    },
+    {
+      "file": "classDiagram-v2-VYDZK3BY-DDO8HDOG.js",
+      "rawBytes": 574,
+      "gzipBytes": 372
+    },
+    {
+      "file": "classDiagram-ZZMXUADV-DDO8HDOG.js",
+      "rawBytes": 574,
+      "gzipBytes": 372
+    },
+    {
+      "file": "cose-bilkent-JH36ORCC-BhnjePlE.js",
+      "rawBytes": 81829,
+      "gzipBytes": 22537
+    },
+    {
+      "file": "cynefin-OW5HDTMX-DQ5BzeJ6.js",
+      "rawBytes": 690875,
+      "gzipBytes": 155121
+    },
+    {
+      "file": "cynefinDiagram-5FMLGOSQ-zfAkUg82.js",
+      "rawBytes": 10204,
+      "gzipBytes": 3687
+    },
+    {
+      "file": "cytoscape.esm-Ix0LnXOy.js",
+      "rawBytes": 443834,
+      "gzipBytes": 142409
+    },
+    {
+      "file": "dagre-GXQ25YYZ-xeIjY79L.js",
+      "rawBytes": 11242,
+      "gzipBytes": 4234
+    },
+    {
+      "file": "defaultLocale-D6rwgZHA.js",
+      "rawBytes": 12239,
+      "gzipBytes": 3826
+    },
+    {
+      "file": "diagram-S7CK7UJ4-BBOpVfTJ.js",
+      "rawBytes": 8464,
+      "gzipBytes": 3780
+    },
+    {
+      "file": "diagram-UQ7AKVKN-DYxiodai.js",
+      "rawBytes": 6334,
+      "gzipBytes": 2737
+    },
+    {
+      "file": "diagram-VSXAHHWV-Ck_gIJmQ.js",
+      "rawBytes": 10930,
+      "gzipBytes": 4220
+    },
+    {
+      "file": "diagram-VX7I27RA-LCg_t_ei.js",
+      "rawBytes": 20781,
+      "gzipBytes": 7742
+    },
+    {
+      "file": "diagram-Z3DM3KII-9WvEYO7X.js",
+      "rawBytes": 4346,
+      "gzipBytes": 1913
+    },
+    {
+      "file": "ebnfDiagram-PWID7BFC-0B56zL0L.js",
+      "rawBytes": 2112,
+      "gzipBytes": 936
+    },
+    {
+      "file": "erDiagram-RLTQ6QDP-Da0tL2Tr.js",
+      "rawBytes": 31040,
+      "gzipBytes": 10685
+    },
+    {
+      "file": "flowDiagram-HODETNUW-CEwzDVbx.js",
+      "rawBytes": 62667,
+      "gzipBytes": 20071
+    },
+    {
+      "file": "ganttDiagram-EL5Y4UJY-BKRKqk0m.js",
+      "rawBytes": 73721,
+      "gzipBytes": 24060
+    },
+    {
+      "file": "gitGraphDiagram-WWUBYQGX-CmmDzm9Q.js",
+      "rawBytes": 30047,
+      "gzipBytes": 8936
+    },
+    {
+      "file": "infoDiagram-27XIBGKW-DrGIpda2.js",
+      "rawBytes": 689,
+      "gzipBytes": 463
+    },
+    {
+      "file": "InteractiveEquationCard-Bjxb-hQ0.js",
+      "rawBytes": 395479,
+      "gzipBytes": 116361
+    },
+    {
+      "file": "ishikawaDiagram-5VMMS53U-808Emm6M.js",
+      "rawBytes": 17673,
+      "gzipBytes": 6728
+    },
+    {
+      "file": "journeyDiagram-3NMN7TZE-BWMMIw65.js",
+      "rawBytes": 23683,
+      "gzipBytes": 8405
+    },
+    {
+      "file": "kanban-definition-UXKFOSKX-D2Tc9KvB.js",
+      "rawBytes": 20804,
+      "gzipBytes": 7345
+    },
+    {
+      "file": "layout-DhaxXiKe.js",
+      "rawBytes": 34997,
+      "gzipBytes": 12572
+    },
+    {
+      "file": "linear-2F-BBT27.js",
+      "rawBytes": 5237,
+      "gzipBytes": 2158
+    },
+    {
+      "file": "MermaidDiagram-BHtTAPZ_.js",
+      "rawBytes": 661395,
+      "gzipBytes": 160451
+    },
+    {
+      "file": "mindmap-definition-YA3MSWOX-ZSyKYFpD.js",
+      "rawBytes": 23467,
+      "gzipBytes": 7947
+    },
+    {
+      "file": "motion-BI-KzgL1.js",
+      "rawBytes": 96854,
+      "gzipBytes": 32015
+    },
+    {
+      "file": "pegDiagram-XKGWAZYB-BOy7J0s9.js",
+      "rawBytes": 2063,
+      "gzipBytes": 982
+    },
+    {
+      "file": "pieDiagram-E7YTZNPT-Bd4FNT10.js",
+      "rawBytes": 6403,
+      "gzipBytes": 2683
+    },
+    {
+      "file": "plotly-2d-B-YMMjus.css",
+      "rawBytes": 69940,
+      "gzipBytes": 10057
+    },
+    {
+      "file": "plotly-2d-B3Kqwxmc.js",
+      "rawBytes": 1236430,
+      "gzipBytes": 434273
+    },
+    {
+      "file": "plotly-3d-DFTWy9ty.js",
+      "rawBytes": 570331,
+      "gzipBytes": 171591
+    },
+    {
+      "file": "PlotlyVisualization-DDqkAWtw.js",
+      "rawBytes": 7931,
+      "gzipBytes": 3346
+    },
+    {
+      "file": "precisionRound-BjUOSOJi.js",
+      "rawBytes": 4990,
+      "gzipBytes": 2214
+    },
+    {
+      "file": "quadrantDiagram-AXDQQJYC-DJMO1rIk.js",
+      "rawBytes": 34579,
+      "gzipBytes": 10176
+    },
+    {
+      "file": "query-CwLsF2wv.js",
+      "rawBytes": 50541,
+      "gzipBytes": 15494
+    },
+    {
+      "file": "railroadDiagram-O6MQD6OU-MpYb_xu4.js",
+      "rawBytes": 1713,
+      "gzipBytes": 815
+    },
+    {
+      "file": "react-DERf4rAL.js",
+      "rawBytes": 134681,
+      "gzipBytes": 43232
+    },
+    {
+      "file": "requirementDiagram-BXWQKSXE-kHxs0kXB.js",
+      "rawBytes": 31313,
+      "gzipBytes": 9873
+    },
+    {
+      "file": "sankeyDiagram-P5KCCOFB-BcxFILNU.js",
+      "rawBytes": 22872,
+      "gzipBytes": 8465
+    },
+    {
+      "file": "sequenceDiagram-WJ2MYXX4--7f2Jb6t.js",
+      "rawBytes": 117558,
+      "gzipBytes": 31330
+    },
+    {
+      "file": "sizeCapture-INFHLROL-DhWEZSRS.js",
+      "rawBytes": 1105,
+      "gzipBytes": 616
+    },
+    {
+      "file": "stateDiagram-D77RDMKH-sZdWatAq.js",
+      "rawBytes": 10473,
+      "gzipBytes": 3677
+    },
+    {
+      "file": "stateDiagram-v2-MP3YSRHH-Cft-3NEf.js",
+      "rawBytes": 535,
+      "gzipBytes": 357
+    },
+    {
+      "file": "swimlanes-42K2YHIH-gaomHZKg.js",
+      "rawBytes": 117224,
+      "gzipBytes": 42892
+    },
+    {
+      "file": "swimlanesDiagram-VR7AAH4N-DlsMHbNk.js",
+      "rawBytes": 655,
+      "gzipBytes": 424
+    },
+    {
+      "file": "timeline-definition-24CTP7MA-CHSiW9lA.js",
+      "rawBytes": 31456,
+      "gzipBytes": 10480
+    },
+    {
+      "file": "vennDiagram-4TSXK5OY-8KxOKD-3.js",
+      "rawBytes": 42481,
+      "gzipBytes": 15854
+    },
+    {
+      "file": "visualization-performance-B5MORa3-.js",
+      "rawBytes": 663901,
+      "gzipBytes": 212492
+    },
+    {
+      "file": "visualization-performance-Cqbimc-k.css",
+      "rawBytes": 79725,
+      "gzipBytes": 18702
+    },
+    {
+      "file": "wardleyDiagram-VM6X3IG4-DR55VaJP.js",
+      "rawBytes": 26203,
+      "gzipBytes": 6995
+    },
+    {
+      "file": "xychartDiagram-S5SC5T6Z-CFSS1tHj.js",
+      "rawBytes": 44555,
+      "gzipBytes": 12630
+    }
+  ]
+}

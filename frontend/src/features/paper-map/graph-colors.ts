@@ -13,7 +13,7 @@ function readColors(): GraphColors {
     uploaded: readThemeColor("--primary"),
     suggested: readThemeColor("--success"),
     external: readThemeColor("--muted-foreground"),
-    link: readThemeColor("--border-strong"),
+    link: readThemeColor("--muted-foreground"),
     label: readThemeColor("--foreground"),
   };
 }

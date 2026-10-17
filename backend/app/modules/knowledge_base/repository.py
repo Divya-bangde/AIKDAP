@@ -78,6 +78,7 @@ class KnowledgeChunkRepository:
         owner_id: uuid.UUID,
         *,
         query_vector: list[float],
+        space_id: str | None = None,
         project_id: uuid.UUID | None = None,
         asset_id: uuid.UUID | None = None,
         top_k: int = 10,
@@ -101,6 +102,9 @@ class KnowledgeChunkRepository:
             .where(Project.owner_id == owner_id)
             .where(KnowledgeChunk.embedding.is_not(None))
             .where(KnowledgeChunk.embedding_status == EmbeddingStatus.COMPLETED)
+            .where(KnowledgeChunk.embedding_space_id.is_not(None))
+            .where(KnowledgeChunk.embedding_space_id == space_id)
+            .where(Project.active_embedding_space_id == space_id)
         )
         if project_id is not None:
             stmt = stmt.where(KnowledgeChunk.project_id == project_id)

@@ -1,0 +1,74 @@
+[
+  {
+    "phase": "before",
+    "run": 1,
+    "initialPlotlyMs": 8556,
+    "equationAdditionalLoadMs": 2062,
+    "equationKeyboardMs": 288,
+    "mermaidColdMs": 1785,
+    "initialScriptMs": 5871.847,
+    "totalScriptMs": 7237.9800000000005,
+    "totalTaskMs": 9503.526000000002,
+    "errors": []
+  },
+  {
+    "phase": "after",
+    "run": 1,
+    "initialPlotlyMs": 1700,
+    "equationAdditionalLoadMs": 1038,
+    "equationKeyboardMs": 139,
+    "mermaidColdMs": 645,
+    "initialScriptMs": 301.98,
+    "totalScriptMs": 974.896,
+    "totalTaskMs": 2034.498,
+    "errors": []
+  },
+  {
+    "phase": "before",
+    "run": 2,
+    "initialPlotlyMs": 8216,
+    "equationAdditionalLoadMs": 1952,
+    "equationKeyboardMs": 380,
+    "mermaidColdMs": 647,
+    "initialScriptMs": 6016.706,
+    "totalScriptMs": 7462.384,
+    "totalTaskMs": 9301.365,
+    "errors": []
+  },
+  {
+    "phase": "after",
+    "run": 2,
+    "initialPlotlyMs": 1709,
+    "equationAdditionalLoadMs": 1018,
+    "equationKeyboardMs": 132,
+    "mermaidColdMs": 579,
+    "initialScriptMs": 313.18800000000005,
+    "totalScriptMs": 896.86,
+    "totalTaskMs": 1963.5810000000001,
+    "errors": []
+  },
+  {
+    "phase": "before",
+    "run": 3,
+    "initialPlotlyMs": 8322,
+    "equationAdditionalLoadMs": 1869,
+    "equationKeyboardMs": 212,
+    "mermaidColdMs": 541,
+    "initialScriptMs": 6136.764999999999,
+    "totalScriptMs": 7268.064,
+    "totalTaskMs": 9087.182999999999,
+    "errors": []
+  },
+  {
+    "phase": "after",
+    "run": 3,
+    "initialPlotlyMs": 1848,
+    "equationAdditionalLoadMs": 1068,
+    "equationKeyboardMs": 173,
+    "mermaidColdMs": 602,
+    "initialScriptMs": 367.631,
+    "totalScriptMs": 1005.7080000000001,
+    "totalTaskMs": 2161.789,
+    "errors": []
+  }
+]

@@ -15,8 +15,13 @@ cross-paper comparison item would.
 import uuid
 from datetime import datetime
 from enum import Enum
+import json
+from typing import Literal, Self
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from app.modules.research import visualization_contract as chart_budgets
+from app.modules.research.experiment_visualization import finite_x, source_reference_bytes
 
 from app.modules.research.schemas import ResearchCertainty, SourceReference
 
@@ -387,18 +392,77 @@ class VisualizationSeries(BaseModel):
     """Raw trace data for the frontend to render with Plotly.js -- the
     backend never renders a chart image or asserts causality (Part H/R)."""
 
-    name: str
-    x: list[str]
-    y: list[float | None]
-    kind: str = Field(description="'scatter' | 'line' | 'bar'")
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+    name: str = Field(max_length=chart_budgets.MAX_LABEL)
+    x: list[str] = Field(max_length=chart_budgets.MAX_POINTS)
+    y: list[float | None] = Field(max_length=chart_budgets.MAX_POINTS)
+    kind: Literal["scatter", "line", "bar"]
+    test_case_ids: list[str] = Field(default_factory=list, max_length=chart_budgets.MAX_POINTS)
+    source_references: list[SourceReference | None] = Field(default_factory=list, max_length=chart_budgets.MAX_POINTS)
+
+    @field_validator("y", mode="before")
+    @classmethod
+    def exact_integer_y(cls, values):
+        for value in values if isinstance(values, list) else []:
+            if isinstance(value, (int, float)) and value is not None and abs(value) > 9007199254740991 and (isinstance(value, int) or value.is_integer()):
+                raise ValueError("integer y exceeds exact browser numeric precision")
+        return values
+
+    @model_validator(mode="after")
+    def paired_finite(self) -> Self:
+        if len(self.x) != len(self.y):
+            raise ValueError("experiment chart x/y arrays must have equal lengths")
+        if self.test_case_ids and len(self.test_case_ids) != len(self.x) or self.source_references and len(self.source_references) != len(self.x):
+            raise ValueError("test-case identities/source references must align with plotted points")
+        if any(len(case_id) > chart_budgets.MAX_LABEL for case_id in self.test_case_ids):
+            raise ValueError("test-case identities exceed visualization label limits")
+        for reference in self.source_references:
+            source_reference_bytes(reference)
+        for x in self.x:
+            if len(x) > chart_budgets.MAX_LABEL:
+                raise ValueError(f"x labels exceed {chart_budgets.MAX_LABEL} characters")
+            finite_x(x)
+        return self
 
 
 class VisualizationData(BaseModel):
-    chart_type: str
-    x_label: str
-    y_label: str
-    series: list[VisualizationSeries]
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+    chart_type: Literal["scatter", "line", "bar"]
+    x_label: str = Field(max_length=chart_budgets.MAX_LABEL)
+    y_label: str = Field(max_length=chart_budgets.MAX_LABEL)
+    series: list[VisualizationSeries] = Field(max_length=chart_budgets.MAX_TRACES)
+    origin: Literal["expected_test_case_values", "unknown"] = "unknown"
+    plan_id: uuid.UUID | None = None
+    plan_version: int | None = Field(default=None, ge=1)
+    input_name: str | None = Field(default=None, max_length=chart_budgets.MAX_LABEL)
+    output_name: str | None = Field(default=None, max_length=chart_budgets.MAX_LABEL)
+    group_by: str | None = Field(default=None, max_length=chart_budgets.MAX_LABEL)
+    total_test_cases: int | None = Field(default=None, ge=0)
+    plotted_test_cases: int | None = Field(default=None, ge=0)
+    excluded_missing_input: int | None = Field(default=None, ge=0)
+    partial: bool | None = None
+    scope_description: str | None = Field(default=None, max_length=chart_budgets.MAX_LABEL)
     note: str | None = Field(
         default=None,
+        max_length=2 * chart_budgets.MAX_LABEL + 256,
         description="e.g. a trend disclaimer -- never a causal claim (Part H).",
     )
+
+    @model_validator(mode="after")
+    def bounded_response(self) -> Self:
+        if any(series.kind != self.chart_type for series in self.series):
+            raise ValueError("experiment chart kind must match every series")
+        if sum(len(series.x) for series in self.series) > chart_budgets.MAX_TOTAL:
+            raise ValueError(f"experiment chart exceeds {chart_budgets.MAX_TOTAL} total points")
+        plotted = sum(len(series.x) for series in self.series)
+        if self.plotted_test_cases is not None and self.plotted_test_cases != plotted:
+            raise ValueError("plotted count must match returned points")
+        if self.total_test_cases is not None and self.excluded_missing_input is not None:
+            if self.total_test_cases != plotted + self.excluded_missing_input:
+                raise ValueError("test-case scope counts must reconcile")
+        size = 0
+        for part in json.JSONEncoder(ensure_ascii=False, allow_nan=False).iterencode(self.model_dump(mode="json")):
+            size += len(part.encode("utf-8"))
+            if size > chart_budgets.MAX_BYTES:
+                raise ValueError(f"experiment chart exceeds {chart_budgets.MAX_BYTES} serialized bytes")
+        return self

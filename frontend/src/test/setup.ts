@@ -1,4 +1,17 @@
 import "@testing-library/jest-dom/vitest";
+import { vi } from "vitest";
+
+// jsdom has no rendering/layout engine. Returning null deliberately exercises
+// the decorative canvas' unsupported-WebGL fallback; graphics need a browser.
+Object.defineProperty(HTMLCanvasElement.prototype, "getContext", {
+  configurable: true,
+  value: vi.fn(() => null),
+});
+Object.defineProperty(window, "scrollTo", { configurable: true, value: vi.fn() });
+Object.defineProperty(Element.prototype, "scrollIntoView", {
+  configurable: true,
+  value: vi.fn(),
+});
 
 /* jsdom implements no IntersectionObserver, which Motion needs for
  * `whileInView` — the mechanism the entry experience's scroll

@@ -1,0 +1,23 @@
+[
+  {
+    "failure": "engine",
+    "isolated": true,
+    "retryBound": 1,
+    "reloadRecovers": true,
+    "intentionallyInjectedErrors": []
+  },
+  {
+    "failure": "lazy chart",
+    "isolated": true,
+    "retryBound": 1,
+    "reloadRecovers": true,
+    "intentionallyInjectedErrors": []
+  },
+  {
+    "failure": "project paper map",
+    "isolated": true,
+    "retryBound": 1,
+    "reloadRecovers": true,
+    "intentionallyInjectedErrors": []
+  }
+]

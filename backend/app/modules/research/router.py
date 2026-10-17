@@ -33,7 +33,7 @@ from app.modules.research.dependencies import (
     get_owned_run,
     get_research_service,
 )
-from app.modules.research.enums import ResearchRunStatus
+from app.modules.research.enums import ResearchGroundingStatus, ResearchRunStatus
 from app.modules.research.experiment_schemas import (
     ExperimentExecuteRequest,
     ExperimentPlan,
@@ -60,6 +60,7 @@ from app.modules.research.schemas import (
     ResearchRunCreate,
     ResearchRunDetail,
     ResearchRunRead,
+    ResearchRunPage,
     ResearchStepRead,
     StepStreamToken,
     CrossPaperComparison,
@@ -72,6 +73,7 @@ from app.modules.research.step_stream import SSE_HEADERS, step_event_stream
 from app.modules.research.service import (
     ProjectAccessDeniedError,
     ResearchRunNotFoundError,
+    ResearchAssetNotFoundError,
     ResearchService,
     TaskAccessDeniedError,
     UnsourcedSynthesisFailedError,
@@ -131,6 +133,25 @@ async def list_research_runs(
             status=status_filter,
             skip=skip,
             limit=limit,
+        )
+    except ProjectAccessDeniedError as exc:
+        raise _PROJECT_NOT_FOUND from exc
+
+
+@router.get("/runs/page", response_model=ResearchRunPage)
+async def page_research_runs(
+    project_id: uuid.UUID | None = Query(default=None),
+    status_filter: ResearchRunStatus | None = Query(default=None, alias="status"),
+    grounding_status: ResearchGroundingStatus | None = Query(default=None),
+    cursor: str | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=200),
+    current_user: User = Depends(get_current_user),
+    service: ResearchService = Depends(get_research_service),
+) -> ResearchRunPage:
+    try:
+        return await service.page_runs(
+            current_user.id, project_id=project_id, status=status_filter,
+            grounding_status=grounding_status, cursor=cursor, limit=limit,
         )
     except ProjectAccessDeniedError as exc:
         raise _PROJECT_NOT_FOUND from exc
@@ -273,6 +294,8 @@ async def analyze_research_document_route(
         return await service.analyze_document(current_user.id, asset_id, project_id, data)
     except ProjectAccessDeniedError as exc:
         raise _PROJECT_NOT_FOUND from exc
+    except ResearchAssetNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Research asset not found.") from exc
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
@@ -290,8 +313,43 @@ async def analyze_cross_paper_route(
         return await service.synthesize_cross_paper(current_user.id, asset_id, project_id, data)
     except ProjectAccessDeniedError as exc:
         raise _PROJECT_NOT_FOUND from exc
+    except ResearchAssetNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Research asset not found.") from exc
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+
+@router.get("/documents/{asset_id}/cross-paper-analysis", response_model=CrossPaperComparison | None)
+async def restore_latest_comparison_route(
+    asset_id: uuid.UUID,
+    project_id: uuid.UUID = Query(...),
+    current_user: User = Depends(get_current_user),
+    service: ResearchService = Depends(get_research_service),
+) -> CrossPaperComparison | None:
+    try:
+        return await service.restore_comparison(current_user.id, project_id, asset_id=asset_id)
+    except ProjectAccessDeniedError as exc:
+        raise _PROJECT_NOT_FOUND from exc
+    except ResearchAssetNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Research asset not found.") from exc
+
+
+@router.get("/comparisons/{artifact_id}", response_model=CrossPaperComparison)
+async def restore_comparison_route(
+    artifact_id: uuid.UUID,
+    project_id: uuid.UUID = Query(...),
+    current_user: User = Depends(get_current_user),
+    service: ResearchService = Depends(get_research_service),
+) -> CrossPaperComparison:
+    try:
+        result = await service.restore_comparison(current_user.id, project_id, artifact_id=artifact_id)
+    except ProjectAccessDeniedError as exc:
+        raise _PROJECT_NOT_FOUND from exc
+    except ResearchAssetNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Research asset not found.") from exc
+    if result is None:
+        raise HTTPException(status_code=404, detail="Comparison not found.")
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -488,5 +546,5 @@ async def get_experiment_visualization_route(
     except ExperimentPlanNotFoundError as exc:
         raise _EXPERIMENT_PLAN_NOT_FOUND from exc
     except ExperimentPlanValidationError as exc:
-        raise _raise_validation(exc) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
 

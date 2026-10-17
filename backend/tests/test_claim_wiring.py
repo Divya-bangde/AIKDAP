@@ -16,10 +16,12 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
+from pydantic import SecretStr
 
 from app.agents.planner.nodes import GraphDependencies, synthesis_node
 from app.agents.planner.planner import get_planner
 from app.agents.planner.synthesis import GroundedSynthesizer
+from app.core.config import settings
 from app.core.llm import gateway as gateway_module
 from app.core.llm.gateway import LLMGateway
 from app.modules.research.schemas import ResearchRunDetail, VerifiedClaimRead
@@ -55,6 +57,7 @@ def model_reply_with_claims(*, claims: list[dict], citation_ids: list[str] | Non
 def litellm_call(monkeypatch) -> AsyncMock:
     mock = AsyncMock(return_value=model_reply())
     monkeypatch.setattr(gateway_module, "acompletion", mock)
+    monkeypatch.setattr(settings, "gemini_api_key", SecretStr("offline-gemini-fixture"))
     return mock
 
 
@@ -202,7 +205,7 @@ async def test_synthesis_node_resolves_full_content_via_chunk_repository(synthes
     class FakeChunkRepository:
         async def get_by_id(self, requested_id):
             if str(requested_id) == chunk_id:
-                return SimpleNamespace(content=full_content)
+                return SimpleNamespace(content=full_content, asset_id=citations[0]["asset_id"], project_id="test-project")
             return None
 
     dependencies = GraphDependencies(
@@ -215,6 +218,7 @@ async def test_synthesis_node_resolves_full_content_via_chunk_repository(synthes
     )
     state = {
         "run_id": str(uuid.uuid4()),
+        "project_id": "test-project",
         "query": "What did the second phase introduce?",
         "objective": "Answer from the knowledge base.",
         "context": "built by the context builder",

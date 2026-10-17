@@ -1,4 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
+import { usePagedProjects } from "@/hooks/usePagedLists";
+import { LoadMore } from "@/components/common/LoadMore";
 import { FolderKanban } from "lucide-react";
 
 import { EmptyState } from "@/components/common/EmptyState";
@@ -6,49 +8,11 @@ import { ErrorState } from "@/components/common/ErrorState";
 import { ProjectGridSkeleton } from "@/components/common/Skeletons";
 import { PageTransition, Stagger, StaggerItem } from "@/components/motion/PageTransition";
 import { CreateProjectDialog } from "@/features/projects/CreateProjectDialog";
-import { ProjectCard, type ProjectStats } from "@/features/projects/ProjectCard";
-import { isGroundedAnswer } from "@/features/research/research-presentation";
-import { isSource } from "@/features/assets/asset-state";
-import * as assetsService from "@/services/assets";
+import { ProjectCard } from "@/features/projects/ProjectCard";
 import * as projectsService from "@/services/projects";
-import * as researchService from "@/services/research";
 
 export function Projects() {
-  const projectsQuery = useQuery({
-    queryKey: ["projects"],
-    queryFn: projectsService.listProjects,
-  });
-
-  // One unfiltered fetch each, then grouped by `project_id` on the
-  // client — rather than N requests, one per card. Both endpoints are
-  // already owner-scoped by the backend.
-  const assetsQuery = useQuery({
-    queryKey: ["assets", "all"],
-    queryFn: () => assetsService.listAssets(),
-  });
-  const runsQuery = useQuery({
-    queryKey: ["research", "runs", "all"],
-    queryFn: () => researchService.listResearchRuns(),
-  });
-
-  /** Real per-project counts, or `undefined` while unknown.
-   *
-   * `undefined` matters: the card renders nothing at all rather than
-   * "0 documents" for a project whose assets simply haven't loaded (or
-   * failed to load). A zero that means "we don't know yet" is exactly
-   * the kind of fabricated figure this product doesn't ship. */
-  function statsFor(projectId: string): ProjectStats {
-    return {
-      documents: assetsQuery.isSuccess
-        ? assetsQuery.data.filter((asset) => asset.project_id === projectId && isSource(asset)).length
-        : undefined,
-      groundedAnswers: runsQuery.isSuccess
-        ? runsQuery.data.filter(
-            (run) => run.project_id === projectId && isGroundedAnswer(run),
-          ).length
-        : undefined,
-    };
-  }
+  const projectsQuery = usePagedProjects();
 
   return (
     <PageTransition>
@@ -68,9 +32,9 @@ export function Projects() {
 
       {projectsQuery.isLoading && <ProjectGridSkeleton />}
 
-      {projectsQuery.isError && <ErrorState error={projectsQuery.error} />}
+      {projectsQuery.isError && !projectsQuery.isFetchNextPageError && <ErrorState error={projectsQuery.error} />}
 
-      {projectsQuery.isSuccess && projectsQuery.data.length === 0 && (
+      {projectsQuery.isSuccess && projectsQuery.items.length === 0 && (
         <EmptyState
           icon={FolderKanban}
           title="No research projects yet."
@@ -78,15 +42,21 @@ export function Projects() {
         />
       )}
 
-      {projectsQuery.isSuccess && projectsQuery.data.length > 0 && (
+      {projectsQuery.items.length > 0 && (
         <Stagger className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {projectsQuery.data.map((project) => (
+          {projectsQuery.items.map((project) => (
             <StaggerItem key={project.id} className="h-full">
-              <ProjectCard project={project} stats={statsFor(project.id)} />
+              <CountedProjectCard project={project} />
             </StaggerItem>
           ))}
         </Stagger>
       )}
+      <LoadMore query={projectsQuery} label="projects" />
     </PageTransition>
   );
+}
+
+function CountedProjectCard({ project }: { project: Parameters<typeof ProjectCard>[0]["project"] }) {
+  const summary = useQuery({ queryKey: ["projects", "summary", project.id], queryFn: () => projectsService.getWorkspaceSummary(project.id) });
+  return <ProjectCard project={project} stats={{ documents: summary.data?.documents, groundedAnswers: summary.data?.grounded_answers }} />;
 }

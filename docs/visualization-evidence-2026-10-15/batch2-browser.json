@@ -1,0 +1,59 @@
+{
+  "date": "2026-10-16",
+  "origin": "synthetic local fixtures; no user data changes",
+  "productionBuild": "batch2-dist, Vite45.33s exit0",
+  "environment": "Chromium 153.0.8010.12",
+  "selection": {
+    "visibleTraces": [
+      "Series 1",
+      "Series 3",
+      "Series 4",
+      "Series 5",
+      "Series 6",
+      "Series 7",
+      "Series 8",
+      "Series 9",
+      "Series 10",
+      "Series 11",
+      "Series 12"
+    ],
+    "tableRows": 34,
+    "legendDisabled": {
+      "click": false,
+      "doubleClick": false
+    },
+    "tracesAfterLegendClick": 11
+  },
+  "downloads": [
+    "batch2-verified-chart-data-and-context.json",
+    "batch2-recovered-chart-data-and-context.json"
+  ],
+  "exportFailure": "URL.createObjectURL injected throw caught; frame/data retained; restored API and actual download succeeded",
+  "mobile": {
+    "diagram": {
+      "client": 390,
+      "scroll": 390,
+      "regionClient": 330,
+      "regionScroll": 800
+    },
+    "research": {
+      "client": 390,
+      "scroll": 390,
+      "plotTop": 685.78125,
+      "proseTop": 1202.78125
+    },
+    "equation": {
+      "client": 375,
+      "scroll": 375,
+      "spoken": "1 kilogram; logarithmic scale"
+    },
+    "zoom": {
+      "method": "CSS root zoom2 with resize; causes actual layout reflow. Not deviceScaleFactor.",
+      "client": 375,
+      "scroll": 375,
+      "regionClient": 130,
+      "regionScroll": 420
+    }
+  },
+  "errors": []
+}

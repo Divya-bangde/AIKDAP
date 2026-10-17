@@ -74,10 +74,26 @@ describe("PaperMap", () => {
 
     renderWithProviders(<PaperMap projectId="p1" />);
 
-    expect(await screen.findByText("Not enough citations to map yet")).toBeInTheDocument();
-    expect(screen.getByText(/Fewer than two of this project's PDFs are matched/)).toBeInTheDocument();
+    expect(await screen.findByText("No citation relationships found")).toBeInTheDocument();
+    expect(screen.getByText(/1 isolated paper has no citation/)).toBeInTheDocument();
     expect(screen.getByText("draft.pdf")).toBeInTheDocument();
     expect(screen.getByText("Looking up")).toBeInTheDocument();
+  });
+
+  it("distinguishes no papers from zero citations", async () => {
+    vi.mocked(papersService.getPaperGraph).mockResolvedValue({ nodes: [], links: [], unmatched: [], external_unavailable: false });
+    renderWithProviders(<PaperMap projectId="empty" />);
+    expect(await screen.findByText("No papers on the map")).toBeInTheDocument();
+  });
+
+  it("renders one real citation and a selectable relationship", async () => {
+    vi.mocked(papersService.getPaperGraph).mockResolvedValue({ ...connected, links: [connected.links[0]] });
+    const user = userEvent.setup();
+    renderWithProviders(<PaperMap projectId="single" />);
+    expect(await screen.findByText("One citation relationship")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /with 1 citations/ })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Paper two" }));
+    expect(await screen.findByRole("dialog")).toHaveTextContent("Paper two");
   });
 
   it("refetches with outside papers when the toggle is on", async () => {
@@ -116,6 +132,39 @@ describe("PaperMap", () => {
 
     await screen.findByRole("dialog");
     expect(screen.queryByRole("button", { name: /Add to project/ })).not.toBeInTheDocument();
+  });
+
+  it("searches real paper-list controls, opens details by keyboard and restores focus", async () => {
+    vi.mocked(papersService.getPaperGraph).mockResolvedValue(connected);
+    const user = userEvent.setup();
+    renderWithProviders(<PaperMap projectId="keyboard" />);
+    const search = await screen.findByRole("searchbox", { name: "Search papers by title or year" });
+    await user.click(search);
+    await user.type(search, "Classic");
+    expect(screen.getByRole("list", { name: "Papers on this map" })).toHaveTextContent("Classic");
+    expect(screen.getByText("1 of 3 papers shown. Search filters this list; the map keeps its full scope.")).toBeInTheDocument();
+    await user.tab();
+    const opener = screen.getByRole("button", { name: "Inspect paper: Classic" });
+    expect(opener).toHaveFocus();
+    await user.keyboard("{Enter}");
+    expect(await screen.findByRole("dialog")).toHaveTextContent("Classic");
+    expect(screen.getByRole("link", { name: "Open paper" })).toHaveAttribute("href", "https://openalex.org/W9");
+    expect(screen.getByRole("button", { name: "Add to project" })).toBeEnabled();
+    expect(papersService.importOutsidePaper).not.toHaveBeenCalled();
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(opener).toHaveFocus());
+  });
+
+  it("keeps isolated papers inspectable and labels real map view controls", async () => {
+    vi.mocked(papersService.getPaperGraph).mockResolvedValue(connected);
+    renderWithProviders(<PaperMap projectId="controls" />);
+    expect(await screen.findByRole("button", { name: "Fit paper map" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reset paper map view" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Zoom in paper map" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Zoom out paper map" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Pause paper map animation" }));
+    expect(screen.getByRole("button", { name: "Resume paper map animation" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText(/Node size reflects global citation count, not relevance/)).toBeInTheDocument();
   });
 });
 

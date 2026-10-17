@@ -1,0 +1,68 @@
+- main:
+  - heading "AIKDAP visualization audit" [level=1]
+  - paragraph: Synthetic fixtures rendered through the current production components. No live project data or model calls.
+  - button "Analytics comparison"
+  - button "Truncated pie"
+  - button "Research plot"
+  - button "Equation calculator"
+  - button "Paper map" [pressed]
+  - button "One citation"
+  - button "Diagram"
+  - button "Zero citations"
+  - button "No papers"
+  - button "Verified evidence"
+  - button "Yearly bars"
+  - button "Invalid pie"
+  - button "Missing visual"
+  - button "3D surface"
+  - button "Broken diagram"
+  - button "Full research view"
+  - button "Many series"
+  - button "Long labels"
+  - button "Dark theme"
+  - 'img "Source mix: 33% your documents, 33% web, 33% general knowledge"'
+  - list:
+    - listitem:
+      - button "Your documents 33%"
+    - listitem:
+      - button "Web 33%"
+    - listitem:
+      - button "General knowledge 33%"
+  - checkbox "Show frequently cited outside papers" [checked]
+  - text: Show frequently cited outside papers
+  - list "Legend":
+    - listitem: Uploaded
+    - listitem: Added from suggestions
+    - listitem: Outside paper
+  - paragraph: Arrows point from the citing paper to the cited paper. Node size reflects global citation count, not relevance to your question. The searchable paper list provides the same details and source actions as canvas selection.
+  - group "Paper map view controls":
+    - button "Fit paper map"
+    - button "Reset paper map view"
+    - button "Zoom in paper map"
+    - button "Zoom out paper map"
+    - button "Resume paper map animation" [pressed]
+  - img "Citation map of 4 papers with 2 citations. Select a paper to see its details."
+  - paragraph: 2 citation relationships. Arrows point from the citing paper to the cited paper.
+  - paragraph: 1 isolated paper has no citation relationship in the displayed graph; citations outside this scope may exist.
+  - region "Accessible paper list":
+    - heading "Papers on this map" [level=3]
+    - text: Search papers by title or year
+    - searchbox "Search papers by title or year"
+    - status: 4 of 4 papers shown. Search filters this list; the map keeps its full scope.
+    - list "Papers on this map":
+      - listitem:
+        - 'button "Inspect paper: Paper A: comparative methods"'
+        - paragraph: Uploaded · 2024 · 20 global citations
+        - paragraph: Cites 1; cited by 0 in this map.
+      - listitem:
+        - 'button "Inspect paper: Paper B: validation results"'
+        - paragraph: Uploaded · 2024 · 20 global citations
+        - paragraph: Cites 1; cited by 1 in this map.
+      - listitem:
+        - 'button "Inspect paper: Paper C: related study"'
+        - paragraph: Uploaded · 2024 · 20 global citations
+        - paragraph: Isolated in this map; citations outside the displayed scope may exist.
+      - listitem:
+        - 'button "Inspect paper: Outside synthetic paper: keyboard import control (verification never invokes this action)"'
+        - paragraph: Outside paper · 2025 · 7 global citations
+        - paragraph: Cites 0; cited by 1 in this map.

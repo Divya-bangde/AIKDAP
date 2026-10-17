@@ -355,6 +355,9 @@ class AssetProcessingService:
 
         try:
             vectors = await self._embeddings.embed([chunk.content for chunk in chunks])
+            from app.modules.knowledge_base.spaces import validate_vectors
+
+            validate_vectors(vectors, len(chunks), self._embeddings.dimensions)
         except Exception as exc:  # noqa: BLE001 - recorded per chunk, not swallowed
             for chunk in chunks:
                 chunk.embedding_status = EmbeddingStatus.FAILED
@@ -371,10 +374,16 @@ class AssetProcessingService:
             )
             return
 
+        from app.modules.knowledge_base.rebuild import activate_initial_space, lock_project
+
+        await lock_project(self._session, asset.project_id)
         for chunk, vector in zip(chunks, vectors, strict=True):
             chunk.embedding = vector
             chunk.embedding_status = EmbeddingStatus.COMPLETED
             chunk.embedding_provider = self._embeddings.name
+            chunk.embedding_space_id = self._embeddings.space.id
+            chunk.embedding_space = self._embeddings.space.as_dict()
+        await activate_initial_space(self._session, asset.project_id, self._embeddings.space.id)
         profile = AIProfile.model_validate(asset.ai_profile or {})
         profile.embedding_status = EmbeddingStatus.COMPLETED
         asset.ai_profile = profile.model_dump(mode="json")

@@ -24,6 +24,7 @@ import {
 import { knowledgeState } from "@/features/assets/asset-state";
 import { fileSlug, projectMarkdown } from "@/lib/export";
 import * as projectsService from "@/services/projects";
+import type { KnowledgeReadiness } from "@/services/knowledge";
 import type { components } from "@/types/api";
 
 type AssetRead = components["schemas"]["AssetRead"];
@@ -42,7 +43,9 @@ export function ProjectHeader({
   assets,
   runs,
   onRequestUpload,
+  readiness,
 }: {
+  readiness?: KnowledgeReadiness;
   project: ProjectRead;
   assets: AssetRead[];
   runs: ResearchRunRead[];
@@ -73,6 +76,11 @@ export function ProjectHeader({
   /** Research answers only from embedded documents, so a project with
    * none uploaded — or none finished processing — has nothing to search. */
   function startResearch() {
+    if (readiness && (!readiness.compatible || readiness.searchable_chunks === 0)) {
+      setWarning({ message: "The knowledge base has no compatible searchable passages. Check search readiness in Overview and rebuild embeddings if needed.", canUpload: readiness.total_chunks === 0 });
+      return;
+    }
+    if (readiness?.compatible && readiness.searchable_chunks > 0) { navigate(`/research?project=${project.id}`); return; }
     const { total, embedded } = knowledgeState(assets);
     if (total === 0) {
       setWarning({

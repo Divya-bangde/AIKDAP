@@ -39,7 +39,22 @@ function makeRun(overrides: Partial<ResearchRunDetail>): ResearchRunDetail {
 }
 
 describe("ResearchRunView polling (Phase 19)", () => {
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => { vi.restoreAllMocks(); vi.clearAllMocks(); });
+
+  it("uses a concise visual-task title and retains the full question in a disclosure", async () => {
+    const query = `Show an annual bar chart. ${"Include the detailed context and uncertainty. ".repeat(10)}`;
+    vi.mocked(researchService.getResearchRun).mockResolvedValue(makeRun({ status: "completed", grounding_status: "grounded", query, final_answer: "Only one supported observation is available.", visualization_outcome: { status: "not_enough_data", reason: "A second observation is needed.", requested: { type: "bar" }, verification: "unverified", repair_attempts: 0 } }));
+    renderWithProviders(<ResearchRunView runId="visual-title" />);
+    const heading = await screen.findByRole("heading", { level: 1, name: /Show an annual bar chart/ });
+    expect(heading.textContent!.length).toBeLessThanOrEqual(100);
+    expect(heading).toHaveTextContent("Show an annual bar chart.");
+    const question = screen.getByText("Full research question").closest("details")!;
+    expect(question).not.toHaveAttribute("open");
+    expect(question).toHaveTextContent(query.trim());
+    const explanation = screen.getByText("Only one supported observation is available.");
+    const visualStatus = screen.getByText("Visualization not enough data");
+    expect(visualStatus.compareDocumentPosition(explanation) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
 
   it("renders real backend steps while running, then polls again", async () => {
     const getRun = vi.mocked(researchService.getResearchRun);

@@ -86,17 +86,17 @@
     --destructive: 0 72% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Categorical chart series, in fixed order (Plotly's `colorway`).
-     * Checked for colour-blind separation as a set, so the order matters:
-     * never reorder or cycle it. Hex because only Plotly/canvas read them. */
-    --chart-1: #2a78d6;
-    --chart-2: #eb6834;
-    --chart-3: #1baf7a;
-    --chart-4: #eda100;
-    --chart-5: #e87ba4;
-    --chart-6: #008300;
+    /* Essential chart marks contrast with card, sunken and page surfaces.
+     * Stable series styles add dashes, symbols and patterns in plotly-theme.
+     * Hex because only Plotly/canvas read these tokens. */
+    --chart-1: #2165b5;
+    --chart-2: #b74618;
+    --chart-3: #087d54;
+    --chart-4: #966600;
+    --chart-5: #aa3563;
+    --chart-6: #006b15;
     --chart-7: #4a3aa7;
-    --chart-8: #e34948;
+    --chart-8: #bc3334;
 
     --border: 220 16% 90%;
     --border-strong: 220 14% 80%;

@@ -23,43 +23,40 @@ import { inViewOnce, sectionItem, sectionReveal } from "@/lib/motion";
  * system. There is no live count, no status, no score, and no
  * assertion about performance or accuracy anywhere in this file. */
 
-/** The real processing sequence, in order. Each description says what
- * that stage does to the work, not how well it does it. */
-const PIPELINE: PipelineStage[] = [
+/** Conceptual paths; optional work and fallbacks are explained beside them. */
+const INGESTION: PipelineStage[] = [
   {
     name: "Collect",
     detail:
-      "Documents are uploaded into a project and extracted to text — the project is the unit that owns them, so knowledge never leaks between pieces of work.",
+      "Documents are uploaded into a project. Owner and project scope determine access before document processing begins.",
   },
   {
-    name: "Understand",
+    name: "Extract and chunk",
     detail:
-      "A language model reads each document and records a profile of it: what it covers, the terms it uses, the entities it names, the language it is written in.",
+      "Text and passage positions are stored. Deterministic document processing can finish before optional model work.",
   },
   {
     name: "Embed",
     detail:
-      "Text is split into passages and embedded with BGE-M3, giving every passage a position in the same vector space a question will later be placed into.",
+      "Passage embedding is attempted before AI understanding is queued. Embedding has its own status; a failed attempt does not discard extracted text.",
   },
+];
+const QUERY: PipelineStage[] = [
+  { name: "Plan and route", detail: "The question determines which retrieval agents are selected. Some requests proceed directly to context building." },
   {
     name: "Retrieve",
     detail:
-      "A question is embedded the same way, and the passages nearest to it are pulled back as candidates. Fast, approximate, and deliberately generous.",
+      "When selected, project-document or web retrieval supplies candidate evidence. Document retrieval requires ready embeddings; it does not wait for an AI document profile.",
   },
   {
-    name: "Rerank",
+    name: "Assess evidence",
     detail:
-      "A cross-encoder reads each candidate against the question itself rather than comparing two summaries of meaning, and re-scores the whole set.",
-  },
-  {
-    name: "Ground",
-    detail:
-      "A relevance gate discards passages too weak to support an answer. When nothing clears it, the run stops here and reports insufficient evidence rather than proceeding.",
+      "A configured reranker can score candidates against the question. If scores are unavailable, retrieval ordering is retained and relevance thresholding is reported as not applied.",
   },
   {
     name: "Synthesize",
     detail:
-      "The surviving evidence — and only that evidence — reaches the synthesis model, and every citation that comes back is validated against what was actually supplied.",
+      "The answer records its evidence outcome. Insufficient evidence may trigger one web fallback, an explicitly labelled general-knowledge answer, or an insufficient-evidence response. Citation and visualization verification are separate checks.",
   },
 ];
 
@@ -133,28 +130,32 @@ export default function LandingStory() {
         id="pipeline"
         index="03"
         eyebrow="What AIKDAP does"
-        heading="One pipeline. Seven stages. Every one of them recorded."
+        heading="Document preparation and research follow different paths."
         standfirst={
           <>
-            A question entering AIKDAP passes through the same sequence every time, and each
-            stage writes down what it did. That record is what makes a finished answer
-            something you can take apart rather than something you have to accept.
+            Simplified conceptual overview — not live progress or measured production metrics.
+            Ingestion prepares documents; query-time orchestration selects work and records
+            the stages, optional steps and fallbacks that actually ran.
           </>
         }
       >
-        <PipelineRail stages={PIPELINE} />
+        <div className="grid gap-12 lg:grid-cols-2">
+          <section aria-label="Document ingestion path"><h3 className="mb-6 text-section">Document ingestion</h3><PipelineRail stages={INGESTION}/></section>
+          <section aria-label="Research query path"><h3 className="mb-6 text-section">Research query</h3><PipelineRail stages={QUERY}/></section>
+        </div>
+        <p className="mt-8 text-sm text-muted-foreground">AI understanding is a separate, optional background task after embedding is attempted. It is not a prerequisite for retrieval. The run timeline shows actual execution, including skipped or failed work.</p>
       </LandingSection>
 
       {/* ---- 04 ---------------------------------------------------- */}
       <LandingSection
         index="04"
         eyebrow="AI understanding"
-        heading="Every document is read before it is ever retrieved."
+        heading="Optional document profiles add context in the background."
         standfirst={
           <>
-            Extraction gives you text. AIKDAP also asks a language model what the document is,
-            and keeps that profile beside it — so the knowledge base knows what it holds, not
-            just that it holds something.
+            Extraction and passage storage come first. AI understanding can later add a
+            document profile alongside the text. A pending or failed profile does not prevent
+            retrieval of passages with ready embeddings.
           </>
         }
       >
@@ -162,10 +163,9 @@ export default function LandingStory() {
           <FlowChain
             align="start"
             nodes={[
-              { label: "Document", note: "As uploaded" },
-              { label: "Extraction", note: "Text and structure" },
-              { label: "Qwen understanding", note: "Reads the document", tone: "ai" },
-              { label: "Document profile", note: "Stored with the asset", tone: "primary" },
+              { label: "Embedding attempted", note: "Separate readiness status" },
+              { label: "Optional understanding", note: "Queued background work", tone: "ai" },
+              { label: "Document profile", note: "When understanding succeeds", tone: "primary" },
             ]}
           />
 
@@ -201,9 +201,10 @@ export default function LandingStory() {
         heading="Retrieval is a filter, not a search box."
         standfirst={
           <>
-            Semantic search is fast and approximate. A reranker is slow and precise. AIKDAP
-            uses the first to gather candidates and the second to decide which of them are
-            strong enough to be shown to a model at all.
+            Semantic search gathers candidates. When available, a reranker scores them
+            against the question and a relevance gate applies the configured threshold.
+            If scoring is unavailable, the run records that fallback rather than implying
+            that every passage passed a relevance score check.
           </>
         }
       >
@@ -211,10 +212,10 @@ export default function LandingStory() {
           <FlowChain
             align="start"
             nodes={[
-              { label: "BGE-M3", note: "Passage embeddings" },
+              { label: "Configured embeddings", note: "Compatible passage and query space" },
               { label: "Semantic retrieval", note: "Nearest candidates" },
-              { label: "BGE reranker", note: "Re-scored against the question", tone: "ai" },
-              { label: "Relevance gate", note: "Weak evidence discarded", tone: "primary" },
+              { label: "Optional reranking", note: "Retrieval order if unavailable", tone: "ai" },
+              { label: "Relevance gate", note: "Applied when scores are available", tone: "primary" },
             ]}
           />
           <RetrievalNarrowing />
@@ -229,8 +230,9 @@ export default function LandingStory() {
         heading="An answer is only as good as the evidence it was allowed to use."
         standfirst={
           <>
-            AIKDAP does not ask a model what it knows. It hands the model the passages that
-            survived retrieval, and then holds the answer to them.
+            In the grounded-answer path, the synthesis model receives the selected passages
+            and citation identifiers are checked against that supplied evidence. Other
+            outcomes are labelled separately when evidence cannot support the request.
           </>
         }
       >
@@ -239,7 +241,7 @@ export default function LandingStory() {
             align="start"
             nodes={[
               { label: "Question" },
-              { label: "Evidence", note: "Passages past the gate" },
+              { label: "Evidence", note: "Selected passages, when available" },
               { label: "Synthesis", note: "Answer written from evidence", tone: "ai" },
               { label: "Citation validation", note: "Checked against what was supplied" },
               { label: "Grounded answer", tone: "primary" },
@@ -258,12 +260,14 @@ export default function LandingStory() {
               className="rounded-xl border border-border bg-card p-7"
             >
               <h3 className="font-display text-xl tracking-tight text-foreground">
-                Citations are verified, not trusted
+                Citation identifiers are checked against supplied evidence
               </h3>
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                 Every citation the model returns is matched back to a passage that was actually
                 supplied to it. A citation pointing at something that was never in the evidence
-                is rejected — it does not reach the page with a caveat attached to it.
+                is rejected from the accepted citation list. The answer can still disclose
+                unverified markers; identifier validation alone does not verify every claim
+                or plotted value.
               </p>
             </motion.div>
 
@@ -289,12 +293,13 @@ export default function LandingStory() {
         id="resilience"
         index="07"
         eyebrow="Provider resilience"
-        heading="The pipeline outlives any single provider."
+        heading="Configured fallback providers can keep research moving."
         standfirst={
           <>
             Synthesis talks to an internal gateway rather than to a vendor. The gateway holds an
-            ordered chain of providers and continues down it when one cannot serve a request, so
-            a run completes — and the answer records which provider served it.
+            ordered chain of providers and can try the next configured option when one cannot
+            serve a request. The run records the provider used or reports failure if the chain
+            is exhausted.
           </>
         }
       >
@@ -309,8 +314,8 @@ export default function LandingStory() {
         standfirst={
           <>
             Every run is inspectable after the fact. The stages it executed, the passages that
-            survived each of them, and the source behind each citation are all on the page —
-            not folded away behind a summary.
+            survived each of them, and available citation sources can be inspected alongside
+            the answer. Supporting detail can be expanded when needed.
           </>
         }
       >

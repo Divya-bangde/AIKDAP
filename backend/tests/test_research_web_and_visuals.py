@@ -139,24 +139,25 @@ def test_point_list_is_converted_to_one_trace():
     spec = {
         "kind": "chart2d",
         "title": "Papers per year",
+        "intent": {"type": "line"},
         "data": [{"x": 2018, "y": 1240}, {"x": 2019, "y": 2890}, {"x": 2020, "y": 5310}],
     }
     *_, visualization = _parse_response(_response(spec))
-    assert visualization["data"] == [
+    assert [{k:v for k,v in trace.items() if v is not None and k not in ("name", "uid", "connectgaps")} for trace in visualization["data"]] == [
         {"type": "scatter", "mode": "lines+markers", "x": [2018, 2019, 2020], "y": [1240, 2890, 5310]}
     ]
 
 
 def test_point_list_with_category_labels_becomes_a_bar_trace():
-    spec = {"kind": "chart2d", "data": [{"x": "SGD", "y": 0.79}, {"x": "Adam", "y": 0.86}]}
+    spec = {"kind": "chart2d", "intent": {"type": "bar"}, "data": [{"x": "SGD", "y": 0.79}, {"x": "Adam", "y": 0.86}]}
     *_, visualization = _parse_response(_response(spec))
-    assert visualization["data"] == [{"type": "bar", "x": ["SGD", "Adam"], "y": [0.79, 0.86]}]
+    assert [{k:v for k,v in trace.items() if v is not None and k not in ("name", "uid", "connectgaps")} for trace in visualization["data"]] == [{"type": "bar", "x": ["SGD", "Adam"], "y": [0.79, 0.86]}]
 
 
 def test_3d_point_list_becomes_a_scatter3d_trace():
-    spec = {"kind": "chart3d", "data": [{"x": 1, "y": 2, "z": 3}, {"x": 4, "y": 5, "z": 6}]}
+    spec = {"kind": "chart3d", "intent": {"type": "scatter3d"}, "data": [{"x": 1, "y": 2, "z": 3}, {"x": 4, "y": 5, "z": 6}]}
     *_, visualization = _parse_response(_response(spec))
-    assert visualization["data"] == [
+    assert [{k:v for k,v in trace.items() if v is not None and k not in ("name", "uid", "connectgaps")} for trace in visualization["data"]] == [
         {"type": "scatter3d", "mode": "markers", "x": [1, 4], "y": [2, 5], "z": [3, 6]}
     ]
 
@@ -173,7 +174,7 @@ def test_chart_with_nothing_to_draw_is_dropped(data):
     assert visualization is None
 
 
-def test_stored_point_list_is_repaired_when_a_run_is_read():
+def test_stored_legacy_point_list_is_withheld_with_honest_unknown_verification():
     """Runs saved before the fix still hold the point-list shape."""
     import uuid
     from datetime import UTC, datetime
@@ -191,4 +192,6 @@ def test_stored_point_list_is_repaired_when_a_run_is_read():
             "visualization": {"kind": "chart2d", "title": "T", "data": [{"x": 2018, "y": 1}, {"x": 2019, "y": 2}], "layout": {}, "mermaid": None},
         }
     )
-    assert run.visualization["data"] == [{"type": "scatter", "mode": "lines+markers", "x": [2018, 2019], "y": [1, 2]}]
+    assert run.visualization is None
+    assert run.visualization_outcome.verification == "unverified"
+    assert "Legacy" in run.visualization_outcome.reason

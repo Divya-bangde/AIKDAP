@@ -1,0 +1,13 @@
+[
+  {
+    "run": 1,
+    "initialPlotlyMs": 8682,
+    "equationAdditionalLoadMs": 1489,
+    "equationKeyboardMs": 217,
+    "mermaidColdMs": 1620,
+    "initialScriptMs": 5945.148999999999,
+    "totalScriptMs": 6893.255,
+    "totalTaskMs": 8764.568000000001,
+    "errors": []
+  }
+]

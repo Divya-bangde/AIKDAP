@@ -29,7 +29,7 @@ class ProjectRepository:
         result = await self._session.execute(
             select(Project)
             .where(Project.owner_id == owner_id)
-            .order_by(Project.created_at.desc())
+            .order_by(Project.created_at.desc(), Project.id.desc())
             .offset(skip)
             .limit(limit)
         )

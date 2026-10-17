@@ -82,6 +82,10 @@ export function ResearchRunView({ runId }: { runId: string }) {
   const isRunning = !isTerminal(run) && !runQuery.timedOut;
   const outcome = runOutcome(run);
   const stepCount = run.steps?.length ?? 0;
+  const visualTitle = run.visualization?.title;
+  const visualRequested = !!visualTitle || !!run.visualization_outcome;
+  const fullTitle = visualTitle || run.query;
+  const conciseTitle = fullTitle.length > 100 ? `${fullTitle.slice(0, 97).trimEnd()}…` : fullTitle;
 
   return (
     <div className="flex flex-col gap-6">
@@ -115,9 +119,9 @@ export function ResearchRunView({ runId }: { runId: string }) {
                 <motion.h1
                   layoutId={researchLayoutId(run.id)}
                   transition={layoutSpring}
-                  className="text-title"
+                  className="break-words text-title"
                 >
-                  {run.query}
+                  {visualRequested ? conciseTitle : run.query}
                 </motion.h1>
               </div>
               <div className="flex shrink-0 items-center gap-2">
@@ -147,6 +151,7 @@ export function ResearchRunView({ runId }: { runId: string }) {
                 )}
               </div>
             </div>
+            {visualRequested && <details><summary className="cursor-pointer text-xs font-medium text-muted-foreground">Full research question</summary><p className="mt-2 break-words text-sm">{run.query}</p></details>}
           </CardHeader>
 
           <CardContent>

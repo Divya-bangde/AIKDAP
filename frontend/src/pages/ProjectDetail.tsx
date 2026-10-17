@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
-import { lazy, Suspense, useState } from "react";
+import { useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 
 import { ErrorState } from "@/components/common/ErrorState";
@@ -14,7 +14,11 @@ import { allSettled, isSource, knowledgeState } from "@/features/assets/asset-st
 import { ProjectHeader } from "@/features/projects/ProjectHeader";
 import { ReportsList } from "@/features/reports/ReportsList";
 import { ResearchHistoryList } from "@/features/research/ResearchHistoryList";
+import { LazyRenderer } from "@/features/research/RendererBoundary";
 import { usePolling } from "@/hooks/usePolling";
+import { usePagedResearch } from "@/hooks/usePagedLists";
+import { LoadMore } from "@/components/common/LoadMore";
+import { KnowledgeReadiness, useKnowledgeReadiness } from "@/features/assets/KnowledgeReadiness";
 import { fadeUp } from "@/lib/motion";
 import * as assetsService from "@/services/assets";
 import * as projectsService from "@/services/projects";
@@ -31,13 +35,12 @@ const TABS = [
 ];
 
 // The force-graph canvas library loads only when this tab is opened.
-const PaperMap = lazy(() => import("@/features/paper-map/PaperMap"));
+const loadPaperMap = () => import("@/features/paper-map/PaperMap");
 // Plotly and the analytics workspace load only when this tab is opened.
-const AnalyticsWorkspace = lazy(() =>
+const loadAnalyticsWorkspace = () =>
   import("@/features/business-analytics/AnalyticsWorkspace").then((m) => ({
     default: m.AnalyticsWorkspace,
-  })),
-);
+  }));
 
 /** One real, backend-counted figure about this project's knowledge base. */
 function KnowledgeStat({ label, value, detail }: { label: string; value: number; detail: string }) {
@@ -81,6 +84,10 @@ export function ProjectDetail() {
     enabled: Boolean(id),
   });
 
+  const historyQuery = usePagedResearch(id);
+  const summaryQuery = useQuery({ queryKey: ["projects", "summary", id], queryFn: () => projectsService.getWorkspaceSummary(id), enabled: Boolean(id) });
+  const readiness = useKnowledgeReadiness(id!);
+
   if (projectQuery.isLoading) {
     return <ProjectWorkspaceSkeleton />;
   }
@@ -103,6 +110,7 @@ export function ProjectDetail() {
         project={project}
         assets={assets}
         runs={runs}
+        readiness={readiness.data}
         onRequestUpload={() => setTab("documents")}
       />
 
@@ -119,14 +127,15 @@ export function ProjectDetail() {
           <motion.div initial="hidden" animate="visible" variants={fadeUp}>
             <h2 className="mb-3 text-section">Knowledge state</h2>
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <KnowledgeStat label="Documents" value={stats.total} detail="Uploaded" />
-              <KnowledgeStat label="Extracted" value={stats.extracted} detail="Pipeline" />
-              <KnowledgeStat label="Understood" value={stats.understood} detail="Qwen 3.5" />
-              <KnowledgeStat label="Embedded" value={stats.embedded} detail="BGE-M3" />
+              {summaryQuery.data && <KnowledgeStat label="Documents" value={summaryQuery.data.documents} detail="All uploaded sources" />}
+              <KnowledgeStat label="Extracted" value={stats.extracted} detail="Loaded sources" />
+              <KnowledgeStat label="Understood" value={stats.understood} detail="Loaded sources" />
+              <KnowledgeStat label="Embedded" value={stats.embedded} detail="Loaded sources" />
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              Counts reflect the backend's reported state for each document.
+              Pipeline counts describe the loaded document sample; Documents is the full project total.
             </p>
+            <KnowledgeReadiness projectId={project.id} />
           </motion.div>
         </TabsContent>
 
@@ -146,27 +155,25 @@ export function ProjectDetail() {
 
         <TabsContent value="research">
           <motion.div initial="hidden" animate="visible" variants={fadeUp}>
-            {runsQuery.isLoading ? (
+            {historyQuery.isLoading ? (
               <RowListSkeleton label="Loading research history" />
             ) : (
-              <ResearchHistoryList runs={runs} />
+              <ResearchHistoryList runs={historyQuery.items} />
             )}
+            {historyQuery.isError && !historyQuery.isFetchNextPageError && <ErrorState error={historyQuery.error} />}
+            <LoadMore query={historyQuery} label="research runs" />
           </motion.div>
         </TabsContent>
 
         <TabsContent value="papers">
           {tab === "papers" && (
-            <Suspense fallback={<RowListSkeleton label="Loading paper map" />}>
-              <PaperMap projectId={project.id} />
-            </Suspense>
+            <LazyRenderer label="paper map" load={loadPaperMap} rendererProps={{projectId:project.id}} />
           )}
         </TabsContent>
 
         <TabsContent value="analytics">
           {tab === "analytics" && (
-            <Suspense fallback={<RowListSkeleton label="Loading analytics" />}>
-              <AnalyticsWorkspace projectId={project.id} />
-            </Suspense>
+            <LazyRenderer label="analytics workspace" load={loadAnalyticsWorkspace} rendererProps={{projectId:project.id}} />
           )}
         </TabsContent>
 

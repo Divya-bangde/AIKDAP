@@ -1,0 +1,200 @@
+{
+  "browser": "153.0.8010.12",
+  "flags": [
+    "--use-angle=swiftshader",
+    "--enable-unsafe-swiftshader"
+  ],
+  "dragged": {
+    "camera": {
+      "up": {
+        "x": 0,
+        "y": 0,
+        "z": 1
+      },
+      "center": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "eye": {
+        "x": 0.010404225557232352,
+        "y": -0.4219723734663653,
+        "z": 2.123518558459454
+      },
+      "projection": {
+        "type": "perspective"
+      }
+    },
+    "axes": {
+      "xaxis": {
+        "autorange": true,
+        "range": [
+          0.96875,
+          2.03125
+        ]
+      },
+      "yaxis": {
+        "autorange": true,
+        "range": [
+          0.96875,
+          2.03125
+        ]
+      },
+      "zaxis": {
+        "autorange": true,
+        "range": [
+          0.9062499999999998,
+          4.09375
+        ]
+      }
+    },
+    "revision": "1",
+    "status": []
+  },
+  "afterTheme": {
+    "camera": {
+      "up": {
+        "x": 0,
+        "y": 0,
+        "z": 1
+      },
+      "center": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "eye": {
+        "x": 0.01040422555723241,
+        "y": -0.42197237346636474,
+        "z": 2.123518558459454
+      },
+      "projection": {
+        "type": "perspective"
+      }
+    },
+    "axes": {
+      "xaxis": {
+        "autorange": true,
+        "range": [
+          0.96875,
+          2.03125
+        ]
+      },
+      "yaxis": {
+        "autorange": true,
+        "range": [
+          0.96875,
+          2.03125
+        ]
+      },
+      "zaxis": {
+        "autorange": true,
+        "range": [
+          0.9062499999999998,
+          4.09375
+        ]
+      }
+    },
+    "revision": "2",
+    "status": []
+  },
+  "themeCameraPreserved": true,
+  "afterFit": {
+    "camera": {
+      "up": {
+        "x": 0,
+        "y": 0,
+        "z": 1
+      },
+      "center": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "eye": {
+        "x": 1.2500000000000002,
+        "y": 1.25,
+        "z": 1.25
+      },
+      "projection": {
+        "type": "perspective"
+      }
+    },
+    "axes": {
+      "xaxis": {
+        "autorange": true,
+        "range": [
+          0.96875,
+          2.03125
+        ]
+      },
+      "yaxis": {
+        "autorange": true,
+        "range": [
+          0.96875,
+          2.03125
+        ]
+      },
+      "zaxis": {
+        "autorange": true,
+        "range": [
+          0.9062499999999998,
+          4.09375
+        ]
+      }
+    },
+    "revision": "2",
+    "status": []
+  },
+  "afterReset": {
+    "camera": {
+      "up": {
+        "x": 0,
+        "y": 0,
+        "z": 1
+      },
+      "center": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "eye": {
+        "x": 1.2500000000000002,
+        "y": 1.25,
+        "z": 1.25
+      },
+      "projection": {
+        "type": "perspective"
+      }
+    },
+    "axes": {
+      "xaxis": {
+        "autorange": true,
+        "range": [
+          0.96875,
+          2.03125
+        ]
+      },
+      "yaxis": {
+        "autorange": true,
+        "range": [
+          0.96875,
+          2.03125
+        ]
+      },
+      "zaxis": {
+        "autorange": true,
+        "range": [
+          0.9062499999999998,
+          4.09375
+        ]
+      }
+    },
+    "revision": "2",
+    "status": []
+  },
+  "fitAllAxesAutorange": true,
+  "resetAllAxesAutorange": true,
+  "fitDefaultCamera": true,
+  "resetDefaultCamera": true
+}

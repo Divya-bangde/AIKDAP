@@ -13,14 +13,22 @@ already use elsewhere in this codebase.
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import update
+
+from app.database.session import get_db
+from app.modules.knowledge_base.embeddings import get_embedding_provider
+from app.modules.knowledge_base.rebuild import readiness, request_rebuild
+from app.modules.projects.models import Project
 
 from app.core.config import settings
 from app.modules.auth.models import User
 from app.modules.auth.security import get_current_user
 from app.modules.knowledge_base.dependencies import get_knowledge_base_service
-from app.modules.knowledge_base.models import KnowledgeChunk
+from app.modules.knowledge_base.models import EmbeddingRebuild, KnowledgeChunk
 from app.modules.knowledge_base.schemas import (
     ChunkLocationRead,
+    EmbeddingReadiness,
     KnowledgeChunkRead,
     SemanticSearchRequest,
     SemanticSearchResponse,
@@ -44,6 +52,47 @@ _ASSET_NOT_FOUND = HTTPException(
 _CHUNK_NOT_FOUND = HTTPException(
     status_code=status.HTTP_404_NOT_FOUND, detail="Knowledge chunk not found."
 )
+
+
+async def _owned_project(session, project_id, owner_id):
+    project = await session.get(Project, project_id)
+    if project is None or project.owner_id != owner_id:
+        raise _PROJECT_NOT_FOUND
+
+
+@router.get("/readiness", response_model=EmbeddingReadiness)
+async def embedding_readiness(
+    project_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    await _owned_project(session, project_id, current_user.id)
+    return await readiness(session, project_id, get_embedding_provider())
+
+
+@router.post("/rebuild", response_model=EmbeddingReadiness, status_code=status.HTTP_202_ACCEPTED)
+async def rebuild_project_embeddings(
+    project_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    from starlette.concurrency import run_in_threadpool
+    from app.workers.scheduler import rebuild_embeddings
+
+    await _owned_project(session, project_id, current_user.id)
+    provider = get_embedding_provider()
+    job = await request_rebuild(session, project_id, provider)
+    try:
+        await run_in_threadpool(rebuild_embeddings.apply_async, args=[str(job.id)], retry=False)
+    except Exception:
+        # Do not overwrite a worker claim/result if publication succeeded before
+        # the broker connection failed. A genuine queued dispatch failure is retryable.
+        await session.execute(update(EmbeddingRebuild).where(
+            EmbeddingRebuild.id == job.id, EmbeddingRebuild.status == "queued",
+            EmbeddingRebuild.claim_token.is_(None),
+        ).values(status="failed", error="Job saved, but worker dispatch failed. Retry to resume dispatch."))
+        await session.commit()
+    return await readiness(session, project_id, provider)
 
 
 @router.post("/search", response_model=SemanticSearchResponse)

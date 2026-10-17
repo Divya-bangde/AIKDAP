@@ -1,4 +1,4 @@
-"""Placeholder periodic (Celery Beat) tasks for future scheduled maintenance.
+"""Manually invoked maintenance tasks, including durable embedding rebuilds.
 
 None of these run automatically — `celery_app.py` defines no
 `beat_schedule`, so nothing here is on an active cron. They're
@@ -18,9 +18,8 @@ from app.core.logging.logger import get_logger
 from app.database.session import async_session_factory
 from app.modules.assets.enums import AssetProcessingStatus
 from app.modules.assets.models import Asset
-from app.modules.knowledge_base.embeddings import get_embedding_provider
 from app.workers.celery_app import celery_app
-from app.workers.tasks import log_task_execution, process_uploaded_asset
+from app.workers.tasks import _run_task_loop, log_task_execution, process_uploaded_asset
 
 logger = get_logger(__name__)
 
@@ -65,20 +64,17 @@ def cleanup_temp_files(self) -> dict[str, str]:
     return {"status": "not_implemented"}
 
 
-@celery_app.task(name="workers.rebuild_embeddings", bind=True)
+@celery_app.task(name="workers.rebuild_embeddings", bind=True, max_retries=3, default_retry_delay=30)
 @log_task_execution
-def rebuild_embeddings(self) -> dict[str, str]:
-    """Placeholder: no-op today.
+def rebuild_embeddings(self, rebuild_id: str) -> dict:
+    """Resume a durable project rebuild; successful staged batches survive retries."""
+    from app.modules.knowledge_base.rebuild import run_rebuild
 
-    Reserved for re-embedding every `KnowledgeChunk` after a future
-    embedding provider or model changes — meaningless until a real
-    `EmbeddingProvider` exists to rebuild *with* (see
-    `app.modules.knowledge_base.embeddings`).
-    """
-    provider = get_embedding_provider()
-    logger.info(
-        "rebuild_embeddings_placeholder",
-        provider=provider.name.value,
-        reason="No embedding provider is configured yet; nothing to rebuild.",
-    )
-    return {"status": "not_implemented", "provider": provider.name.value}
+    try:
+        result = _run_task_loop(run_rebuild(async_session_factory, uuid.UUID(rebuild_id)))
+    except Exception as exc:
+        raise self.retry(exc=exc) from exc
+    if result["status"] == "busy":
+        # Worker death can redeliver before lease expiry; retry after that lease.
+        raise self.retry(countdown=result["retry_after"])
+    return result

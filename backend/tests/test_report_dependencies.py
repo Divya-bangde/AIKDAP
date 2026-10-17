@@ -111,6 +111,9 @@ async def test_document_lister_returns_only_this_projects_processed_documents(se
 async def test_section_searcher_returns_only_this_projects_evidence_for_str_and_uuid_ids(session, project, monkeypatch):
     monkeypatch.setattr(settings, "reranker_enabled", False)
     other = await _other_project(session, project)
+    space = _FixedEmbeddings().space
+    project.active_embedding_space_id = space.id
+    other.active_embedding_space_id = space.id
     mine = _document(project, title="My Paper")
     theirs = _document(other, title="Their Paper")
     session.add_all([mine, theirs])
@@ -125,6 +128,8 @@ async def test_section_searcher_returns_only_this_projects_evidence_for_str_and_
                 embedding_status=EmbeddingStatus.COMPLETED,
                 embedding_provider=EmbeddingProviderName.LOCAL,
                 embedding=_vector(),
+                embedding_space_id=space.id,
+                embedding_space=space.as_dict(),
             ),
             KnowledgeChunk(
                 project_id=other.id,
@@ -134,6 +139,8 @@ async def test_section_searcher_returns_only_this_projects_evidence_for_str_and_
                 embedding_status=EmbeddingStatus.COMPLETED,
                 embedding_provider=EmbeddingProviderName.LOCAL,
                 embedding=_vector(),
+                embedding_space_id=space.id,
+                embedding_space=space.as_dict(),
             ),
         ]
     )

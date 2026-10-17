@@ -22,6 +22,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
+from pydantic import SecretStr
 
 from app.agents.planner.nodes import build_citation, synthesis_node
 from app.agents.planner.state import PROVENANCE_KEYS
@@ -134,6 +135,7 @@ def litellm_call(monkeypatch) -> AsyncMock:
     """
     mock = AsyncMock(return_value=model_reply())
     monkeypatch.setattr(gateway_module, "acompletion", mock)
+    monkeypatch.setattr(settings, "gemini_api_key", SecretStr("offline-gemini-fixture"))
     return mock
 
 

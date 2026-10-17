@@ -1,7 +1,5 @@
 import { runOutcome } from "@/features/research/research-presentation";
-import type { components } from "@/types/api";
-
-type ResearchRunRead = components["schemas"]["ResearchRunRead"];
+import type { ResearchRunSummary as ResearchRunRead } from "@/services/research";
 
 /** The status a run's own badge actually shows — `grounding_status`
  * when the backend has one, `status` otherwise. Filtering must match

@@ -1,0 +1,25 @@
+{
+  "viewport": "1440x900",
+  "theme": "light",
+  "environment": "Chromium 153.0.8010.12; Vite dev; real production React/Plotly/canvas",
+  "origin": "synthetic local fixtures, no user project writes",
+  "checks": [
+    {
+      "name": "Zero citations",
+      "text": "\n33%\nShow frequently cited outside papers\nUploaded\nAdded from suggestions\nOutside paper\n\nNo citation relationships found\n\nYour matched papers don't cite each other yet. Try showing frequently cited outside papers.\n\n3 isolated papers have no citation relationship in the displayed graph; citations outside this scope may exist."
+    },
+    {
+      "name": "No papers",
+      "text": "\n33%\nShow frequently cited outside papers\nUploaded\nAdded from suggestions\nOutside paper\n\nNo papers on the map\n\nNo papers have an OpenAlex match yet. Unmatched papers are listed below; their citations are unknown."
+    },
+    {
+      "name": "Missing visual",
+      "text": "\n33%\nResearch result\nGrounded Intelligence\nGrounded\n\nIllustrative Category A has mass 42 kg c1. The value is from a synthetic local fixture, not measured production data.\n\nVisualization not enough data\n\nNo independently verifiable chart values were available.\n\nRequested visual: bar.\n\nSupply a table with values and units.\n\nSupported by 1 evidence item\n\nSources\n1 CITED\nc1\nSynthetic local evidence\nfixture\nIllustrative sample. Category A: 42 kg."
+    },
+    {
+      "name": "Invalid pie",
+      "text": "\n33%\n\nShow category shares\n\nCompleted\n\nVisualization unavailable: Pie values must be finite, nonnegative numbers without missing values.\n\nShowing 1 of 1\n\nSynthetic fixture: only 2 of 10 category results are returned.\n\nHow this was computed"
+    }
+  ],
+  "errors": []
+}

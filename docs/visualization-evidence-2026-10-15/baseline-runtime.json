@@ -1,0 +1,50 @@
+{
+  "profile": {
+    "browser": "153.0.8010.12",
+    "cpuSlowdown": 4,
+    "downloadMbps": 10,
+    "uploadMbps": 5,
+    "latencyMs": 40,
+    "viewport": "1440x900",
+    "transport": "gzip, cache disabled, fresh context",
+    "initial": "navigation plus selection of isolated Research plot before initial analytics mounts",
+    "equation": "additional cold equation module with Plotly warm",
+    "interaction": "focus first slider, ArrowRight, two animation frames",
+    "mermaid": "cold module and render after equation"
+  },
+  "samples": [
+    {
+      "run": 1,
+      "initialPlotlyMs": 8479,
+      "equationAdditionalLoadMs": 2073,
+      "equationKeyboardMs": 377,
+      "mermaidColdMs": 644,
+      "initialScriptMs": 6305.383,
+      "totalScriptMs": 7803.452,
+      "totalTaskMs": 9768.928,
+      "errors": []
+    },
+    {
+      "run": 2,
+      "initialPlotlyMs": 8529,
+      "equationAdditionalLoadMs": 2072,
+      "equationKeyboardMs": 361,
+      "mermaidColdMs": 590,
+      "initialScriptMs": 6377.645,
+      "totalScriptMs": 7866.663,
+      "totalTaskMs": 9722.339,
+      "errors": []
+    },
+    {
+      "run": 3,
+      "initialPlotlyMs": 7400,
+      "equationAdditionalLoadMs": 1369,
+      "equationKeyboardMs": 231,
+      "mermaidColdMs": 530,
+      "initialScriptMs": 5272.481,
+      "totalScriptMs": 6161.092,
+      "totalTaskMs": 7583.014999999999,
+      "errors": []
+    }
+  ]
+}

@@ -415,7 +415,9 @@ async def test_t5_start_failure_container_id_durable_status_accurate(session, pr
 
 
 @pytest.mark.requires_docker_image("alpine:3.19")
-def test_t6_crash_between_create_and_start_observable_by_separate_process(monkeypatch):
+def test_t6_crash_between_create_and_start_observable_by_separate_process(
+    monkeypatch, subprocess_test_environment
+):
     import os
     import subprocess
     import sys
@@ -458,6 +460,7 @@ def test_t6_crash_between_create_and_start_observable_by_separate_process(monkey
     result = subprocess.run(
         [sys.executable, "-c", script],
         capture_output=True, text=True, timeout=30,
+        env=subprocess_test_environment,
         cwd=os.path.dirname(os.path.dirname(__file__)) or ".",
     )
     assert result.returncode == 0, result.stderr[-3000:]
@@ -499,7 +502,9 @@ async def _teardown_project(project: Project) -> None:
 
 
 @pytest.mark.requires_docker_image("alpine:3.19")
-def test_t7_crash_between_start_and_wait_container_continues_independently():
+def test_t7_crash_between_start_and_wait_container_continues_independently(
+    subprocess_test_environment
+):
     import os
     import subprocess
     import sys
@@ -543,6 +548,7 @@ def test_t7_crash_between_start_and_wait_container_continues_independently():
     result = subprocess.run(
         [sys.executable, "-c", script],
         capture_output=True, text=True, timeout=30,
+        env=subprocess_test_environment,
         cwd=os.path.dirname(os.path.dirname(__file__)) or ".",
     )
     assert result.returncode == 0, result.stderr[-3000:]

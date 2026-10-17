@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -12,7 +12,8 @@ type PlotTrace = {
   x: number[];
   y: (number | null)[];
   name?: string;
-  line?: { dash?: string };
+  line?: { dash?: string; color?: string };
+  opacity?: number;
 };
 type PlotLayout = {
   xaxis?: { range?: [number, number] };
@@ -30,7 +31,8 @@ vi.mock("@/features/research/PlotlyVisualization", () => ({
       data-testid="plot"
       data-xrange={JSON.stringify(layout.xaxis?.range ?? null)}
       data-yrange={JSON.stringify(layout.yaxis?.range ?? null)}
-      data-traces={JSON.stringify(data.map((trace) => ({ name: trace.name, dash: trace.line?.dash })))}
+      data-traces={JSON.stringify(data.map((trace) => ({ name: trace.name, dash: trace.line?.dash, opacity: trace.opacity })))}
+      data-colors={JSON.stringify(data.map((trace) => trace.line?.color))}
     >
       {data[0].y.length} points; marker {data[1].x[0]},{data[1].y[0]}
     </div>
@@ -108,6 +110,54 @@ const rearrangement = () => screen.getByTestId("rearrangement").querySelector("a
 afterEach(() => vi.restoreAllMocks());
 
 describe("AnswerEquations", () => {
+  it("updates equation and reference colors live without losing input or axis state", async () => {
+    const original = window.getComputedStyle.bind(window);
+    vi.spyOn(window, "getComputedStyle").mockImplementation((element, pseudo) => element.classList.contains("text-primary") ? { color: document.documentElement.classList.contains("dark") ? "rgb(190, 180, 255)" : "rgb(70, 40, 180)" } as CSSStyleDeclaration : original(element, pseudo));
+    document.documentElement.classList.remove("dark");
+    renderWithProviders(<AnswerEquations equations={[distance]} />);
+    fireEvent.change(await screen.findByLabelText("speed (v) value"), { target: { value: "3" } });
+    const plot = await screen.findByTestId("plot");
+    const range = plot.getAttribute("data-yrange");
+    const traces = plot.getAttribute("data-traces");
+    document.documentElement.classList.add("dark");
+    await waitFor(() => expect(plot.getAttribute("data-colors")).toContain("rgb(190, 180, 255)"));
+    expect(screen.getByLabelText("speed (v) value")).toHaveValue(3);
+    expect(plot).toHaveAttribute("data-yrange", range);
+    expect(plot).toHaveAttribute("data-traces", traces);
+    document.documentElement.classList.remove("dark");
+  });
+  const massOne: AnswerEquation = {
+    ...schwarzschild,
+    variables: { ...schwarzschild.variables, M: variable("M", { name: "mass", unit: "kg", value: 1, min: 0.1, max: 100 }) },
+  };
+
+  it("announces physical values and units for a logarithmic control and synchronizes numeric edits", async () => {
+    renderWithProviders(<AnswerEquations equations={[massOne]} />);
+    const slider = await screen.findByRole("slider", {name:"mass (M)"});
+    expect(slider).toHaveAttribute("aria-valuetext", "1 kilogram; logarithmic scale");
+    // Its internal coordinate is logarithmic; that coordinate is not the spoken value.
+    expect(Number((slider as HTMLInputElement).value)).toBeCloseTo(0, 2);
+    fireEvent.change(screen.getByLabelText("mass (M) value"), {target:{value:"2"}});
+    expect(slider).toHaveAttribute("aria-valuetext", "2 kilograms; logarithmic scale");
+    expect(Number((slider as HTMLInputElement).value)).toBeCloseTo(Math.log10(2), 2);
+    fireEvent.change(slider, {target:{value:"1"}});
+    expect(screen.getByLabelText("mass (M) value")).toHaveValue(10);
+    expect(slider).toHaveAttribute("aria-valuetext", "10 kilograms; logarithmic scale");
+  });
+
+  it("rejects invalid log-domain numeric edits while keeping the last physical value", async () => {
+    renderWithProviders(<AnswerEquations equations={[massOne]} />);
+    const input = await screen.findByLabelText("mass (M) value");
+    fireEvent.change(input,{target:{value:"0"}});
+    expect(input).toHaveValue(1);
+    expect(input).toHaveAttribute("aria-invalid","true");
+    expect(screen.getByRole("alert")).toHaveTextContent("finite positive value");
+    fireEvent.change(input,{target:{value:"3"}});
+    expect(input).toHaveValue(3);
+    expect(input).toHaveAttribute("aria-invalid","false");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
   it("shows a LaTeX-only equation with its variables but no sliders or chart", () => {
     const { container } = renderWithProviders(<AnswerEquations equations={[integral]} />);
 
@@ -136,10 +186,10 @@ describe("AnswerEquations", () => {
     expect(result).toHaveTextContent("20");
     expect(rearrangement()).toBe("d = t v");
 
-    fireEvent.change(screen.getByLabelText("v value"), { target: { value: "3" } });
+    fireEvent.change(screen.getByLabelText("speed (v) value"), { target: { value: "3" } });
     expect(result).toHaveTextContent("30");
 
-    fireEvent.change(screen.getByLabelText("t slider"), { target: { value: "5" } });
+    fireEvent.change(screen.getByLabelText("time (t)"), { target: { value: "5" } });
     expect(result).toHaveTextContent("15");
     expect(await screen.findByTestId("plot")).toHaveTextContent("120 points; marker 5,15");
   });
@@ -156,8 +206,8 @@ describe("AnswerEquations", () => {
     expect(screen.getByRole("button", { name: "Solve for v" })).toHaveAttribute("aria-pressed", "true");
     // d is now an input at the 20 it had: v = 20 / 10.
     expect(screen.getByLabelText("Result v")).toHaveTextContent("2");
-    expect(screen.getByLabelText("d slider")).toBeInTheDocument();
-    expect(screen.queryByLabelText("v slider")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("distance (d)")).toBeInTheDocument();
+    expect(screen.queryByLabelText("speed (v)")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Solve for t" }));
     expect(rearrangement()).toBe("t = \\frac{d}{v}");
@@ -167,8 +217,8 @@ describe("AnswerEquations", () => {
   it("stretches the slider and curve to a value outside the backend range", async () => {
     renderWithProviders(<AnswerEquations equations={[distance]} />);
 
-    fireEvent.change(await screen.findByLabelText("t value"), { target: { value: "90" } });
-    expect(screen.getByLabelText("t slider")).toHaveAttribute("max", "90");
+    fireEvent.change(await screen.findByLabelText("time (t) value"), { target: { value: "90" } });
+    expect(screen.getByLabelText("time (t)")).toHaveAttribute("max", "90");
     // t is plotted: the marker sits on the curve's last point, not past it.
     expect(await screen.findByTestId("plot")).toHaveTextContent("marker 90,180");
   });
@@ -177,9 +227,9 @@ describe("AnswerEquations", () => {
     renderWithProviders(<AnswerEquations equations={[schwarzschild]} />);
 
     expect(await screen.findByLabelText("Result r_s")).toHaveTextContent(formatValue((2 * 6.674e-11 * 2e30) / 2.998e8 ** 2));
-    expect(screen.getByLabelText("M slider")).toBeInTheDocument();
-    expect(screen.queryByLabelText("G slider")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("c slider")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("mass (M)")).toBeInTheDocument();
+    expect(screen.queryByLabelText("gravitational constant (G)")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("speed of light (c)")).not.toBeInTheDocument();
     expect(screen.getAllByText("constant")).toHaveLength(2);
     expect(screen.queryByRole("button", { name: "Solve for G" })).not.toBeInTheDocument();
   });
@@ -203,7 +253,7 @@ function plotAttrs(plot: HTMLElement) {
   return {
     xrange: JSON.parse(plot.getAttribute("data-xrange") ?? "null") as [number, number] | null,
     yrange: JSON.parse(plot.getAttribute("data-yrange") ?? "null") as [number, number] | null,
-    traces: JSON.parse(plot.getAttribute("data-traces") ?? "[]") as { name?: string; dash?: string }[],
+    traces: JSON.parse(plot.getAttribute("data-traces") ?? "[]") as { name?: string; dash?: string; opacity?: number }[],
   };
 }
 
@@ -218,17 +268,17 @@ describe("stable axes and the Fit button (Problem 1)", () => {
     // Halving v shrinks the live curve to [0, 60], but the reference
     // curve (frozen at v = 2) still reaches 120, so the range is
     // unchanged rather than shrinking to fit the smaller curve.
-    fireEvent.change(screen.getByLabelText("v value"), { target: { value: "1" } });
+    fireEvent.change(screen.getByLabelText("speed (v) value"), { target: { value: "1" } });
     plot = screen.getByTestId("plot");
     expect(plotAttrs(plot).yrange).toEqual([0, 120]);
 
     // Now v = 6 pushes the live curve to [0, 360]: the range must grow.
-    fireEvent.change(screen.getByLabelText("v value"), { target: { value: "6" } });
+    fireEvent.change(screen.getByLabelText("speed (v) value"), { target: { value: "6" } });
     plot = screen.getByTestId("plot");
     expect(plotAttrs(plot).yrange).toEqual([0, 360]);
 
     // Dropping back to v = 1 must not shrink the range back down.
-    fireEvent.change(screen.getByLabelText("v value"), { target: { value: "1" } });
+    fireEvent.change(screen.getByLabelText("speed (v) value"), { target: { value: "1" } });
     plot = screen.getByTestId("plot");
     expect(plotAttrs(plot).yrange).toEqual([0, 360]);
   });
@@ -236,8 +286,8 @@ describe("stable axes and the Fit button (Problem 1)", () => {
   it('"Fit" rescales the y-axis to the current curve', async () => {
     renderWithProviders(<AnswerEquations equations={[distance]} />);
 
-    fireEvent.change(await screen.findByLabelText("v value"), { target: { value: "6" } });
-    fireEvent.change(screen.getByLabelText("v value"), { target: { value: "1" } });
+    fireEvent.change(await screen.findByLabelText("speed (v) value"), { target: { value: "6" } });
+    fireEvent.change(screen.getByLabelText("speed (v) value"), { target: { value: "1" } });
     // Still widened from the v = 6 excursion, not yet fit to v = 1.
     expect(plotAttrs(screen.getByTestId("plot")).yrange).toEqual([0, 360]);
 
@@ -250,11 +300,11 @@ describe("stable axes and the Fit button (Problem 1)", () => {
   it("draws a faint reference curve at the starting values, unaffected by later changes", async () => {
     renderWithProviders(<AnswerEquations equations={[distance]} />);
 
-    fireEvent.change(await screen.findByLabelText("v value"), { target: { value: "4" } });
+    fireEvent.change(await screen.findByLabelText("speed (v) value"), { target: { value: "4" } });
 
     const { traces } = plotAttrs(screen.getByTestId("plot"));
     expect(traces).toHaveLength(3);
-    expect(traces[2]).toEqual({ name: "starting values", dash: "dot" });
+    expect(traces[2]).toEqual({ name: "starting values", dash: "dot", opacity: 1 });
   });
 
   it("sets a log-scale axis range in log10 units, not raw values", async () => {
@@ -283,6 +333,8 @@ describe("Compare (Problem 2a)", () => {
     expect(family.length).toBeLessThanOrEqual(5);
     // Each curve in the family is labelled with a distinct value.
     expect(new Set(family.map((trace) => trace.name)).size).toBe(family.length);
+    expect(family.every((trace) => trace.opacity === 1)).toBe(true);
+    expect(new Set(family.map((trace) => trace.dash)).size).toBe(family.length);
   });
 });
 
@@ -306,7 +358,7 @@ describe("Systems of equations (Problem 2b)", () => {
     expect(await screen.findByLabelText("Result x")).toHaveTextContent("3");
     expect(screen.getByLabelText("Result y")).toHaveTextContent("2");
 
-    fireEvent.change(screen.getByLabelText("a value"), { target: { value: "3" } });
+    fireEvent.change(screen.getByLabelText("difference (a) value"), { target: { value: "3" } });
     expect(screen.getByLabelText("Result x")).toHaveTextContent("1");
     expect(screen.getByLabelText("Result y")).toHaveTextContent("4");
   });
@@ -343,7 +395,7 @@ describe("Independent cards (Problem 2d, known limit)", () => {
     const other: AnswerEquation = { ...distance, label: "Other distance" };
     renderWithProviders(<AnswerEquations equations={[distance, other]} />);
 
-    const vInputs = await screen.findAllByLabelText("v value");
+    const vInputs = await screen.findAllByLabelText("speed (v) value");
     expect(vInputs).toHaveLength(2);
 
     fireEvent.change(vInputs[0], { target: { value: "9" } });
@@ -367,7 +419,7 @@ describe("InteractiveEquationCard evaluation", () => {
   it("never uses eval or the Function constructor", async () => {
     const evalSpy = vi.spyOn(globalThis, "eval");
     renderWithProviders(<AnswerEquations equations={[distance]} />);
-    fireEvent.change(await screen.findByLabelText("v value"), { target: { value: "4" } });
+    fireEvent.change(await screen.findByLabelText("speed (v) value"), { target: { value: "4" } });
 
     expect(screen.getByLabelText("Result d")).toHaveTextContent("40");
     expect(evalSpy).not.toHaveBeenCalled();

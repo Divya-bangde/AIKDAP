@@ -7,8 +7,10 @@ import { aiProfile, makeAsset, makeProject, makeUser } from "@/test/fixtures";
 import { renderWithProviders } from "@/test/render";
 import * as projectsService from "@/services/projects";
 import { useAuthStore } from "@/store/auth-store";
+import * as authService from "@/services/auth";
 
 vi.mock("@/services/projects");
+vi.mock("@/services/auth");
 
 describe("ProjectHeader — Start Research", () => {
   afterEach(() => vi.restoreAllMocks());
@@ -60,7 +62,9 @@ describe("ProjectHeader — persona", () => {
   });
 
   it("overrides the persona for this project and can return to the default", async () => {
-    useAuthStore.setState({ user: makeUser({ persona: "student" }) });
+    const profile = makeUser({ persona: "student" });
+    useAuthStore.setState({ accessToken: "test-token", refreshToken: "test-refresh", user: profile });
+    vi.mocked(authService.currentUser).mockResolvedValue(profile);
     vi.mocked(projectsService.updateProject).mockResolvedValue(makeProject());
     const user = userEvent.setup();
     // Starts overridden so both a new override and "use my default" are

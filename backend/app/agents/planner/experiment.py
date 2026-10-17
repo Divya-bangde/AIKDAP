@@ -770,7 +770,8 @@ def choose_series_kind(pair_lists: list[list[tuple[str, float | None]]]) -> str:
     are labels rather than numbers, and `line` otherwise."""
     xs_per_series = [[x for x, _ in pairs] for pairs in pair_lists]
     all_xs = [x for xs in xs_per_series for x in xs]
-    if not all_xs or any(len(set(xs)) != len(xs) for xs in xs_per_series):
+    normalized = [[float(x) if _is_number(x) else x for x in xs] for xs in xs_per_series]
+    if not all_xs or any(len(set(xs)) != len(xs) for xs in normalized):
         return "scatter"
     if not all(_is_number(x) for x in all_xs):
         return "bar"

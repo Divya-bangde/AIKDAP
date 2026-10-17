@@ -1,5 +1,5 @@
 import { screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Dashboard } from "@/pages/Dashboard";
 import * as assetsService from "@/services/assets";
@@ -10,19 +10,23 @@ import { renderWithProviders } from "@/test/render";
 
 vi.mock("@/services/assets");
 vi.mock("@/services/projects");
+
+beforeEach(() => {
+  vi.mocked(projectsService.getWorkspaceSummary).mockResolvedValue({ projects: 1, assets: 1, documents: 1, runs: 1, grounded_answers: 1 });
+});
 vi.mock("@/services/research");
 
 describe("Dashboard — Recent Research Runs", () => {
   afterEach(() => vi.restoreAllMocks());
 
   it("shows the project and duration for a completed run", async () => {
-    vi.mocked(projectsService.listProjects).mockResolvedValue([
+    vi.mocked(projectsService.listProjectsPage).mockResolvedValue({ items: [
       makeProject({ id: "p1", name: "Poultry Intelligence" }),
-    ]);
+    ], next_cursor: null });
     vi.mocked(assetsService.listAssets).mockResolvedValue([]);
-    vi.mocked(researchService.listResearchRuns).mockResolvedValue([
+    vi.mocked(researchService.listResearchRunsPage).mockResolvedValue({ items: [
       makeRun({ duration_ms: 4200 }),
-    ]);
+    ], next_cursor: null });
 
     renderWithProviders(<Dashboard />);
 
@@ -33,11 +37,11 @@ describe("Dashboard — Recent Research Runs", () => {
   });
 
   it("shows a real citation count on a grounded run, never a fabricated one (Sprint 9K.9)", async () => {
-    vi.mocked(projectsService.listProjects).mockResolvedValue([makeProject()]);
+    vi.mocked(projectsService.listProjectsPage).mockResolvedValue({ items: [makeProject()], next_cursor: null });
     vi.mocked(assetsService.listAssets).mockResolvedValue([]);
-    vi.mocked(researchService.listResearchRuns).mockResolvedValue([
+    vi.mocked(researchService.listResearchRunsPage).mockResolvedValue({ items: [
       makeRun({ citations: [{ id: "c1" }], grounding_status: "grounded" }),
-    ]);
+    ], next_cursor: null });
 
     renderWithProviders(<Dashboard />);
 
@@ -45,11 +49,11 @@ describe("Dashboard — Recent Research Runs", () => {
   });
 
   it("never claims a citation count for a run that has none", async () => {
-    vi.mocked(projectsService.listProjects).mockResolvedValue([makeProject()]);
+    vi.mocked(projectsService.listProjectsPage).mockResolvedValue({ items: [makeProject()], next_cursor: null });
     vi.mocked(assetsService.listAssets).mockResolvedValue([]);
-    vi.mocked(researchService.listResearchRuns).mockResolvedValue([
+    vi.mocked(researchService.listResearchRunsPage).mockResolvedValue({ items: [
       makeRun({ citations: [], grounding_status: "grounded" }),
-    ]);
+    ], next_cursor: null });
 
     renderWithProviders(<Dashboard />);
 
@@ -58,11 +62,11 @@ describe("Dashboard — Recent Research Runs", () => {
   });
 
   it("shows the run's real outcome, not just that the job finished", async () => {
-    vi.mocked(projectsService.listProjects).mockResolvedValue([makeProject()]);
+    vi.mocked(projectsService.listProjectsPage).mockResolvedValue({ items: [makeProject()], next_cursor: null });
     vi.mocked(assetsService.listAssets).mockResolvedValue([]);
-    vi.mocked(researchService.listResearchRuns).mockResolvedValue([
+    vi.mocked(researchService.listResearchRunsPage).mockResolvedValue({ items: [
       makeRun({ grounding_status: "insufficient_evidence" }),
-    ]);
+    ], next_cursor: null });
 
     renderWithProviders(<Dashboard />);
 
@@ -75,9 +79,9 @@ describe("Dashboard — keyboard focus order", () => {
   afterEach(() => vi.restoreAllMocks());
 
   it("puts no inert stops in the tab order", async () => {
-    vi.mocked(projectsService.listProjects).mockResolvedValue([makeProject()]);
+    vi.mocked(projectsService.listProjectsPage).mockResolvedValue({ items: [makeProject()], next_cursor: null });
     vi.mocked(assetsService.listAssets).mockResolvedValue([makeAsset()]);
-    vi.mocked(researchService.listResearchRuns).mockResolvedValue([makeRun()]);
+    vi.mocked(researchService.listResearchRunsPage).mockResolvedValue({ items: [makeRun()], next_cursor: null });
 
     const { container } = renderWithProviders(<Dashboard />);
     await screen.findByText("What challenges does ABC Poultry face?");

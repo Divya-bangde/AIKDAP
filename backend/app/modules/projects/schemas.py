@@ -9,6 +9,14 @@ from app.modules.auth.models import Persona
 from app.modules.projects.models import Project, ProjectStatus, ProjectType
 
 
+class WorkspaceSummary(BaseModel):
+    projects: int
+    assets: int
+    documents: int
+    runs: int
+    grounded_answers: int
+
+
 class ProjectCreate(BaseModel):
     """Payload for creating a new project."""
 

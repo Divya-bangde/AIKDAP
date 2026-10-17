@@ -2,14 +2,17 @@ import { create } from "zustand";
 import { createJSONStorage, persist, type StateStorage } from "zustand/middleware";
 
 import type { components } from "@/types/api";
+import { advanceSession } from "@/lib/session-lifecycle";
 
 type UserRead = components["schemas"]["UserRead"];
 
 interface AuthState {
+  sessionId: number;
   accessToken: string | null;
   refreshToken: string | null;
   user: UserRead | null;
   setSession: (tokens: { accessToken: string; refreshToken: string }) => void;
+  rotateTokens: (tokens: { accessToken: string; refreshToken: string }) => void;
   setUser: (user: UserRead) => void;
   clear: () => void;
 }
@@ -62,15 +65,25 @@ const sessionAwareStorage: StateStorage = {
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
+      sessionId: 0,
       accessToken: null,
       refreshToken: null,
       user: null,
-      setSession: ({ accessToken, refreshToken }) =>
-        set({ accessToken, refreshToken }),
+      setSession: ({ accessToken, refreshToken }) => {
+        const sessionId = advanceSession();
+        set({ accessToken, refreshToken, sessionId, user: null });
+      },
+      rotateTokens: ({ accessToken, refreshToken }) => set({ accessToken, refreshToken }),
       setUser: (user) => set({ user }),
-      clear: () => set({ accessToken: null, refreshToken: null, user: null }),
+      clear: () => {
+        const sessionId = advanceSession();
+        set({ accessToken: null, refreshToken: null, user: null, sessionId });
+      },
     }),
-    { name: "aikdap-auth", storage: createJSONStorage(() => sessionAwareStorage) },
+    {
+      name: "aikdap-auth", storage: createJSONStorage(() => sessionAwareStorage),
+      partialize: ({ accessToken, refreshToken, user }) => ({ accessToken, refreshToken, user }),
+    },
   ),
 );
 

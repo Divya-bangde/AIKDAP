@@ -1,20 +1,59 @@
-"""Shared pytest fixtures.
+"""Offline by default; integration requires explicit disposable service URLs.
 
-The integration tests here run against the real Postgres instance the
-application uses, not a mock: the bug under test was a data-propagation
-failure that only shows up once state has actually been persisted, so
-verifying it against an in-memory double would prove nothing.
-
-Every fixture cleans up after itself — the user cascade removes the
-project, runs, steps, and messages it created.
+Run ``python scripts/check.py integration`` to provision disposable PostgreSQL
+and Redis, migrate, and run the suite. Normal pytest never uses application
+credentials or the developer's .env, and unexpected network calls fail closed.
 """
 
+import asyncio
+import os
 import shutil
+import socket
 import uuid
 from collections.abc import AsyncIterator
+from unittest.mock import patch
+from urllib.parse import urlsplit
 
 import pytest
 import pytest_asyncio
+from pydantic_settings import DotEnvSettingsSource, EnvSettingsSource
+
+# LiteLLM otherwise fetches its price catalogue at import time, before fixtures
+# can install the network guard. Use its bundled catalogue for repeatable tests.
+os.environ["LITELLM_LOCAL_MODEL_COST_MAP"] = "True"
+
+
+def _test_service_url(name: str, default: str) -> str:
+    value = os.environ.get(name, default)
+    parsed = urlsplit(value)
+    if parsed.hostname not in {"localhost", "127.0.0.1", "::1"}:
+        raise pytest.UsageError(f"{name} must point to a local disposable service")
+    if name == "TEST_DATABASE_URL" and not parsed.path.startswith("/aikdap_test"):
+        raise pytest.UsageError("TEST_DATABASE_URL database name must start with aikdap_test")
+    if name == "TEST_DATABASE_URL" and "connect_timeout=" not in parsed.query:
+        value += ("&" if parsed.query else "?") + "connect_timeout=5"
+    return value
+
+
+TEST_DATABASE_URL = _test_service_url(
+    "TEST_DATABASE_URL", "postgresql+psycopg://test:test@127.0.0.1:1/aikdap_test"
+)
+TEST_REDIS_URL = _test_service_url("TEST_REDIS_URL", "redis://127.0.0.1:1/0")
+_test_settings = {
+    "secret_key": "isolated-test-key-never-use-in-production",
+    "database_url": TEST_DATABASE_URL,
+    "celery_broker_url": TEST_REDIS_URL,
+    "celery_result_backend": TEST_REDIS_URL,
+}
+
+# Construct the singleton from repository defaults and explicit test endpoints,
+# before importing any module that captures it. No .env or ambient API key leaks
+# into a supposedly offline test. Restore source classes immediately afterward.
+with (
+    patch.object(EnvSettingsSource, "__call__", return_value=_test_settings),
+    patch.object(DotEnvSettingsSource, "__call__", return_value={}),
+):
+    from app.core.config import Settings, settings
 
 # Tests mix async tests (one fresh loop each) with sync tests that drive
 # Celery tasks through their own `asyncio.run()`, exactly like the worker.
@@ -28,8 +67,7 @@ configure_for_worker_process()
 # process cannot resolve the users/projects foreign keys, exactly as a
 # worker process could not.
 import app.workers.celery_app  # noqa: F401
-from app.core.config import settings
-from app.core.llm.provider_health import get_provider_health_registry
+from app.core.llm import provider_health
 from app.database.session import async_session_factory
 from app.modules.auth.models import User
 from app.modules.projects.models import Project, ProjectStatus, ProjectType
@@ -44,7 +82,7 @@ def _local_docker_images() -> set[str] | None:
     try:
         import docker
 
-        images = docker.from_env().images.list()
+        images = docker.from_env(timeout=3).images.list()
     except Exception:
         return None
     names: set[str] = set()
@@ -59,6 +97,15 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
     """Skip tests whose external dependency is absent on this machine:
     the tesseract binary (ships in the backend Docker image) and the
     images real-container execution tests launch."""
+    for item in items:
+        database_test = "session" in item.fixturenames or "async_session_factory" in vars(item.module)
+        if database_test or "redis_registry" in item.fixturenames:
+            item.add_marker(pytest.mark.integration)
+        if database_test and not os.environ.get("TEST_DATABASE_URL"):
+            item.add_marker(pytest.mark.skip(reason="requires disposable PostgreSQL via TEST_DATABASE_URL"))
+        if item.get_closest_marker("live_ollama") and not os.environ.get("TEST_LIVE_OLLAMA"):
+            item.add_marker(pytest.mark.skip(reason="live Ollama is opt-in via TEST_LIVE_OLLAMA=1"))
+
     if not shutil.which("tesseract"):
         skip = pytest.mark.skip(reason="tesseract OCR binary not on PATH")
         for item in items:
@@ -78,19 +125,47 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
 
 
 @pytest.fixture(autouse=True)
-def isolated_provider_health():
-    """Clear the LLM provider breaker around every test (Sprint 9G).
+def isolated_settings_and_network(monkeypatch):
+    """Restore mutable settings and deny all non-test network connections."""
+    original_settings = settings.model_copy(deep=True)
+    for key in list(os.environ):
+        if key.lower() in Settings.model_fields:
+            monkeypatch.delenv(key)
+    monkeypatch.setitem(Settings.model_config, "env_file", None)
+    original_connect = socket.socket.connect
+    original_socketpair = socket.socketpair
+    creating_socketpair = False
+    allowed = set()
+    for name, value in (("TEST_DATABASE_URL", TEST_DATABASE_URL), ("TEST_REDIS_URL", TEST_REDIS_URL)):
+        if os.environ.get(name):
+            parsed = urlsplit(value)
+            allowed.add((parsed.hostname, parsed.port or (5432 if "DATABASE" in name else 6379)))
+    if os.environ.get("TEST_LIVE_OLLAMA"):
+        allowed.add(("127.0.0.1", 11434))
 
-    The registry is a process-wide singleton, so without this a test
-    that provokes a 503 would leave Gemini marked unavailable and the
-    *next* test's call would be short-circuited into a fallback it
-    never asked for. That failure mode is order-dependent and
-    miserable to diagnose, and it is entirely avoidable here.
-    """
-    registry = get_provider_health_registry()
-    registry.reset()
+    def guarded_connect(sock, address):
+        if not creating_socketpair and sock.family in {socket.AF_INET, socket.AF_INET6}:
+            host, port = address[:2]
+            if (host, port) not in allowed:
+                raise AssertionError(f"Unexpected network call in test to {host}:{port}; inject a transport or use disposable services")
+        return original_connect(sock, address)
+
+    def local_socketpair(*args, **kwargs):
+        # Windows implements asyncio's internal wakeup socketpair with a local
+        # TCP connection. It is IPC, not an application network request.
+        nonlocal creating_socketpair
+        creating_socketpair = True
+        try:
+            return original_socketpair(*args, **kwargs)
+        finally:
+            creating_socketpair = False
+
+    monkeypatch.setattr(socket, "socketpair", local_socketpair)
+    monkeypatch.setattr(socket.socket, "connect", guarded_connect)
+    monkeypatch.setattr(provider_health, "_registry", provider_health.ProviderHealthRegistry())
     yield
-    registry.reset()
+    for field in Settings.model_fields:
+        setattr(settings, field, getattr(original_settings, field))
 
 
 @pytest.fixture(autouse=True)
@@ -112,10 +187,34 @@ def instant_retries(monkeypatch):
     monkeypatch.setattr(settings, "llm_retry_max_delay", 0.0)
 
 
+@pytest.fixture
+def subprocess_test_environment():
+    """Pass disposable endpoints explicitly to independently launched workers.
+
+    The isolation guard clears ambient application settings. A subprocess does
+    not inherit the parent interpreter's settings singleton or pytest fixtures.
+    """
+    child_env = os.environ.copy()
+    child_env.update(
+        SECRET_KEY=settings.secret_key,
+        DATABASE_URL=TEST_DATABASE_URL,
+        CELERY_BROKER_URL=TEST_REDIS_URL,
+        CELERY_RESULT_BACKEND=TEST_REDIS_URL,
+        LITELLM_LOCAL_MODEL_COST_MAP="True",
+    )
+    return child_env
+
+
 @pytest_asyncio.fixture
 async def session() -> AsyncIterator:
-    """An `AsyncSession` bound to the real application database."""
+    """Real disposable PostgreSQL; unreachable databases fail within 5 seconds."""
+    if not os.environ.get("TEST_DATABASE_URL"):
+        pytest.skip("requires disposable PostgreSQL via TEST_DATABASE_URL; run scripts/check.py integration")
     async with async_session_factory() as db_session:
+        try:
+            await asyncio.wait_for(db_session.connection(), timeout=5)
+        except Exception:
+            pytest.fail("Disposable PostgreSQL unavailable (5-second connection bound)", pytrace=False)
         yield db_session
 
 

@@ -4,7 +4,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ResearchHistoryList } from "@/features/research/ResearchHistoryList";
 import { ResearchRunView } from "@/features/research/ResearchRunView";
 import { Dashboard } from "@/pages/Dashboard";
-import * as assetsService from "@/services/assets";
 import * as projectsService from "@/services/projects";
 import * as researchService from "@/services/research";
 import { renderWithProviders } from "@/test/render";
@@ -75,9 +74,9 @@ describe("the same run reads the same outcome on every surface", () => {
   it("shows 'Insufficient Evidence' on Dashboard, History and the Run page for the same run — never 'Completed' on any of them", async () => {
     const run = makeRun();
 
-    vi.mocked(projectsService.listProjects).mockResolvedValue([makeProject()]);
-    vi.mocked(assetsService.listAssets).mockResolvedValue([]);
-    vi.mocked(researchService.listResearchRuns).mockResolvedValue([run]);
+    vi.mocked(projectsService.listProjectsPage).mockResolvedValue({ items: [makeProject()], next_cursor: null });
+    vi.mocked(projectsService.getWorkspaceSummary).mockResolvedValue({ projects: 1, assets: 0, documents: 0, runs: 1, grounded_answers: 0 });
+    vi.mocked(researchService.listResearchRunsPage).mockResolvedValue({ items: [run], next_cursor: null });
     renderWithProviders(<Dashboard />);
     expect(await screen.findByText("Insufficient Evidence")).toBeInTheDocument();
     expect(screen.queryByText("Completed")).not.toBeInTheDocument();
@@ -102,9 +101,9 @@ describe("the same run reads the same outcome on every surface", () => {
       citations: [{ id: "c1" }],
     });
 
-    vi.mocked(projectsService.listProjects).mockResolvedValue([makeProject()]);
-    vi.mocked(assetsService.listAssets).mockResolvedValue([]);
-    vi.mocked(researchService.listResearchRuns).mockResolvedValue([run]);
+    vi.mocked(projectsService.listProjectsPage).mockResolvedValue({ items: [makeProject()], next_cursor: null });
+    vi.mocked(projectsService.getWorkspaceSummary).mockResolvedValue({ projects: 1, assets: 0, documents: 0, runs: 1, grounded_answers: 1 });
+    vi.mocked(researchService.listResearchRunsPage).mockResolvedValue({ items: [run], next_cursor: null });
     renderWithProviders(<Dashboard />);
     expect(await screen.findByText("Grounded")).toBeInTheDocument();
 

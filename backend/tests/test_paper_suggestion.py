@@ -12,7 +12,13 @@ from app.core.config.settings import Settings
 
 def test_openalex_settings_default_to_unconfigured(monkeypatch):
     monkeypatch.delenv("OPENALEX_API_KEY", raising=False)
-    settings = Settings(_env_file=None)
+    settings = Settings(
+        _env_file=None,
+        secret_key="offline-settings-fixture",
+        database_url="postgresql+psycopg://test:test@127.0.0.1:1/aikdap_test",
+        celery_broker_url="redis://127.0.0.1:1/0",
+        celery_result_backend="redis://127.0.0.1:1/0",
+    )
     assert settings.openalex_api_key is None
     assert settings.openalex_timeout == 20.0
 

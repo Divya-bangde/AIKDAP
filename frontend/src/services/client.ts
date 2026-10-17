@@ -1,3 +1,4 @@
+import { assertSession, onSessionChange, sessionEpoch, trackSessionRequest } from "@/lib/session-lifecycle";
 import { parseApiError, type ApiError } from "@/lib/api-error";
 import { getAuthTokens, useAuthStore } from "@/store/auth-store";
 import type { components } from "@/types/api";
@@ -19,45 +20,45 @@ if (import.meta.env.DEV && !BASE_URL) {
 
 type TokenPair = components["schemas"]["TokenPair"];
 
-let refreshInFlight: Promise<string | null> | null = null;
+let refreshInFlight: { epoch: number; promise: Promise<string | null> } | null = null;
 
 /** Exchange the stored refresh token for a new access token exactly
  * once per concurrent burst of 401s — `refreshInFlight` coalesces
  * simultaneous callers instead of firing N refresh requests. Returns
  * the new access token, or `null` if refresh failed (expired/invalid
  * refresh token), in which case the caller clears the session. */
-async function refreshAccessToken(): Promise<string | null> {
-  if (refreshInFlight) return refreshInFlight;
-
+async function refreshAccessToken(epoch: number): Promise<string | null> {
+  if (refreshInFlight?.epoch === epoch) return refreshInFlight.promise;
+  assertSession(epoch);
   const { refreshToken } = getAuthTokens();
   if (!refreshToken) return null;
-
-  refreshInFlight = (async () => {
+  const tracked = trackSessionRequest();
+  const promise = (async () => {
     try {
-      // Goes through `doFetch` like every other call: a refresh that
-      // bypassed it would miss the transport headers set there, and a
-      // failed refresh silently clears the session — so this path
-      // breaking looks like a random logout rather than a network fault.
       const response = await doFetch("/api/v1/auth/refresh", {
-        method: "POST",
+        method: "POST", signal: tracked.controller.signal,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refresh_token: refreshToken }),
       });
+      assertSession(epoch);
       if (!response.ok) return null;
       const tokens = (await response.json()) as TokenPair;
-      useAuthStore.getState().setSession({
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
+      assertSession(epoch);
+      useAuthStore.getState().rotateTokens({
+        accessToken: tokens.access_token, refreshToken: tokens.refresh_token,
       });
       return tokens.access_token;
-    } catch {
+    } catch (error) {
+      assertSession(epoch);
+      if (error instanceof DOMException && error.name === "AbortError") throw error;
       return null;
     } finally {
-      refreshInFlight = null;
+      tracked.release();
+      if (refreshInFlight?.epoch === epoch) refreshInFlight = null;
     }
   })();
-
-  return refreshInFlight;
+  refreshInFlight = { epoch, promise };
+  return promise;
 }
 
 interface RequestOptions {
@@ -93,6 +94,7 @@ async function fetchWithAuthAndRetry(
   path: string,
   init: RequestInit,
   auth: boolean,
+  epoch: number,
   isRetry = false,
 ): Promise<Response> {
   const headers: Record<string, string> = (init.headers as Record<string, string>) ?? {};
@@ -101,16 +103,20 @@ async function fetchWithAuthAndRetry(
     if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
   }
 
+  assertSession(epoch);
   const response = await doFetch(path, { ...init, headers });
+  assertSession(epoch);
 
   if (response.status === 401 && auth && !isRetry) {
-    const newToken = await refreshAccessToken();
-    if (newToken) return fetchWithAuthAndRetry(path, init, auth, true);
-    useAuthStore.getState().clear();
+    const newToken = await refreshAccessToken(epoch);
+    if (newToken) return fetchWithAuthAndRetry(path, init, auth, epoch, true);
   }
 
   if (!response.ok) {
-    throw (await parseApiError(response)) satisfies ApiError;
+    const error = (await parseApiError(response)) satisfies ApiError;
+    assertSession(epoch);
+    if (response.status === 401 && auth) useAuthStore.getState().clear();
+    throw error;
   }
 
   return response;
@@ -120,61 +126,34 @@ async function fetchWithAuthAndRetry(
  * `auth: false`, and on a 401 attempts exactly one silent refresh +
  * retry before surfacing the error (Phase 9's "prevent refresh
  * loops" — `isRetry` guarantees a second 401 is never retried). */
-export async function request<T>(
-  path: string,
-  { method = "GET", body, auth = true }: RequestOptions = {},
-): Promise<T> {
-  return requestInternal<T>(path, { method, body, auth }, false);
+/** Keep the session guard through body parsing: a response can arrive before
+ * logout while its JSON/blob completes afterwards. */
+async function sessionRequest<T>(path: string, init: RequestInit, auth: boolean, parse: (response: Response) => Promise<T>): Promise<T> {
+  const epoch = sessionEpoch();
+  const tracked = trackSessionRequest();
+  try {
+    const response = await fetchWithAuthAndRetry(path, { ...init, signal: tracked.controller.signal }, auth, epoch);
+    const result = await parse(response);
+    assertSession(epoch);
+    return result;
+  } finally {
+    tracked.release();
+  }
 }
 
-async function requestInternal<T>(
-  path: string,
-  { method, body, auth }: Required<RequestOptions>,
-  isRetry: boolean,
-): Promise<T> {
-  const response = await fetchWithAuthAndRetry(
-    path,
-    {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    },
-    auth,
-    isRetry,
-  );
-
-  if (response.status === 204) return undefined as T;
-  return (await response.json()) as T;
+export function request<T>(path: string, { method = "GET", body, auth = true }: RequestOptions = {}): Promise<T> {
+  return sessionRequest(path, {
+    method, headers: { "Content-Type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  }, auth, async (response) => response.status === 204 ? undefined as T : await response.json() as T);
 }
 
-/** Multipart upload — the one request shape `request()` cannot make
- * (no JSON body, no Content-Type header to set manually so the
- * browser can append the multipart boundary). Same 401/refresh/retry
- * contract as `request()`. */
-export async function requestForm<T>(
-  path: string,
-  formData: FormData,
-): Promise<T> {
-  const response = await fetchWithAuthAndRetry(
-    path,
-    { method: "POST", body: formData },
-    true,
-  );
-
-  return (await response.json()) as T;
+export function requestForm<T>(path: string, formData: FormData): Promise<T> {
+  return sessionRequest(path, { method: "POST", body: formData }, true, async (response) => await response.json() as T);
 }
 
-/** Authenticated binary download -- the one shape neither `request()`
- * (always parses JSON) nor `requestForm()` (always POSTs) can make.
- * Same 401/refresh/retry contract as both. */
-export async function requestBlob(path: string): Promise<Blob> {
-  const response = await fetchWithAuthAndRetry(
-    path,
-    { method: "GET" },
-    true,
-  );
-
-  return response.blob();
+export function requestBlob(path: string): Promise<Blob> {
+  return sessionRequest(path, { method: "GET" }, true, (response) => response.blob());
 }
 
 /** Opens a Server-Sent Events stream. `EventSource` cannot send an
@@ -185,5 +164,9 @@ export async function requestBlob(path: string): Promise<Blob> {
  * callers fall back to polling. */
 export function openEventStream(path: string): EventSource | null {
   if (typeof EventSource === "undefined") return null;
-  return new EventSource(`${BASE_URL}${path}`);
+  const stream = new EventSource(`${BASE_URL}${path}`);
+  const close = stream.close.bind(stream);
+  const unsubscribe = onSessionChange(() => stream.close());
+  stream.close = () => { unsubscribe(); close(); };
+  return stream;
 }

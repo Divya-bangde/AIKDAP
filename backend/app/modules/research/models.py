@@ -50,6 +50,7 @@ class ResearchRun(BaseModel):
     """One execution of the research workflow inside a project."""
 
     __tablename__ = "research_runs"
+    __table_args__ = (Index("ix_research_runs_owner_created_id", "owner_id", "created_at", "id"),)
 
     project_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True
@@ -126,6 +127,7 @@ class ResearchRun(BaseModel):
     # diagrams. Validated by `schemas.Visualization` before storage; null
     # when none was requested or the model's spec failed validation.
     visualization: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    visualization_outcome: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
 
     # Equations the answer relies on, when the question involved any:
     # `schemas.Equation` entries, each with the backend-sampled `curve`
@@ -254,3 +256,30 @@ class AgentMessage(BaseModel):
     message_metadata: Mapped[dict[str, Any]] = mapped_column(
         "metadata", JSONB, nullable=False, default=dict
     )
+
+
+class DocumentUnderstandingCache(BaseModel):
+    """Versioned extraction; legacy unkeyed asset metadata is never a cache hit."""
+
+    __tablename__ = "document_understanding_cache"
+
+    asset_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("assets.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    cache_key: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    source_version: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    understanding: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+
+
+class CrossPaperArtifact(BaseModel):
+    """Immutable comparison snapshot, including input versions and quoted evidence."""
+
+    __tablename__ = "cross_paper_artifacts"
+    __table_args__ = (
+        Index("ix_cross_paper_artifacts_lookup", "owner_id", "project_id", "primary_asset_id", "created_at", "id"),
+    )
+
+    owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    project_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    primary_asset_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("assets.id", ondelete="CASCADE"), nullable=False)
+    result: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)

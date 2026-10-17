@@ -1,18 +1,35 @@
-import { screen, waitFor } from "@testing-library/react";
+import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Route, Routes } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppShell } from "@/layouts/AppShell";
 import * as authService from "@/services/auth";
+import * as assetsService from "@/services/assets";
+import * as projectsService from "@/services/projects";
+import * as researchService from "@/services/research";
 import { useAuthStore } from "@/store/auth-store";
 import { makeUser } from "@/test/fixtures";
 import { renderWithProviders } from "@/test/render";
 
 vi.mock("@/services/auth");
+vi.mock("@/services/assets");
+vi.mock("@/services/projects");
+vi.mock("@/services/research");
 
 describe("AppShell", () => {
+  beforeEach(() => {
+    // ActiveWorkToast is mounted by the shell. Its background queries must
+    // not send the fixture's fake tokens to a running local backend.
+    vi.mocked(assetsService.listAssets).mockResolvedValue([]);
+    vi.mocked(projectsService.listProjects).mockResolvedValue([]);
+    vi.mocked(researchService.listResearchRuns).mockResolvedValue([]);
+  });
+
   afterEach(() => {
+    // Unsubscribe the shell before clearing session caches; otherwise mounted
+    // queries can restart during teardown and race the following test's mocks.
+    cleanup();
     useAuthStore.getState().clear();
     vi.restoreAllMocks();
   });
@@ -200,7 +217,9 @@ describe("AppShell", () => {
     const select = await screen.findByLabelText("I am a");
     await user.selectOptions(select, "student");
 
-    await waitFor(() => expect(select).toHaveValue("student"));
-    expect(vi.mocked(authService.updateMe).mock.calls[0][0]).toEqual({ persona: "student" });
+    // The native selection can change before React Query invokes the mutation.
+    // Wait for the server contract as well as the current rendered value.
+    await waitFor(() => expect(authService.updateMe).toHaveBeenCalledWith({ persona: "student" }));
+    await waitFor(() => expect(screen.getByLabelText("I am a")).toHaveValue("student"));
   });
 });

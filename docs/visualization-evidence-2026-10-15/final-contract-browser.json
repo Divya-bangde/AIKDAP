@@ -1,0 +1,109 @@
+{
+  "checks": [
+    {
+      "name": "Four metrics/series chronological and gaps",
+      "panels": [
+        [
+          {
+            "x": [
+              "January",
+              "February",
+              "March"
+            ],
+            "y": [
+              100,
+              200,
+              300
+            ],
+            "name": "revenue · West"
+          },
+          {
+            "x": [
+              "January",
+              "February",
+              "March"
+            ],
+            "y": [
+              140,
+              240,
+              null
+            ],
+            "name": "revenue · East"
+          }
+        ],
+        [
+          {
+            "x": [
+              "January",
+              "February",
+              "March"
+            ],
+            "y": [
+              50,
+              100,
+              150
+            ],
+            "name": "cost · West"
+          },
+          {
+            "x": [
+              "January",
+              "February",
+              "March"
+            ],
+            "y": [
+              90,
+              110,
+              null
+            ],
+            "name": "cost · East"
+          }
+        ]
+      ]
+    },
+    "Numeric years retain bar intent; partial pie labelled; exact integer retained in table without rounded chart",
+    "Selected traces exactly match plotted and exported 11-series data",
+    "Expected-only experiment origin, case IDs, plan version, unit and source provenance exported",
+    "Evidence opens42kg drawer; searchable map paper keyboard selection and focus restoration work"
+  ],
+  "errors": [],
+  "expectedSourceButtons": [
+    "Analytics comparison",
+    "Truncated pie",
+    "Research plot",
+    "Equation calculator",
+    "Paper map",
+    "One citation",
+    "Diagram",
+    "Zero citations",
+    "No papers",
+    "Verified evidence",
+    "Yearly bars",
+    "Invalid pie",
+    "Missing visual",
+    "3D surface",
+    "Broken diagram",
+    "Full research view",
+    "Many series",
+    "Long labels",
+    "Expected experiment",
+    "Exact integer table",
+    "Equation comparison",
+    "Heatmap",
+    "Contour",
+    "Scatter3D",
+    "Unsafe UID",
+    "Oversized diagram",
+    "Large trend",
+    "Dark theme",
+    "Your documents 33%",
+    "Web 33%",
+    "General knowledge 33%",
+    "Open chart evidence: Synthetic expected-case specification",
+    "Fit chart to data",
+    "Reset chart view",
+    "Download plotted data and context",
+    "Download chart image (SVG with context)"
+  ],
+  "passed": true
+}

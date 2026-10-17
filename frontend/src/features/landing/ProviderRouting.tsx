@@ -2,7 +2,7 @@ import { motion } from "motion/react";
 
 import { diagramStage, inViewOnce } from "@/lib/motion";
 
-/** The configured order of the LLM gateway's provider chain. Names
+/** An illustrative provider chain, independent of runtime configuration. Names
  * only — no endpoints, no models, no keys, nothing that describes how
  * to reach any of them. */
 const PROVIDERS = [
@@ -73,9 +73,9 @@ export function ProviderRouting() {
       </ol>
 
       <figcaption className="mt-8 border-l-2 border-ai/40 pl-4 text-sm leading-relaxed text-muted-foreground">
-        The configured order of the gateway&rsquo;s providers. This diagram does not report
-        which providers are reachable right now — the platform tracks that from real
-        provider health and shows it on the System Health page.
+        Illustrative provider chain. Actual providers and their order depend on configuration.
+        This diagram does not report availability or guarantee that a run succeeds. Current
+        provider health appears on the System Health page.
       </figcaption>
     </figure>
   );

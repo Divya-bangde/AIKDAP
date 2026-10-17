@@ -1,0 +1,107 @@
+{
+  "title": "Expected energy (J) by Mass (kg)",
+  "finding": "Expected: 2 values, displayed range 42 to 84.",
+  "origin": "expected test-case values (not observed execution results)",
+  "scope": [
+    "Two synthetic expected test cases; no observed execution data."
+  ],
+  "context": [
+    "Units are supplied only when present in axis labels.",
+    "Plan: fixture-plan; version 3.",
+    "Selected input: mass; output: energy."
+  ],
+  "sources": [
+    {
+      "id": "case-0-0",
+      "title": "Synthetic expected-case specification",
+      "asset_id": "fixture-source-asset",
+      "reference": "Case 1 expects 42 joules."
+    }
+  ],
+  "metadata": {
+    "plan_id": "fixture-plan",
+    "plan_version": 3,
+    "input_name": "mass",
+    "output_name": "energy",
+    "group_by": null,
+    "total_test_cases": 2,
+    "plotted_test_cases": 2,
+    "excluded_missing_input": 0,
+    "received_test_case_provenance": [
+      {
+        "name": "Expected",
+        "test_case_ids": [
+          "fixture-case1",
+          "fixture-case2"
+        ],
+        "source_references": [
+          {
+            "paper_id": "fixture-source-asset",
+            "paper_title": "Synthetic expected-case specification",
+            "quote": "Case 1 expects 42 joules.",
+            "evidence_scope": "FULL_TEXT"
+          },
+          null
+        ]
+      }
+    ]
+  },
+  "layout": {
+    "autosize": true,
+    "height": 360,
+    "margin": {
+      "t": 20,
+      "r": 20,
+      "b": 50,
+      "l": 60
+    },
+    "xaxis": {
+      "title": {
+        "text": "Mass (kg)"
+      }
+    },
+    "yaxis": {
+      "title": {
+        "text": "Expected energy (J)"
+      }
+    }
+  },
+  "plotted_trace_mapping": [
+    {
+      "exported_trace": 0,
+      "received_trace": 0,
+      "uid": null,
+      "name": "Expected"
+    }
+  ],
+  "plotted_traces": [
+    {
+      "x": [
+        "1",
+        "2"
+      ],
+      "y": [
+        42,
+        84
+      ],
+      "type": "scatter",
+      "mode": "lines+markers",
+      "name": "Expected"
+    }
+  ],
+  "plotted_values": [
+    {
+      "trace": "Expected",
+      "point": 0,
+      "x": "1",
+      "y": 42
+    },
+    {
+      "trace": "Expected",
+      "point": 1,
+      "x": "2",
+      "y": 84
+    }
+  ],
+  "relationship_source": null
+}

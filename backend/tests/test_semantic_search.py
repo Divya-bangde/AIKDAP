@@ -65,6 +65,8 @@ async def _make_asset_with_chunks(
     """Create one asset and one completed knowledge chunk per
     `content -> vector` entry (a `None` vector leaves the chunk
     unembedded, to prove those are excluded from results)."""
+    space = FakeEmbeddingProvider(_unit_vector(0)).space
+    project.active_embedding_space_id = space.id
     asset = Asset(
         project_id=project.id,
         owner_id=project.owner_id,
@@ -99,6 +101,8 @@ async def _make_asset_with_chunks(
             ),
             embedding_provider=EmbeddingProviderName.LOCAL if vector is not None else None,
             embedding=vector,
+            embedding_space_id=space.id if vector is not None else None,
+            embedding_space=space.as_dict() if vector is not None else None,
         )
         session.add(chunk)
     await session.flush()

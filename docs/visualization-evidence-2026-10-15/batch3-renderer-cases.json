@@ -1,0 +1,268 @@
+{
+  "checks": [
+    {
+      "name": "Analytics comparison",
+      "text": "\nCompare revenue and cost by month and region\n\nCompleted\n\nOrdinal line: declared domain order; missing values remain gaps.\n\nMetrics use separate panels because units differ or are unspecified. No unit conversion is assumed.\n\nrevenue (units unspecified)\n\nrevenue · West: 3 values, displayed range 100 to 300; revenue · East: 3 values, displayed range 140 to 240, 1 missing (gaps).\n\nData origin: derived from dataset computation.\n\nAxes / units: month; revenue (units unspecified).\n\nAnalysis: Compare revenue and cost by month and region\n\nDataset: audit-dataset\n\nTime window: no time bucket declared.\n\nOrdinal line: declared domain order; missing values remain gaps.\n\nMetrics use separate panels because units differ or are unspecified. No unit conversion is assumed.\n\nSelect series (2 of 2)\nFit chart to data\nReset chart view\nJanuary\nFebruary\nMarch\n100\n150\n200\n250\n300\nrevenue · West\nrevenue · East\nmonth\nrevenue (units unspecified)\nDownload plotted data and context\nDownload chart image (SVG with context)\nInspect plotted values\ncost (units unspecified)\n\ncost · West: 3 values, displayed range 50 to 150; cost · East: 3 values, displayed range 90 to 110, 1 missing (gaps).\n\nData origin: derived from dataset computation.\n\nAxes / units: month; cost (units unspecified).\n\nAnalysis: Compare revenue and cost by month and region\n\nDataset: audit-dataset\n\nTime window: no time bucket declared.\n\nOrdinal line: declared domain order; missing values remain gaps.\n\nMetrics use separate panels because units differ or are unspecified. No unit conversion is assumed.\n\nSelect series (2 of 2)\nFit chart to data\nReset chart view\nJanuary\nFebruary\nMarch\n60\n80\n100\n120\n140\ncost · West\ncost · East\nmonth\ncost (units unspecified)\nDownload plotted data and context\nDownload chart image (SVG with context)\nInspect plotted values\nShowing 5 of 5\n\nSynthetic audit fixture. Both revenue and cost are present in the result table.\n\nHow this was computed",
+      "plots": [
+        {
+          "types": [
+            "scatter",
+            "scatter"
+          ],
+          "x": [
+            [
+              "January",
+              "February",
+              "March"
+            ],
+            [
+              "January",
+              "February",
+              "March"
+            ]
+          ],
+          "y": [
+            [
+              100,
+              200,
+              300
+            ],
+            [
+              140,
+              240,
+              null
+            ]
+          ],
+          "z": [
+            null,
+            null
+          ]
+        },
+        {
+          "types": [
+            "scatter",
+            "scatter"
+          ],
+          "x": [
+            [
+              "January",
+              "February",
+              "March"
+            ],
+            [
+              "January",
+              "February",
+              "March"
+            ]
+          ],
+          "y": [
+            [
+              50,
+              100,
+              150
+            ],
+            [
+              90,
+              110,
+              null
+            ]
+          ],
+          "z": [
+            null,
+            null
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Truncated pie",
+      "text": "\nShow category shares\n\nCompleted\n\nPartial data: showing 2 of 10 result rows.\n\nPercentages use only displayed values; omitted or unverified source categories are excluded. No Other value has been inferred.\n\nShare of displayed categories\n\nrevenue: 2 values, displayed range 40 to 60.\n\nData origin: derived from dataset computation.\n\nAxis titles were not supplied; any declared units are listed with provenance.\n\nAnalysis: Show category shares\n\nDataset: audit-dataset\n\nTime window: no time bucket declared.\n\nPartial data: showing 2 of 10 result rows.\n\nPercentages use only displayed values; omitted or unverified source categories are excluded. No Other value has been inferred.\n\nFit chart to data\nReset chart view\n60%\n40%\nA\nB\nShare of displayed categories\nDownload plotted data and context\nDownload chart image (SVG with context)\nInspect plotted values\nShowing 2 of 10\n\nSynthetic fixture: only 2 of 10 category results are returned.\n\nHow this was computed",
+      "plots": [
+        {
+          "types": [
+            "pie"
+          ],
+          "x": [
+            null
+          ],
+          "y": [
+            null
+          ],
+          "z": [
+            null
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Yearly bars",
+      "text": "\nSynthetic yearly bars: preserve requested intent\n\nCompleted\nrevenue (units unspecified)\n\nrevenue: 2 values, displayed range 42 to 45.\n\nData origin: derived from dataset computation.\n\nAxes / units: year; revenue (units unspecified).\n\nAnalysis: Synthetic yearly bars: preserve requested intent\n\nDataset: audit-dataset\n\nTime window: no time bucket declared.\n\nFit chart to data\nReset chart view\n2024\n2025\n0\n10\n20\n30\n40\nyear\nrevenue (units unspecified)\nDownload plotted data and context\nDownload chart image (SVG with context)\nInspect plotted values\nShowing 2 of 2\n\nSynthetic audit fixture. Both revenue and cost are present in the result table.\n\nHow this was computed",
+      "plots": [
+        {
+          "types": [
+            "bar"
+          ],
+          "x": [
+            [
+              2024,
+              2025
+            ]
+          ],
+          "y": [
+            [
+              42,
+              45
+            ]
+          ],
+          "z": [
+            null
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Heatmap",
+      "text": "Synthetic grid values\n\nTrace 1: 4 values, displayed range 0 to 3.\n\nData origin: illustrative.\n\nAxes / units: X; Y.\n\nScope and time window were not supplied.\n\nFit chart to data\nReset chart view\n−2\n−1.5\n−1\n−0.5\n0\n0.5\n1\n1.5\n2\n0.5\n1\n1.5\n2\n2.5\n0\n0.5\n1\n1.5\n2\n2.5\n3\nX\nY\nDownload plotted data and context\nDownload chart image (SVG with context)\nInspect plotted values",
+      "plots": [
+        {
+          "types": [
+            "heatmap"
+          ],
+          "x": [
+            [
+              -1,
+              1
+            ]
+          ],
+          "y": [
+            [
+              1,
+              2
+            ]
+          ],
+          "z": [
+            [
+              [
+                0,
+                1
+              ],
+              [
+                2,
+                3
+              ]
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Contour",
+      "text": "Synthetic grid values\n\nTrace 1: 4 values, displayed range 0 to 3.\n\nData origin: illustrative.\n\nAxes / units: X; Y.\n\nScope and time window were not supplied.\n\nFit chart to data\nReset chart view\n−1\n−0.5\n0\n0.5\n1\n1\n1.2\n1.4\n1.6\n1.8\n2\n0\n0.5\n1\n1.5\n2\n2.5\n3\nX\nY\nDownload plotted data and context\nDownload chart image (SVG with context)\nInspect plotted values",
+      "plots": [
+        {
+          "types": [
+            "contour"
+          ],
+          "x": [
+            [
+              -1,
+              1
+            ]
+          ],
+          "y": [
+            [
+              1,
+              2
+            ]
+          ],
+          "z": [
+            [
+              [
+                0,
+                1
+              ],
+              [
+                2,
+                3
+              ]
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Scatter3D",
+      "text": "Synthetic illustrative 3D points\n\nTrace 1: 3 values, displayed range 1 to 3.\n\nData origin: illustrative.\n\nAxis titles were not supplied; any declared units are listed with provenance.\n\nScope and time window were not supplied.\n\nFit chart to data\nReset chart view\nDownload plotted data and context\nDownload chart image (SVG with context)\nInspect plotted values",
+      "plots": [
+        {
+          "types": [
+            "scatter3d"
+          ],
+          "x": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "y": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "z": [
+            [
+              3,
+              2,
+              1
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Exact integer table",
+      "text": "\nSynthetic exact integer preservation\n\nCompleted\n\nVisualization unavailable: Chart withheld because the integer exceeds exact browser numeric precision. Inspect the exact result table.\n\nShowing 1 of 1\n\nSynthetic audit fixture. Both revenue and cost are present in the result table.\n\nHow this was computed",
+      "plots": []
+    },
+    {
+      "name": "Expected experiment",
+      "text": "Expected energy (J) by Mass (kg)\n\nExpected: 2 values, displayed range 42 to 84.\n\nData origin: expected test-case values (not observed execution results).\n\nAxes / units: Mass (kg); Expected energy (J).\n\nUnits are supplied only when present in axis labels.\n\nPlan: fixture-plan; version 3.\n\nSelected input: mass; output: energy.\n\nTwo synthetic expected test cases; no observed execution data.\n\nOpen chart evidence: Synthetic expected-case specification\nFit chart to data\nReset chart view\n1\n1.2\n1.4\n1.6\n1.8\n2\n40\n50\n60\n70\n80\nMass (kg)\nExpected energy (J)\nDownload plotted data and context\nDownload chart image (SVG with context)\nInspect plotted values",
+      "plots": [
+        {
+          "types": [
+            "scatter"
+          ],
+          "x": [
+            [
+              "1",
+              "2"
+            ]
+          ],
+          "y": [
+            [
+              42,
+              84
+            ]
+          ],
+          "z": [
+            null
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Unsafe UID",
+      "text": "Synthetic unsafe identity rejection\n\nTrace 1: 1 values, displayed range 42 to 42.\n\nData origin: illustrative.\n\nAxis titles were not supplied; any declared units are listed with provenance.\n\nScope and time window were not supplied.\n\nFit chart to data\nReset chart view\n\nThe chart renderer could not load or draw this visualization. Inspect the plotted values or sources below, or retry once.\n\nRetry chart renderer\nDownload plotted data and context\nDownload chart image (SVG with context)\nInspect plotted values",
+      "plots": []
+    },
+    {
+      "name": "Oversized diagram",
+      "text": "Synthetic over-budget diagram\n\nRelationship diagram: labelled nodes and directed connections are described in the text alternative.\n\nData origin: illustrative.\n\nScope and time window were not supplied.\n\nDiagram exceeds the rendering budget (20,000 characters, 500 lines or 300 relationships). Simplify it or inspect the source below.\n\nflowchart LR\nA0 --> A1\nA1 --> A2\nA2 --> A3\nA3 --> A4\nA4 --> A5\nA5 --> A6\nA6 --> A7\nA7 --> A8\nA8 --> A9\nA9 --> A10\nA10 --> A11\nA11 --> A12\nA12 --> A13\nA13 --> A14\nA14 --> A15\nA15 --> A16\nA16 --> A17\nA17 --> A18\nA18 --> A19\nA19 --> A20\nA20 --> A21\nA21 --> A22\nA22 --> A23\nA23 --> A24\nA24 --> A25\nA25 --> A26\nA26 --> A27\nA27 --> A28\nA28 --> A29\nA29 --> A30\nA30 --> A31\nA31 --> A32\nA32 --> A33\nA33 --> A34\nA34 --> A35\nA35 --> A36\nA36 --> A37\nA37 --> A38\nA38 --> A39\nA39 --> A40\nA40 --> A41\nA41 --> A42\nA42 --> A43\nA43 --> A44\nA44 --> A45\nA45 --> A46\nA46 --> A47\nA47 --> A48\nA48 --> A49\nA49 --> A50\nA50 --> A51\nA51 --> A52\nA52 --> A53\nA53 --> A54\nA54 --> A55\nA55 --> A56\nA56 --> A57\nA57 --> A58\nA58 --> A59\nA59 --> A60\nA60 --> A61\nA61 --> A62\nA62 --> A63\nA63 --> A64\nA64 --> A65\nA65 --> A66\nA66 --> A67\nA67 --> A68\nA68 --> A69\nA69 --> A70\nA70 --> A71\nA71 --> A72\nA72 --> A73\nA73 --> A74\nA74 --> A75\nA75 --> A76\nA76 --> A77\nA77 --> A78\nA78 --> A79\nA79 --> A80\nA80 --> A81\nA81 --> A82\nA82 --> A83\nA83 --> A84\nA84 --> A85\nA85 --> A86\nA86 --> A87\nA87 --> A88\nA88 --> A89\nA89 --> A90\nA90 --> A91\nA91 --> A92\nA92 --> A93\nA93 --> A94\nA94 --> A95\nA95 --> A96\nA96 --> A97\nA97 --> A98\nA98 --> A99\nA99 --> A100\nA100 --> A101\nA101 --> A102\nA102 --> A103\nA103 --> A104\nA104 --> A105\nA105 --> A106\nA106 --> A107\nA107 --> A108\nA108 --> A109\nA109 --> A110\nA110 --> A111\nA111 --> A112\nA112 --> A113\nA113 --> A114\nA114 --> A115\nA115 --> A116\nA116 --> A117\nA117 --> A118\nA118 --> A119\nA119 --> A120\nA120 --> A121\nA121 --> A122\nA122 --> A123\nA123 --> A124\nA124 --> A125\nA125 --> A126\nA126 --> A127\nA127 --> A128\nA128 --> A129\nA129 --> A130\nA130 --> A131\nA131 --> A132\nA132 --> A133\nA133 --> A134\nA134 --> A135\nA135 --> A136\nA136 --> A137\nA137 --> A138\nA138 --> A139\nA139 --> A140\nA140 --> A141\nA141 --> A142\nA142 --> A143\nA143 --> A144\nA144 --> A145\nA145 --> A146\nA146 --> A147\nA147 --> A148\nA148 --> A149\nA149 --> A150\nA150 --> A151\nA151 --> A152\nA152 --> A153\nA153 --> A154\nA154 --> A155\nA155 --> A156\nA156 --> A157\nA157 --> A158\nA158 --> A159\nA159 --> A160\nA160 --> A161\nA161 --> A162\nA162 --> A163\nA163 --> A164\nA164 --> A165\nA165 --> A166\nA166 --> A167\nA167 --> A168\nA168 --> A169\nA169 --> A170\nA170 --> A171\nA171 --> A172\nA172 --> A173\nA173 --> A174\nA174 --> A175\nA175 --> A176\nA176 --> A177\nA177 --> A178\nA178 --> A179\nA179 --> A180\nA180 --> A181\nA181 --> A182\nA182 --> A183\nA183 --> A184\nA184 --> A185\nA185 --> A186\nA186 --> A187\nA187 --> A188\nA188 --> A189\nA189 --> A190\nA190 --> A191\nA191 --> A192\nA192 --> A193\nA193 --> A194\nA194 --> A195\nA195 --> A196\nA196 --> A197\nA197 --> A198\nA198 --> A199\nA199 --> A200\nA200 --> A201\nA201 --> A202\nA202 --> A203\nA203 --> A204\nA204 --> A205\nA205 --> A206\nA206 --> A207\nA207 --> A208\nA208 --> A209\nA209 --> A210\nA210 --> A211\nA211 --> A212\nA212 --> A213\nA213 --> A214\nA214 --> A215\nA215 --> A216\nA216 --> A217\nA217 --> A218\nA218 --> A219\nA219 --> A220\nA220 --> A221\nA221 --> A222\nA222 --> A223\nA223 --> A224\nA224 --> A225\nA225 --> A226\nA226 --> A227\nA227 --> A228\nA228 --> A229\nA229 --> A230\nA230 --> A231\nA231 --> A232\nA232 --> A233\nA233 --> A234\nA234 --> A235\nA235 --> A236\nA236 --> A237\nA237 --> A238\nA238 --> A239\nA239 --> A240\nA240 --> A241\nA241 --> A242\nA242 --> A243\nA243 --> A244\nA244 --> A245\nA245 --> A246\nA246 --> A247\nA247 --> A248\nA248 --> A249\nA249 --> A250\nA250 --> A251\nA251 --> A252\nA252 --> A253\nA253 --> A254\nA254 --> A255\nA255 --> A256\nA256 --> A257\nA257 --> A258\nA258 --> A259\nA259 --> A260\nA260 --> A261\nA261 --> A262\nA262 --> A263\nA263 --> A264\nA264 --> A265\nA265 --> A266\nA266 --> A267\nA267 --> A268\nA268 --> A269\nA269 --> A270\nA270 --> A271\nA271 --> A272\nA272 --> A273\nA273 --> A274\nA274 --> A275\nA275 --> A276\nA276 --> A277\nA277 --> A278\nA278 --> A279\nA279 --> A280\nA280 --> A281\nA281 --> A282\nA282 --> A283\nA283 --> A284\nA284 --> A285\nA285 --> A286\nA286 --> A287\nA287 --> A288\nA288 --> A289\nA289 --> A290\nA290 --> A291\nA291 --> A292\nA292 --> A293\nA293 --> A294\nA294 --> A295\nA295 --> A296\nA296 --> A297\nA297 --> A298\nA298 --> A299\nA299 --> A300\nA300 --> A301\nDownload plotted data and context\nDownload diagram (SVG with context)\nDiagram relationships (text alternative)",
+      "plots": []
+    }
+  ],
+  "errors": []
+}

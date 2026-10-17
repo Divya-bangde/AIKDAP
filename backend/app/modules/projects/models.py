@@ -61,6 +61,8 @@ class Project(BaseModel):
     )
     color: Mapped[str | None] = mapped_column(String(20), nullable=True)
     icon: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    # NULL means no verified, activated vector space (including pre-migration data).
+    active_embedding_space_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     #: Null means "use the owner's persona".
     persona_override: Mapped[Persona | None] = mapped_column(
         PERSONA_SQL_ENUM, nullable=True

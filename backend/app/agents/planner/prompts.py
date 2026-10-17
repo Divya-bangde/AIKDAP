@@ -194,9 +194,21 @@ null. When set, it is exactly one object:
   -- never one object per point.
 - 3D chart: {"kind": "chart3d", "title": "...", "data": [Plotly scatter3d or surface traces], "layout": {}}
 - diagram: {"kind": "diagram", "title": "...", "mermaid": "Mermaid source, e.g. flowchart TD ..."}
-Every number plotted in a chart must appear in the evidence; never plot
-estimated, invented, or illustrative values. If the evidence contains no
-numbers to plot, use a diagram of what the evidence describes, or null."""
+Every numeric coordinate must include point-level provenance in a top-level
+"provenance" array. Each entry identifies trace (zero based), field (x/y/z/values),
+point (zero based), optional grid column, formula (identity/sum/difference/ratio/convert),
+unit (empty string if dimensionless), and inputs. Each input contains citation_id,
+reference, asset_id/chunk_id when supplied, an exact evidence quote associating
+category and value, token_index (zero based numeric token within quote), value,
+and unit. Physical units must immediately follow the numeric token in the quote.
+Specify origin measured or derived, and intent.type (bar/line/scatter/pie/etc.).
+For lines declare intent.axis_semantics numeric/date for trends, ordinal with
+intent.domain for an explicit category order, or trajectory for intentional paths.
+Trends reject duplicate/missing x values; null y values remain unbridged gaps.
+Only conversions g to kg, kg to g, m to km, km to m, and fraction to/from % are supported.
+ratio produces fraction. Include rounding_decimals only for explicit rounding.
+Never invent provenance. If the requested visual lacks enough evidence, return
+visualization null. Do not substitute a diagram for a requested numerical chart."""
 
 GROUNDED_SYNTHESIS_USER_TEMPLATE = """Question:
 {query}
@@ -213,6 +225,7 @@ Answer the question using only the evidence above."""
 #: citation id, and it is the only handle the model is given — so a
 #: returned id can always be checked against what was supplied.
 GROUNDED_EVIDENCE_BLOCK_TEMPLATE = """[{id}] {title} (source={source})
+Evidence identity: reference={reference}; asset_id={asset_id}; chunk_id={chunk_id}
 {snippet}"""
 
 
@@ -230,6 +243,9 @@ def render_grounded_evidence(citations: list[dict]) -> str:
             id=citation.get("id") or "unknown",
             title=citation.get("title") or "Untitled reference",
             source=citation.get("source") or "unknown",
+            reference=citation.get("reference") or "unknown",
+            asset_id=citation.get("asset_id") or "null",
+            chunk_id=citation.get("chunk_id") or "null",
             snippet=citation.get("snippet") or "",
         )
         for citation in citations

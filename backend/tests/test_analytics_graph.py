@@ -62,6 +62,8 @@ async def test_truncated_dataset_notes_it_in_explain_prompt(monkeypatch):
     gateway = ScriptedGateway(json.dumps(GOOD_PLAN), "East leads.")
     state = await run(gateway)
     assert state["profile"]["truncated"] is True
+    assert state["result"]["scope"]["dataset_truncated"] is True
+    assert state["result"]["scope"]["partial"] is True
     assert "Truncated: yes" in gateway.calls[1]["prompt"]
 
 

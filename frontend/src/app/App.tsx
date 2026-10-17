@@ -40,6 +40,7 @@ export function App() {
   useApplyTheme();
 
   const accessToken = useAuthStore((state) => state.accessToken);
+  const sessionId = useAuthStore((state) => state.sessionId);
 
   return (
     /* `reducedMotion="user"` makes every Motion animation in the app
@@ -49,7 +50,7 @@ export function App() {
      * than re-checked in each component. CSS-driven decoration is
      * disabled separately in `index.css`. */
     <MotionConfig reducedMotion="user">
-      <Routes>
+      <Routes key={sessionId}>
         <Route path="/login" element={<Login />} />
 
         {/* The landing page for everyone, signed in or not — where the

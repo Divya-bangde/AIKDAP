@@ -1,6 +1,6 @@
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AssetsLibrary } from "@/features/assets/AssetsLibrary";
 import { isSource } from "@/features/assets/asset-state";
@@ -24,12 +24,16 @@ const analysis = makeAsset({
 });
 
 function renderLibrary(onOpenAnalytics = vi.fn()) {
-  vi.mocked(assetsService.listAssets).mockResolvedValue([report, analysis, upload]);
+  vi.mocked(assetsService.listAssetsPage).mockResolvedValue({ items: [report, analysis, upload], next_cursor: null });
   renderWithProviders(<AssetsLibrary projectId="p1" onOpenAnalytics={onOpenAnalytics} />);
   return userEvent.setup();
 }
 
 describe("AssetsLibrary", () => {
+  beforeEach(() => {
+    vi.mocked(reportsService.downloadReport).mockResolvedValue(undefined);
+    vi.mocked(assetsService.downloadAssetFile).mockResolvedValue(new Blob(["paper"]));
+  });
   afterEach(() => vi.restoreAllMocks());
 
   it("lists sources and generated outputs together, each with its own action", async () => {
@@ -66,7 +70,7 @@ describe("AssetsLibrary", () => {
   });
 
   it("shows an empty state for a project with no assets", async () => {
-    vi.mocked(assetsService.listAssets).mockResolvedValue([]);
+    vi.mocked(assetsService.listAssetsPage).mockResolvedValue({ items: [], next_cursor: null });
     renderWithProviders(<AssetsLibrary projectId="p1" onOpenAnalytics={vi.fn()} />);
 
     expect(await screen.findByText("No assets yet.")).toBeInTheDocument();
